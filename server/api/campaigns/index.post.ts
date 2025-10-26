@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z, ZodError } from 'zod'
 import { getUserFromEvent } from '~/server/utils/auth'
 import { prisma } from '~/server/utils/db'
 import { validatePngWithAlpha, createThumbnail, generateAssetKey } from '~/server/utils/png'
@@ -130,10 +130,19 @@ export default defineEventHandler(async (event) => {
         }
       }
     }
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof ZodError) {
+      throw createError({
+        statusCode: 422,
+        statusMessage: error.issues[0]?.message || 'Validation failed'
+      })
+    }
+
+    const message = error instanceof Error ? error.message : 'Failed to create campaign'
+
     throw createError({
       statusCode: 400,
-      statusMessage: error.message || 'Failed to create campaign'
+      statusMessage: message
     })
   }
 })

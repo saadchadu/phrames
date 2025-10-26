@@ -100,6 +100,7 @@ const { data, pending, error, refresh } = await useLazyAsyncData(
 const handleLogout = async () => {
   try {
     await logout()
+    await navigateTo('/login')
   } catch (error) {
     toast.add({
       title: 'Error',

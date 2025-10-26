@@ -1,7 +1,7 @@
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
   type User as FirebaseUser
 } from 'firebase/auth'
@@ -18,45 +18,73 @@ export const useAuth = () => {
   const user = useState<User | null>('auth.user', () => null)
   const loading = useState<boolean>('auth.loading', () => false)
   const initialized = useState<boolean>('auth.initialized', () => false)
+  const listenerRegistered = useState<boolean>('auth.listenerRegistered', () => false)
+  const initPromise = useState<Promise<void> | null>('auth.initPromise', () => null)
+  const initResolve = useState<(() => void) | null>('auth.initResolve', () => null)
 
   // Initialize auth state listener
-  const initAuth = () => {
-    if (initialized.value) return
-    
-    onAuthStateChanged($auth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        user.value = {
-          id: firebaseUser.uid,
-          email: firebaseUser.email || '',
-          displayName: firebaseUser.displayName || undefined,
-          photoURL: firebaseUser.photoURL || undefined
-        }
-        
-        // Sync with backend
-        try {
-          const token = await firebaseUser.getIdToken()
-          await $fetch('/api/auth/sync', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          })
-        } catch (error) {
-          console.error('Failed to sync user:', error)
-        }
-      } else {
-        user.value = null
-      }
-      loading.value = false
-      initialized.value = true
+  const initAuth = async () => {
+    if (process.server) return
+
+    if (initialized.value) {
+      return
+    }
+
+    if (initPromise.value) {
+      await initPromise.value
+      return
+    }
+
+    initPromise.value = new Promise<void>((resolve) => {
+      initResolve.value = resolve
     })
+
+    if (!listenerRegistered.value) {
+      listenerRegistered.value = true
+
+      onAuthStateChanged($auth, async (firebaseUser: FirebaseUser | null) => {
+        try {
+          if (firebaseUser) {
+            user.value = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              displayName: firebaseUser.displayName || undefined,
+              photoURL: firebaseUser.photoURL || undefined
+            }
+
+            // Sync with backend
+            try {
+              const token = await firebaseUser.getIdToken()
+              await $fetch('/api/auth/sync', {
+                method: 'POST',
+                headers: {
+                  Authorization: `Bearer ${token}`
+                }
+              })
+            } catch (error) {
+              console.error('Failed to sync user:', error)
+            }
+          } else {
+            user.value = null
+          }
+        } finally {
+          initialized.value = true
+          initResolve.value?.()
+          initPromise.value = null
+          initResolve.value = null
+        }
+      })
+    }
+
+    if (initPromise.value) {
+      await initPromise.value
+    }
   }
 
   const login = async (email: string, password: string) => {
     loading.value = true
     try {
       await signInWithEmailAndPassword($auth, email, password)
-      await navigateTo('/dashboard')
     } catch (error: any) {
       throw new Error(getFirebaseErrorMessage(error.code))
     } finally {
@@ -68,7 +96,6 @@ export const useAuth = () => {
     loading.value = true
     try {
       await createUserWithEmailAndPassword($auth, email, password)
-      await navigateTo('/dashboard')
     } catch (error: any) {
       throw new Error(getFirebaseErrorMessage(error.code))
     } finally {
@@ -80,7 +107,6 @@ export const useAuth = () => {
     loading.value = true
     try {
       await signOut($auth)
-      await navigateTo('/login')
     } catch (error) {
       console.error('Logout error:', error)
     } finally {

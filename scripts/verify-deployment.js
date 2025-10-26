@@ -28,6 +28,7 @@ const requiredEnvVars = {
   'S3_SECRET_ACCESS_KEY': 'Storage secret key',
   'S3_BUCKET': 'Storage bucket name',
   'S3_PUBLIC_BASE_URL': 'Public CDN URL for assets',
+  'S3_REGION': 'Storage region (e.g., us-east-1)',
   
   // Site Config
   'NUXT_PUBLIC_SITE_URL': 'Your domain URL'

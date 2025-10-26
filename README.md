@@ -60,6 +60,7 @@ A free, Twibbonize-style web app for creating photo frame campaigns. Creators ca
 - `S3_SECRET_ACCESS_KEY`: Storage secret key
 - `S3_BUCKET`: Storage bucket name
 - `S3_PUBLIC_BASE_URL`: Public CDN URL for assets
+- `S3_REGION`: AWS region (or region for your S3-compatible provider)
 - `NUXT_PUBLIC_SITE_URL`: Your domain (e.g., https://phrames.cleffon.com)
 
 ### Firebase Configuration

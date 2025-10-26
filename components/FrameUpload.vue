@@ -102,8 +102,13 @@ const fileName = ref('')
 const fileSize = ref(0)
 const error = ref('')
 
-const validatePngFile = async (file) => {
-  return new Promise((resolve, reject) => {
+interface FrameInfo {
+  width: number
+  height: number
+}
+
+const validatePngFile = async (file: File): Promise<FrameInfo> => {
+  return new Promise<FrameInfo>((resolve, reject) => {
     if (file.type !== 'image/png') {
       reject(new Error('File must be a PNG image'))
       return
@@ -150,7 +155,7 @@ const validatePngFile = async (file) => {
   })
 }
 
-const processFile = async (file) => {
+const processFile = async (file: File) => {
   error.value = ''
   
   try {
@@ -162,13 +167,13 @@ const processFile = async (file) => {
     fileSize.value = file.size
     
     emit('file-selected', file, previewUrl, info)
-  } catch (err) {
-    error.value = err.message
+  } catch (err: unknown) {
+    error.value = err instanceof Error ? err.message : 'Unable to process the selected file'
     clearFile()
   }
 }
 
-const handleFileSelect = (event) => {
+const handleFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (file) {
@@ -176,7 +181,7 @@ const handleFileSelect = (event) => {
   }
 }
 
-const handleDrop = (event) => {
+const handleDrop = (event: DragEvent) => {
   event.preventDefault()
   isDragging.value = false
   
@@ -196,7 +201,7 @@ const clearFile = () => {
   error.value = ''
 }
 
-const formatFileSize = (bytes) => {
+const formatFileSize = (bytes: number) => {
   if (bytes === 0) return '0 Bytes'
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']

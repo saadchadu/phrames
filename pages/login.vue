@@ -63,6 +63,7 @@ import { z } from 'zod'
 
 const { login, loading, initAuth } = useAuth()
 const toast = useToast()
+const route = useRoute()
 
 // Initialize Firebase auth
 onMounted(() => {
@@ -82,15 +83,24 @@ const form = reactive({
 const handleLogin = async () => {
   try {
     await login(form.email, form.password)
+    
+    const redirectParam = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+    const redirectTarget = redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+      ? redirectParam
+      : '/dashboard'
+    
     toast.add({
       title: 'Success',
       description: 'Welcome back!',
       color: 'green'
     })
+    
+    await navigateTo(redirectTarget)
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to sign in. Please try again.'
     toast.add({
       title: 'Error',
-      description: error.message,
+      description: message,
       color: 'red'
     })
   }

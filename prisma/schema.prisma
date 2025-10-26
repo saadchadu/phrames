@@ -17,6 +17,7 @@ model User {
   
   assets       Asset[]
   campaigns    Campaign[]
+  sessions     Session[]
   auditLogs    AuditLog[]
 
   @@map("users")

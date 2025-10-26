@@ -85,7 +85,7 @@
 ### Environment Variables Required
 - [x] Database connection string
 - [x] Firebase configuration (8 variables)
-- [x] S3 storage configuration (5 variables)
+- [x] S3 storage configuration (6 variables)
 - [x] Site URL configuration
 
 ### Domain Configuration

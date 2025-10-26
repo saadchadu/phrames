@@ -72,6 +72,7 @@ import { z } from 'zod'
 
 const { signup, loading, initAuth } = useAuth()
 const toast = useToast()
+const route = useRoute()
 
 // Initialize Firebase auth
 onMounted(() => {
@@ -96,15 +97,24 @@ const form = reactive({
 const handleSignup = async () => {
   try {
     await signup(form.email, form.password)
+    
+    const redirectParam = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+    const redirectTarget = redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+      ? redirectParam
+      : '/dashboard'
+    
     toast.add({
       title: 'Success',
       description: 'Account created successfully!',
       color: 'green'
     })
+    
+    await navigateTo(redirectTarget)
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to create account. Please try again.'
     toast.add({
       title: 'Error',
-      description: error.message,
+      description: message,
       color: 'red'
     })
   }

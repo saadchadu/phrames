@@ -159,13 +159,13 @@ const form = reactive({
 })
 
 const loading = ref(false)
-const frameFile = ref(null)
-const framePreview = ref(null)
-const frameInfo = ref(null)
+const frameFile = ref<File | null>(null)
+const framePreview = ref<string | null>(null)
+const frameInfo = ref<{ width: number; height: number } | null>(null)
 
 const aspectRatio = computed(() => {
   if (!frameInfo.value) return ''
-  const gcd = (a, b) => b === 0 ? a : gcd(b, a % b)
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
   const divisor = gcd(frameInfo.value.width, frameInfo.value.height)
   return `${frameInfo.value.width / divisor}:${frameInfo.value.height / divisor}`
 })
@@ -181,7 +181,7 @@ const generateSlug = () => {
   }
 }
 
-const handleFrameSelected = (file, preview, info) => {
+const handleFrameSelected = (file: File, preview: string, info: { width: number; height: number }) => {
   frameFile.value = file
   framePreview.value = preview
   frameInfo.value = info
@@ -218,10 +218,16 @@ const handleSubmit = async () => {
     })
     
     await router.push(`/dashboard/campaigns/${result.campaign.id}`)
-  } catch (error) {
+  } catch (error: unknown) {
+    const apiMessage =
+      typeof error === 'object' && error !== null && 'data' in error && (error as any).data?.statusMessage
+        ? (error as any).data.statusMessage
+        : null
+    const message = apiMessage || (error instanceof Error ? error.message : 'Failed to create campaign')
+
     toast.add({
       title: 'Error',
-      description: error.data?.message || 'Failed to create campaign',
+      description: message,
       color: 'red'
     })
   } finally {

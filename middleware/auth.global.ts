@@ -1,31 +1,36 @@
-export default defineNuxtRouteMiddleware((to) => {
-  // Temporarily disable middleware for debugging
-  return
-  
-  // Skip middleware on server-side rendering
-  if (process.server) return
-  
-  const { user, initialized, initAuth } = useAuth()
-  
-  // Initialize auth if not already done
-  if (!initialized.value) {
-    initAuth()
+export default defineNuxtRouteMiddleware(async (to) => {
+  if (process.server) {
     return
   }
-  
-  // Protected routes that require authentication
+
+  const { user, initialized, initAuth } = useAuth()
+
+  if (!initialized.value) {
+    await initAuth()
+  }
+
   const protectedRoutes = ['/dashboard']
   const isProtectedRoute = protectedRoutes.some(route => to.path.startsWith(route))
-  
-  // Auth routes that should redirect if already logged in
+
   const authRoutes = ['/login', '/signup']
   const isAuthRoute = authRoutes.includes(to.path)
-  
+
   if (isProtectedRoute && !user.value) {
-    return navigateTo('/login')
+    const redirectTo = to.fullPath || to.path
+    return navigateTo({
+      path: '/login',
+      query: {
+        redirect: redirectTo
+      }
+    })
   }
-  
+
   if (isAuthRoute && user.value) {
-    return navigateTo('/dashboard')
+    const redirectParam = typeof to.query.redirect === 'string' ? to.query.redirect : ''
+    const redirectTarget = redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+      ? redirectParam
+      : '/dashboard'
+
+    return navigateTo(redirectTarget)
   }
-}
+})

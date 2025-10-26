@@ -13,6 +13,7 @@ export default defineNuxtConfig({
     s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     s3Bucket: process.env.S3_BUCKET,
     s3PublicBaseUrl: process.env.S3_PUBLIC_BASE_URL,
+    s3Region: process.env.S3_REGION || 'us-east-1',
     firebaseAdminProjectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
     firebaseAdminClientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
     firebaseAdminPrivateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY,

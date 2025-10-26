@@ -1,7 +1,16 @@
+import type { H3Event } from 'h3'
+import { getHeader } from 'h3'
 import { verifyFirebaseToken } from './firebase-admin'
 import { prisma } from './db'
 
-export async function getUserFromEvent(event: any) {
+interface FirebaseAuthUser {
+  uid: string
+  email?: string | null
+  name?: string | null
+  picture?: string | null
+}
+
+export async function getUserFromEvent(event: H3Event) {
   const authHeader = getHeader(event, 'authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null
@@ -19,22 +28,23 @@ export async function getUserFromEvent(event: any) {
   return user
 }
 
-export async function syncUserWithDatabase(firebaseUser: any) {
+export async function syncUserWithDatabase(firebaseUser: FirebaseAuthUser) {
   const { uid, email, name, picture } = firebaseUser
+  const normalizedEmail = email || `${uid}@users.phrames`
   
   try {
     // Upsert user in PostgreSQL
     const user = await prisma.user.upsert({
       where: { id: uid },
       update: {
-        email: email || '',
+        email: normalizedEmail,
         displayName: name || null,
         photoURL: picture || null,
         updatedAt: new Date()
       },
       create: {
         id: uid,
-        email: email || '',
+        email: normalizedEmail,
         displayName: name || null,
         photoURL: picture || null
       }
