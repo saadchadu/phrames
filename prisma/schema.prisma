@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id // Firebase UID
+  email        String    @unique
+  displayName  String?
+  photoURL     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  assets       Asset[]
+  campaigns    Campaign[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+enum AssetType {
+  frame_png
+  thumb_png
+}
+
+model Asset {
+  id          String    @id @default(uuid())
+  ownerUserId String
+  type        AssetType
+  storageKey  String
+  width       Int
+  height      Int
+  sizeBytes   Int
+  createdAt   DateTime  @default(now())
+  
+  owner     User       @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  campaigns Campaign[]
+
+  @@map("assets")
+}
+
+enum CampaignVisibility {
+  public
+  unlisted
+}
+
+enum CampaignStatus {
+  active
+  archived
+}
+
+model Campaign {
+  id           String              @id @default(uuid())
+  userId       String
+  name         String
+  slug         String              @unique
+  description  String?
+  visibility   CampaignVisibility  @default(public)
+  status       CampaignStatus      @default(active)
+  frameAssetId String
+  aspectRatio  String              // e.g., "1:1", "4:5", "16:9"
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  frameAsset Asset                 @relation(fields: [frameAssetId], references: [id])
+  stats      CampaignStatsDaily[]
+
+  @@map("campaigns")
+}
+
+model CampaignStatsDaily {
+  id         String   @id @default(uuid())
+  campaignId String
+  date       DateTime @db.Date
+  visits     Int      @default(0)
+  renders    Int      @default(0)
+  downloads  Int      @default(0)
+  
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, date])
+  @@map("campaign_stats_daily")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorUserId  String?
+  action       String
+  targetType   String
+  targetId     String
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
