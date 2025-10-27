@@ -13,13 +13,13 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event)
     const { email, password } = loginSchema.parse(body)
 
-    // Development mode: use mock authentication when database is not available
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        // Try to connect to database first
-        await prisma.$queryRaw`SELECT 1`
-      } catch (dbError) {
-        // Database not available, use mock authentication
+    // Check database availability first
+    try {
+      await prisma.$queryRaw`SELECT 1`
+    } catch (dbError) {
+      // Database not available
+      if (process.env.NODE_ENV === 'development') {
+        // Development mode: use mock authentication
         if (email === 'demo@phrames.com' && password === 'demo123') {
           const mockSessionId = 'dev-session-' + Date.now()
           
@@ -42,6 +42,12 @@ export default defineEventHandler(async (event) => {
             statusMessage: 'Invalid email or password. Try demo@phrames.com / demo123'
           })
         }
+      } else {
+        // Production mode: return service unavailable
+        throw createError({
+          statusCode: 503,
+          statusMessage: 'Service temporarily unavailable. Please try again later.'
+        })
       }
     }
 
