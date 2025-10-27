@@ -11,6 +11,17 @@
       </div>
       
       <UCard class="p-6">
+        <div v-if="formErrors.length > 0" class="mb-4">
+          <UAlert
+            v-for="error in formErrors"
+            :key="error"
+            color="red"
+            variant="soft"
+            :title="error"
+            class="mb-2"
+          />
+        </div>
+        
         <UForm 
           :schema="loginSchema" 
           :state="form" 
@@ -65,7 +76,7 @@ const { login, loading, initAuth } = useAuth()
 const toast = useToast()
 const route = useRoute()
 
-// Initialize Firebase auth
+// Initialize auth
 onMounted(() => {
   initAuth()
 })
@@ -80,9 +91,12 @@ const form = reactive({
   password: ''
 })
 
-const handleLogin = async () => {
+const formErrors = ref<string[]>([])
+
+const handleLogin = async (data: any) => {
+  formErrors.value = []
   try {
-    await login(form.email, form.password)
+    await login(data.email, data.password)
     
     const redirectParam = typeof route.query.redirect === 'string' ? route.query.redirect : ''
     const redirectTarget = redirectParam.startsWith('/') && !redirectParam.startsWith('//')
@@ -98,6 +112,7 @@ const handleLogin = async () => {
     await navigateTo(redirectTarget)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to sign in. Please try again.'
+    formErrors.value = [message]
     toast.add({
       title: 'Error',
       description: message,

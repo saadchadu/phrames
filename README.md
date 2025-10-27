@@ -15,7 +15,7 @@ A free, Twibbonize-style web app for creating photo frame campaigns. Creators ca
 - **Framework**: Nuxt 3 with TypeScript
 - **UI**: Nuxt UI + Tailwind CSS
 - **Database**: PostgreSQL with Prisma
-- **Auth**: Firebase Authentication
+- **Auth**: Credentials (email/password) with bcrypt
 - **Storage**: S3-compatible (Cloudflare R2/AWS S3)
 - **Deployment**: Vercel
 
@@ -28,25 +28,19 @@ A free, Twibbonize-style web app for creating photo frame campaigns. Creators ca
    npm install
    ```
 
-2. **Set up Firebase**:
-   - Create a Firebase project at https://console.firebase.google.com
-   - Enable Authentication with Email/Password
-   - Generate a service account key for Firebase Admin
-   - Copy the configuration values
-
-3. **Set up environment variables**:
+2. **Set up environment variables**:
    ```bash
    cp .env.example .env
-   # Edit .env with your database, Firebase, and S3 credentials
+   # Edit .env with your database, session secret, and S3 credentials
    ```
 
-4. **Set up database**:
+3. **Set up database**:
    ```bash
    npx prisma migrate dev
    npx prisma generate
    ```
 
-5. **Run development server**:
+4. **Run development server**:
    ```bash
    npm run dev
    ```
@@ -63,16 +57,8 @@ A free, Twibbonize-style web app for creating photo frame campaigns. Creators ca
 - `S3_REGION`: AWS region (or region for your S3-compatible provider)
 - `NUXT_PUBLIC_SITE_URL`: Your domain (e.g., https://phrames.cleffon.com)
 
-### Firebase Configuration
-- `NUXT_PUBLIC_FIREBASE_API_KEY`: Firebase Web API key
-- `NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN`: Firebase Auth domain
-- `NUXT_PUBLIC_FIREBASE_PROJECT_ID`: Firebase project ID
-- `NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET`: Firebase storage bucket
-- `NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`: Firebase messaging sender ID
-- `NUXT_PUBLIC_FIREBASE_APP_ID`: Firebase app ID
-- `FIREBASE_ADMIN_PROJECT_ID`: Firebase Admin project ID
-- `FIREBASE_ADMIN_CLIENT_EMAIL`: Firebase Admin service account email
-- `FIREBASE_ADMIN_PRIVATE_KEY`: Firebase Admin service account private key
+### Authentication
+- `SESSION_SECRET`: Long random string for session encryption
 
 ## Deployment
 

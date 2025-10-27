@@ -11,6 +11,17 @@
       </div>
       
       <UCard class="p-6">
+        <div v-if="formErrors.length > 0" class="mb-4">
+          <UAlert
+            v-for="error in formErrors"
+            :key="error"
+            color="red"
+            variant="soft"
+            :title="error"
+            class="mb-2"
+          />
+        </div>
+        
         <UForm 
           :schema="signupSchema" 
           :state="form" 
@@ -30,7 +41,7 @@
             <UInput 
               v-model="form.password" 
               type="password" 
-              placeholder="Create a password (min 8 characters)"
+              placeholder="Create a password (min 6 characters)"
               :disabled="loading"
             />
           </UFormGroup>
@@ -74,7 +85,7 @@ const { signup, loading, initAuth } = useAuth()
 const toast = useToast()
 const route = useRoute()
 
-// Initialize Firebase auth
+// Initialize auth
 onMounted(() => {
   initAuth()
 })
@@ -94,9 +105,12 @@ const form = reactive({
   confirmPassword: ''
 })
 
-const handleSignup = async () => {
+const formErrors = ref<string[]>([])
+
+const handleSignup = async (data: any) => {
+  formErrors.value = []
   try {
-    await signup(form.email, form.password)
+    await signup(data.email, data.password)
     
     const redirectParam = typeof route.query.redirect === 'string' ? route.query.redirect : ''
     const redirectTarget = redirectParam.startsWith('/') && !redirectParam.startsWith('//')
@@ -112,6 +126,7 @@ const handleSignup = async () => {
     await navigateTo(redirectTarget)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to create account. Please try again.'
+    formErrors.value = [message]
     toast.add({
       title: 'Error',
       description: message,

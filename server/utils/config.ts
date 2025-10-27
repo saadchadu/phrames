@@ -15,19 +15,11 @@ export function validateEnvironment(options: { strict?: boolean } = {}) {
 
   const requiredVars: ConfigPath[] = [
     'databaseUrl',
-    'firebaseAdminProjectId',
-    'firebaseAdminClientEmail',
-    'firebaseAdminPrivateKey',
+    'sessionSecret',
     's3Bucket',
     's3AccessKeyId',
     's3SecretAccessKey',
-    's3PublicBaseUrl',
-    ['public', 'firebaseApiKey'],
-    ['public', 'firebaseAuthDomain'],
-    ['public', 'firebaseProjectId'],
-    ['public', 'firebaseStorageBucket'],
-    ['public', 'firebaseMessagingSenderId'],
-    ['public', 'firebaseAppId']
+    's3PublicBaseUrl'
   ]
 
   const missing = requiredVars

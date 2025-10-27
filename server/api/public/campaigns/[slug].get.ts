@@ -7,52 +7,55 @@ export default defineEventHandler(async (event) => {
   if (!slug) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Slug is required'
+      statusMessage: 'Campaign slug is required'
     })
   }
-  
-  const campaign = await prisma.campaign.findUnique({
-    where: { 
-      slug,
-      status: 'active'
-    },
-    include: {
-      frameAsset: true,
-      user: {
-        select: {
-          email: true
-        }
+
+  try {
+    const campaign = await prisma.campaign.findUnique({
+      where: { 
+        slug,
+        status: 'active'
+      },
+      include: {
+        frameAsset: true
       }
-    }
-  })
-  
-  if (!campaign) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Campaign not found'
     })
-  }
-  
-  if (campaign.visibility === 'unlisted') {
-    // Still allow access but don't index
-  }
-  
-  return {
-    id: campaign.id,
-    name: campaign.name,
-    slug: campaign.slug,
-    description: campaign.description,
-    visibility: campaign.visibility,
-    aspectRatio: campaign.aspectRatio,
-    createdAt: campaign.createdAt,
-    frameAsset: {
-      id: campaign.frameAsset.id,
-      url: getPublicUrl(campaign.frameAsset.storageKey),
-      width: campaign.frameAsset.width,
-      height: campaign.frameAsset.height
-    },
-    creator: {
-      email: campaign.user.email
+
+    if (!campaign) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Campaign not found'
+      })
     }
+
+    // Check visibility
+    if (campaign.visibility === 'unlisted') {
+      // Allow access but don't list publicly
+    }
+
+    const frameUrl = getPublicUrl(campaign.frameAsset.storageKey)
+
+    return {
+      id: campaign.id,
+      name: campaign.name,
+      description: campaign.description,
+      frameUrl,
+      frameWidth: campaign.frameAsset.width,
+      frameHeight: campaign.frameAsset.height,
+      aspectRatio: campaign.aspectRatio,
+      visibility: campaign.visibility,
+      status: campaign.status
+    }
+  } catch (error: any) {
+    if (error.statusCode) {
+      throw error
+    }
+    
+    console.error('Error fetching campaign:', error)
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Internal server error'
+    })
   }
 })

@@ -1,4 +1,3 @@
-import { defineNitroPlugin } from 'nitropack'
 import { validateEnvironment } from '~/server/utils/config'
 
 export default defineNitroPlugin(() => {

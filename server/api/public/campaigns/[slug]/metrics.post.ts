@@ -11,14 +11,14 @@ export default defineEventHandler(async (event) => {
   if (!slug) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Slug is required'
+      statusMessage: 'Campaign slug is required'
     })
   }
-  
+
   try {
     const body = await readBody(event)
-    const { event: eventType } = metricsSchema.parse(body)
-    
+    const { event: metricEvent } = metricsSchema.parse(body)
+
     // Find campaign
     const campaign = await prisma.campaign.findUnique({
       where: { 
@@ -26,32 +26,25 @@ export default defineEventHandler(async (event) => {
         status: 'active'
       }
     })
-    
+
     if (!campaign) {
       throw createError({
         statusCode: 404,
         statusMessage: 'Campaign not found'
       })
     }
-    
+
     // Get today's date
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    
+
     // Update or create daily stats
-    const updateData: any = {}
-    switch (eventType) {
-      case 'visit':
-        updateData.visits = { increment: 1 }
-        break
-      case 'render':
-        updateData.renders = { increment: 1 }
-        break
-      case 'download':
-        updateData.downloads = { increment: 1 }
-        break
+    const updateData = {
+      visits: metricEvent === 'visit' ? { increment: 1 } : undefined,
+      renders: metricEvent === 'render' ? { increment: 1 } : undefined,
+      downloads: metricEvent === 'download' ? { increment: 1 } : undefined
     }
-    
+
     await prisma.campaignStatsDaily.upsert({
       where: {
         campaignId_date: {
@@ -63,19 +56,22 @@ export default defineEventHandler(async (event) => {
       create: {
         campaignId: campaign.id,
         date: today,
-        visits: eventType === 'visit' ? 1 : 0,
-        renders: eventType === 'render' ? 1 : 0,
-        downloads: eventType === 'download' ? 1 : 0
+        visits: metricEvent === 'visit' ? 1 : 0,
+        renders: metricEvent === 'render' ? 1 : 0,
+        downloads: metricEvent === 'download' ? 1 : 0
       }
     })
-    
+
     return { success: true }
-  } catch (error) {
-    if (error.statusCode) throw error
+  } catch (error: any) {
+    if (error.statusCode) {
+      throw error
+    }
     
+    console.error('Error recording metrics:', error)
     throw createError({
-      statusCode: 400,
-      statusMessage: error.message || 'Failed to record metric'
+      statusCode: 500,
+      statusMessage: 'Internal server error'
     })
   }
 })
