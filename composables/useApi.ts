@@ -1,20 +1,31 @@
+interface CampaignAsset {
+  id: string
+  width: number
+  height: number
+  storageKey?: string
+  url?: string
+  sizeBytes?: number
+}
+
+interface CampaignMetricsSummary {
+  visits: number
+  renders: number
+  downloads: number
+}
+
 interface Campaign {
   id: string
   name: string
   slug: string
-  description?: string
+  description?: string | null
   visibility: 'public' | 'unlisted'
-  status: 'active' | 'archived'
+  status: 'active' | 'archived' | 'suspended'
   aspectRatio: string
   createdAt: string
   updatedAt: string
-  frameAsset: {
-    id: string
-    width: number
-    height: number
-    storageKey: string
-  }
-  statsCount?: number
+  frameAsset: CampaignAsset
+  thumbnailAsset: CampaignAsset | null
+  metrics?: CampaignMetricsSummary
 }
 
 interface CampaignsResponse {
@@ -27,45 +38,106 @@ interface CampaignsResponse {
   }
 }
 
+interface CampaignStatsResponse {
+  campaign: {
+    id: string
+    name: string
+    slug: string
+  }
+  totals: CampaignMetricsSummary
+  dailyStats: Array<{
+    date: string
+    visits: number
+    renders: number
+    downloads: number
+  }>
+}
+
 export const useApi = () => {
-  const { getIdToken } = useAuth()
-  
-  const getCampaigns = async (page: number = 1, limit: number = 10): Promise<CampaignsResponse> => {
-    const token = await getIdToken()
-    const options: any = {
-      query: { page, limit }
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    const { $firebaseAuth } = useNuxtApp()
+    if (!$firebaseAuth || !$firebaseAuth.currentUser) {
+      return {}
     }
     
-    if (token) {
-      options.headers = { Authorization: `Bearer ${token}` }
+    try {
+      const token = await $firebaseAuth.currentUser.getIdToken()
+      return {
+        Authorization: `Bearer ${token}`
+      }
+    } catch (error) {
+      console.error('Failed to get auth token:', error)
+      return {}
     }
-    
-    return await $fetch('/api/campaigns', options)
+  }
+
+  const getCampaigns = async (params: { page?: number; limit?: number } = {}): Promise<CampaignsResponse> => {
+    const { page = 1, limit = 12 } = params
+    const headers = await getAuthHeaders()
+    return await $fetch('/api/campaigns', {
+      query: { page, limit },
+      headers
+    })
   }
   
   const createCampaign = async (formData: FormData): Promise<{ success: boolean; campaign: Campaign }> => {
-    const token = await getIdToken()
-    const options: any = {
+    const headers = await getAuthHeaders()
+    return await $fetch('/api/campaigns', {
       method: 'POST',
-      body: formData
-    }
-    
-    if (token) {
-      options.headers = { Authorization: `Bearer ${token}` }
-    }
-    
-    return await $fetch('/api/campaigns', options)
+      body: formData,
+      headers
+    })
   }
   
   const getCampaign = async (id: string): Promise<Campaign> => {
-    const token = await getIdToken()
-    const options: any = {}
-    
-    if (token) {
-      options.headers = { Authorization: `Bearer ${token}` }
-    }
-    
-    return await $fetch(`/api/campaigns/${id}`, options)
+    const headers = await getAuthHeaders()
+    return await $fetch(`/api/campaigns/${id}`, {
+      headers
+    })
+  }
+
+  const updateCampaign = async (id: string, payload: Partial<Pick<Campaign, 'name' | 'description' | 'visibility' | 'slug' | 'status'>>): Promise<{ success: boolean; campaign: Campaign }> => {
+    const headers = await getAuthHeaders()
+    return await $fetch(`/api/campaigns/${id}`, {
+      method: 'PATCH',
+      body: payload,
+      headers
+    })
+  }
+
+  const updateCampaignFrame = async (id: string, file: File): Promise<{ success: boolean; campaign: Campaign }> => {
+    const formData = new FormData()
+    formData.append('frame', file)
+    const headers = await getAuthHeaders()
+
+    return await $fetch(`/api/campaigns/${id}/frame`, {
+      method: 'PATCH',
+      body: formData,
+      headers
+    })
+  }
+
+  const archiveCampaign = async (id: string): Promise<{ success: boolean }> => {
+    const headers = await getAuthHeaders()
+    return await $fetch(`/api/campaigns/${id}/archive`, {
+      method: 'POST',
+      headers
+    })
+  }
+
+  const unarchiveCampaign = async (id: string): Promise<{ success: boolean }> => {
+    const headers = await getAuthHeaders()
+    return await $fetch(`/api/campaigns/${id}/unarchive`, {
+      method: 'POST',
+      headers
+    })
+  }
+
+  const getCampaignStats = async (id: string): Promise<CampaignStatsResponse> => {
+    const headers = await getAuthHeaders()
+    return await $fetch(`/api/campaigns/${id}/stats`, {
+      headers
+    })
   }
   
   const getPublicCampaign = async (slug: string) => {
@@ -78,12 +150,34 @@ export const useApi = () => {
       body: { event }
     })
   }
+
+  const reportCampaign = async (slug: string, payload: { reason: 'spam' | 'inappropriate' | 'copyright' | 'other'; details?: string; reporterEmail?: string }) => {
+    return await $fetch(`/api/public/campaigns/${slug}/report`, {
+      method: 'POST',
+      body: payload
+    })
+  }
+
+  const deleteCampaign = async (id: string): Promise<{ success: boolean; message: string }> => {
+    const headers = await getAuthHeaders()
+    return await $fetch(`/api/campaigns/${id}`, {
+      method: 'DELETE',
+      headers
+    })
+  }
   
   return {
     getCampaigns,
     createCampaign,
     getCampaign,
+    updateCampaign,
+    updateCampaignFrame,
+    archiveCampaign,
+    unarchiveCampaign,
+    getCampaignStats,
     getPublicCampaign,
-    recordMetric
+    recordMetric,
+    reportCampaign,
+    deleteCampaign
   }
 }

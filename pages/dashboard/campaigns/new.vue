@@ -44,9 +44,10 @@
                   v-model="form.slug" 
                   placeholder="campaign-url-slug"
                   :disabled="loading"
+                  @blur="normaliseSlug"
                 />
                 <template #help>
-                  Your campaign will be available at: /c/{{ form.slug || 'your-slug' }}
+                  {{ slugHelp }}
                 </template>
               </UFormGroup>
               
@@ -131,9 +132,7 @@
 <script setup lang="ts">
 import { z } from 'zod'
 
-definePageMeta({
-  middleware: 'auth'
-})
+// Auth protection handled by global middleware
 
 const { createCampaign } = useApi()
 const toast = useToast()
@@ -162,6 +161,7 @@ const loading = ref(false)
 const frameFile = ref<File | null>(null)
 const framePreview = ref<string | null>(null)
 const frameInfo = ref<{ width: number; height: number } | null>(null)
+const slugHelp = ref('Your campaign will be available at: /c/your-slug')
 
 const aspectRatio = computed(() => {
   if (!frameInfo.value) return ''
@@ -171,14 +171,29 @@ const aspectRatio = computed(() => {
 })
 
 const generateSlug = () => {
-  if (!form.slug && form.name) {
-    form.slug = form.name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
+  if (!form.name) return
+  if (!form.slug) {
+    form.slug = slugify(form.name)
   }
+  updateSlugHelp()
+}
+
+const slugify = (value: string) => {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}
+
+const normaliseSlug = () => {
+  form.slug = slugify(form.slug)
+  updateSlugHelp()
+}
+
+const updateSlugHelp = () => {
+  slugHelp.value = `Your campaign will be available at: /c/${form.slug || 'your-slug'}`
 }
 
 const handleFrameSelected = (file: File, preview: string, info: { width: number; height: number }) => {
@@ -225,6 +240,18 @@ const handleSubmit = async () => {
         : null
     const message = apiMessage || (error instanceof Error ? error.message : 'Failed to create campaign')
 
+    if (message.toLowerCase().includes('slug') && message.toLowerCase().includes('exists')) {
+      const suggestion = suggestSlug(form.slug || form.name)
+      form.slug = suggestion
+      updateSlugHelp()
+      toast.add({
+        title: 'Slug already in use',
+        description: `Try this available slug instead: ${suggestion}`,
+        color: 'yellow'
+      })
+      return
+    }
+
     toast.add({
       title: 'Error',
       description: message,
@@ -238,5 +265,19 @@ const handleSubmit = async () => {
 useSeoMeta({
   title: 'Create Campaign - Phrames',
   description: 'Create a new photo frame campaign.'
+})
+
+const suggestSlug = (base: string) => {
+  const baseSlug = slugify(base || 'campaign')
+  const suffix = Math.floor(Math.random() * 900 + 100)
+  return `${baseSlug}-${suffix}`
+}
+
+watch(() => form.slug, () => {
+  updateSlugHelp()
+})
+
+onMounted(() => {
+  updateSlugHelp()
 })
 </script>

@@ -1,57 +1,59 @@
 import type { H3Event } from 'h3'
-import { getCookie } from 'h3'
-import { prisma } from './db'
-import bcrypt from 'bcryptjs'
+import { getCookie, getHeader } from 'h3'
+import { firestoreHelpers } from './firestore'
 
 export async function getUserFromEvent(event: H3Event) {
+  // Try Firebase token first
+  const authHeader = getHeader(event, 'authorization')
+  const token = authHeader?.replace('Bearer ', '')
+
+  if (token) {
+    try {
+      const { verifyFirebaseToken } = await import('./firebase')
+      const firebaseUser = await verifyFirebaseToken(token)
+
+      // Get user from Firestore by Firebase UID
+      const user = await firestoreHelpers.getUserByFirebaseUid(firebaseUser.uid)
+
+      if (user && user.status === 'active') {
+        return user
+      }
+    } catch (error) {
+      console.error('Firebase token verification failed:', error)
+    }
+  }
+
+  // Fallback to session-based auth
   const sessionId = getCookie(event, 'session-id')
   if (!sessionId) {
     return null
   }
-  
+
   try {
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
-      include: { user: true }
-    })
-    
-    if (!session || session.expiresAt < new Date()) {
+    const session = await firestoreHelpers.getSession(sessionId)
+
+    if (!session) {
       return null
     }
-    
-    return session.user
+
+    // Get user from session
+    const user = await firestoreHelpers.getUserById(session.userId)
+
+    if (!user || user.status !== 'active') {
+      return null
+    }
+
+    return user
   } catch (error) {
     console.error('Error getting user from session:', error)
     return null
   }
 }
 
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 12)
-}
-
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash)
-}
-
 export async function createSession(userId: string): Promise<string> {
-  const expiresAt = new Date()
-  expiresAt.setDate(expiresAt.getDate() + 30) // 30 days
-  
-  const session = await prisma.session.create({
-    data: {
-      userId,
-      expiresAt
-    }
-  })
-  
-  return session.id
+  return await firestoreHelpers.createSession(userId)
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
-  await prisma.session.delete({
-    where: { id: sessionId }
-  }).catch(() => {
-    // Session might not exist, ignore error
-  })
+  await firestoreHelpers.deleteSession(sessionId)
 }

@@ -26,7 +26,7 @@
             Drag and drop your PNG file here, or click to browse
           </p>
           <UButton 
-            @click="$refs.fileInput.click()" 
+            @click="openFilePicker" 
             variant="outline"
             :disabled="loading"
           >
@@ -58,7 +58,7 @@
           </div>
           
           <UButton 
-            @click="$refs.fileInput.click()" 
+            @click="openFilePicker" 
             variant="outline" 
             size="sm"
             :disabled="loading"
@@ -70,7 +70,7 @@
       
       <div class="text-sm text-gray-600 space-y-1">
         <p>• PNG format with transparency required</p>
-        <p>• Recommended size: 1080×1080px or larger</p>
+        <p>• Minimum size: 1080×1080px</p>
         <p>• Maximum file size: 10MB</p>
       </div>
       
@@ -96,6 +96,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
+const fileInput = ref<HTMLInputElement | null>(null)
 const isDragging = ref(false)
 const preview = ref<string | null>(null)
 const fileName = ref('')
@@ -106,6 +107,8 @@ interface FrameInfo {
   width: number
   height: number
 }
+
+const MIN_DIMENSION = 1080
 
 const validatePngFile = async (file: File): Promise<FrameInfo> => {
   return new Promise<FrameInfo>((resolve, reject) => {
@@ -143,6 +146,11 @@ const validatePngFile = async (file: File): Promise<FrameInfo> => {
         reject(new Error('PNG must have transparency (alpha channel)'))
         return
       }
+
+      if (img.width < MIN_DIMENSION || img.height < MIN_DIMENSION) {
+        reject(new Error(`Frame must be at least ${MIN_DIMENSION}px on each side`))
+        return
+      }
       
       resolve({ width: img.width, height: img.height })
     }
@@ -160,7 +168,10 @@ const processFile = async (file: File) => {
   
   try {
     const info = await validatePngFile(file)
-    
+    if (preview.value) {
+      URL.revokeObjectURL(preview.value)
+    }
+
     const previewUrl = URL.createObjectURL(file)
     preview.value = previewUrl
     fileName.value = file.name
@@ -199,6 +210,9 @@ const clearFile = () => {
   fileName.value = ''
   fileSize.value = 0
   error.value = ''
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
 }
 
 const formatFileSize = (bytes: number) => {
@@ -207,6 +221,11 @@ const formatFileSize = (bytes: number) => {
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+const openFilePicker = () => {
+  if (props.loading) return
+  fileInput.value?.click()
 }
 
 onUnmounted(() => {

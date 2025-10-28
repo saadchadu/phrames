@@ -1,74 +1,41 @@
-import { z } from 'zod'
 import { setCookie } from 'h3'
-import { prisma } from '~/server/utils/db'
-import { verifyPassword, createSession } from '~/server/utils/auth'
-
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required')
-})
+import { verifyFirebaseToken } from '~/server/utils/firebase'
+import { firestoreHelpers } from '~/server/utils/firestore'
+import { createSession } from '~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
   try {
-    const body = await readBody(event)
-    const { email, password } = loginSchema.parse(body)
+    // Get Firebase token from Authorization header
+    const authHeader = getHeader(event, 'authorization')
+    const token = authHeader?.replace('Bearer ', '')
 
-    // Check database availability first
-    try {
-      await prisma.$queryRaw`SELECT 1`
-    } catch (dbError) {
-      // Database not available
-      if (process.env.NODE_ENV === 'development') {
-        // Development mode: use mock authentication
-        if (email === 'demo@phrames.com' && password === 'demo123') {
-          const mockSessionId = 'dev-session-' + Date.now()
-          
-          setCookie(event, 'session-id', mockSessionId, {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 30 // 30 days
-          })
-
-          return {
-            user: {
-              id: 'dev-user-123',
-              email: 'demo@phrames.com'
-            }
-          }
-        } else {
-          throw createError({
-            statusCode: 401,
-            statusMessage: 'Invalid email or password. Try demo@phrames.com / demo123'
-          })
-        }
-      } else {
-        // Production mode: return service unavailable
-        throw createError({
-          statusCode: 503,
-          statusMessage: 'Service temporarily unavailable. Please try again later.'
-        })
-      }
-    }
-
-    // Production mode or development with database: use real authentication
-    const user = await prisma.user.findUnique({
-      where: { email }
-    })
-
-    if (!user) {
+    if (!token) {
       throw createError({
         statusCode: 401,
-        statusMessage: 'Invalid email or password'
+        statusMessage: 'No authentication token provided'
       })
     }
 
-    // Verify password
-    const isValidPassword = await verifyPassword(password, user.passwordHash)
-    if (!isValidPassword) {
+    // Verify Firebase token
+    let firebaseUser
+    try {
+      firebaseUser = await verifyFirebaseToken(token)
+    } catch (error) {
       throw createError({
         statusCode: 401,
-        statusMessage: 'Invalid email or password'
+        statusMessage: 'Invalid authentication token'
+      })
+    }
+
+    // Find or create user in Firestore
+    let user = await firestoreHelpers.getUserByFirebaseUid(firebaseUser.uid)
+
+    if (!user) {
+      // Create user if doesn't exist (auto-registration)
+      user = await firestoreHelpers.createUser({
+        firebaseUid: firebaseUser.uid,
+        email: firebaseUser.email!,
+        emailVerified: firebaseUser.email_verified || false
       })
     }
 
@@ -95,14 +62,6 @@ export default defineEventHandler(async (event) => {
     }
     
     console.error('Login error:', error)
-    
-    // Check for database connection errors
-    if (error.message?.includes("Can't reach database server")) {
-      throw createError({
-        statusCode: 503,
-        statusMessage: 'Database unavailable. Please try again later.'
-      })
-    }
     
     throw createError({
       statusCode: 500,

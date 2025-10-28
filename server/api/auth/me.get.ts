@@ -1,20 +1,32 @@
 import { getCookie } from 'h3'
 import { getUserFromEvent } from '~/server/utils/auth'
+import { verifyFirebaseToken } from '~/server/utils/firebase'
 
 export default defineEventHandler(async (event) => {
-  // Development mode: check for mock session
-  if (process.env.NODE_ENV === 'development') {
-    const sessionId = getCookie(event, 'session-id')
-    if (sessionId?.startsWith('dev-session-')) {
-      return {
-        user: {
-          id: 'dev-user-123',
-          email: 'demo@phrames.com'
+  // Try Firebase token first
+  const authHeader = getHeader(event, 'authorization')
+  const token = authHeader?.replace('Bearer ', '')
+
+  if (token) {
+    try {
+      const firebaseUser = await verifyFirebaseToken(token)
+      
+      // Get user from database
+      const user = await getUserFromEvent(event)
+      if (user) {
+        return {
+          user: {
+            id: user.id,
+            email: user.email
+          }
         }
       }
+    } catch (error) {
+      // Token invalid, fall through to session check
     }
   }
 
+  // Fallback to session-based auth
   const user = await getUserFromEvent(event)
   
   if (!user) {

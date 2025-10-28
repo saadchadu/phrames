@@ -1,5 +1,5 @@
-import { prisma } from '~/server/utils/db'
-import { getPublicUrl } from '~/server/utils/s3'
+import { sendRedirect } from 'h3'
+import { firestoreHelpers } from '~/server/utils/firestore'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
@@ -12,40 +12,51 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const campaign = await prisma.campaign.findUnique({
-      where: { 
-        slug,
-        status: 'active'
-      },
-      include: {
-        frameAsset: true
-      }
-    })
+    const campaign = await firestoreHelpers.getCampaignBySlug(slug)
 
     if (!campaign) {
+      const historicSlug = await firestoreHelpers.getSlugHistory(slug)
+
+      if (historicSlug) {
+        const currentCampaign = await firestoreHelpers.getCampaignById(historicSlug.campaignId)
+        if (currentCampaign) {
+          return sendRedirect(event, `/c/${currentCampaign.slug}`, 301)
+        }
+      }
+
       throw createError({
         statusCode: 404,
         statusMessage: 'Campaign not found'
       })
     }
 
-    // Check visibility
-    if (campaign.visibility === 'unlisted') {
-      // Allow access but don't list publicly
+    if (campaign.status !== 'active') {
+      throw createError({
+        statusCode: 410,
+        statusMessage: 'Campaign unavailable'
+      })
     }
 
-    const frameUrl = getPublicUrl(campaign.frameAsset.storageKey)
-
+    // Use the URL from the campaign object (already includes correct URL)
     return {
       id: campaign.id,
       name: campaign.name,
       description: campaign.description,
-      frameUrl,
-      frameWidth: campaign.frameAsset.width,
-      frameHeight: campaign.frameAsset.height,
       aspectRatio: campaign.aspectRatio,
       visibility: campaign.visibility,
-      status: campaign.status
+      status: campaign.status,
+      frameAsset: {
+        id: campaign.frameAsset.id,
+        url: campaign.frameAsset.url,
+        width: campaign.frameAsset.width,
+        height: campaign.frameAsset.height
+      },
+      thumbnailAsset: campaign.thumbnailAsset ? {
+        id: campaign.thumbnailAsset.id,
+        url: campaign.thumbnailAsset.url,
+        width: campaign.thumbnailAsset.width,
+        height: campaign.thumbnailAsset.height
+      } : null
     }
   } catch (error: any) {
     if (error.statusCode) {

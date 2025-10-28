@@ -1,5 +1,7 @@
 # 🎉 Phrames - Build Status Report
 
+> **Note:** Backend data now flows through Firebase Authentication + Firestore. Any lingering PostgreSQL references in historical sections are obsolete.
+
 ## ✅ **ALL SYSTEMS GREEN - PRODUCTION READY**
 
 **Date**: $(date)  

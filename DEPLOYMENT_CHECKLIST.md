@@ -2,10 +2,11 @@
 
 ## ✅ Pre-Deployment Setup
 
-### 1. Database Setup
-- [ ] Create PostgreSQL database (Vercel Postgres, Supabase, or other)
-- [ ] Get DATABASE_URL connection string
-- [ ] Run migrations: `npx prisma migrate deploy`
+### 1. Firestore Setup
+- [ ] Create a Firebase project (if not already)
+- [ ] Enable Firestore in production mode
+- [ ] Enable Authentication providers (Email/Password + Google)
+- [ ] Download Admin SDK service account credentials
 
 ### 2. S3 Storage Setup
 - [ ] Create S3 bucket (AWS S3 or Cloudflare R2)
@@ -17,8 +18,16 @@
 Required for production:
 
 ```bash
-DATABASE_URL=postgres://user:password@host:5432/database
 SESSION_SECRET=your-long-random-session-secret-key-here
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+NUXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
+NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NUXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+NUXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef123456
 S3_ENDPOINT=https://your-s3-endpoint.com
 S3_ACCESS_KEY_ID=your-access-key
 S3_SECRET_ACCESS_KEY=your-secret-key
@@ -45,7 +54,7 @@ NUXT_PUBLIC_SITE_URL=https://phrames.cleffon.com
 ### 3. Environment Variables
 - [ ] Add all environment variables in Vercel dashboard
 - [ ] Ensure SESSION_SECRET is a long random string
-- [ ] Verify DATABASE_URL is correct
+- [ ] Verify Firebase Admin credentials are correct
 - [ ] Test S3 credentials
 
 ### 4. Domain Setup
@@ -80,7 +89,7 @@ NUXT_PUBLIC_SITE_URL=https://phrames.cleffon.com
 ## 🔧 Troubleshooting
 
 ### Common Issues
-1. **Database Connection**: Verify DATABASE_URL format and credentials
+1. **Firebase Admin**: Ensure `FIREBASE_PRIVATE_KEY` preserves newline characters (`\n`)
 2. **S3 Upload Errors**: Check bucket permissions and CORS settings
 3. **Session Issues**: Ensure SESSION_SECRET is set and consistent
 4. **Build Errors**: Check for missing dependencies or TypeScript errors
@@ -88,14 +97,13 @@ NUXT_PUBLIC_SITE_URL=https://phrames.cleffon.com
 ### Logs
 - Check Vercel function logs for server errors
 - Use browser dev tools for client-side issues
-- Monitor database logs for query issues
 
 ## 📊 Monitoring
 
 ### Performance
 - [ ] Page load times < 3s
 - [ ] Image upload/processing < 10s
-- [ ] Database query performance
+- [ ] Firestore read/write latency within limits
 
 ### Security
 - [ ] HTTPS enabled
@@ -115,8 +123,8 @@ NUXT_PUBLIC_SITE_URL=https://phrames.cleffon.com
 
 ## 📝 Notes
 
-- The app uses credentials authentication (no Firebase)
-- Sessions are stored in PostgreSQL with 30-day expiration
+- Authentication flows through Firebase (email/password + Google)
+- Creator sessions are stored in Firestore with 30-day expiration
 - Images are processed client-side with Canvas API
 - S3 is used only for frame storage, not user uploads
 - Analytics are stored in daily aggregates

@@ -1,69 +1,61 @@
-import { z } from 'zod'
+import { z, ZodError } from 'zod'
 import { setCookie } from 'h3'
-import { prisma } from '~/server/utils/db'
-import { hashPassword, createSession } from '~/server/utils/auth'
+import { verifyFirebaseToken } from '~/server/utils/firebase'
+import { firestoreHelpers } from '~/server/utils/firestore'
+import { createSession } from '~/server/utils/auth'
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters')
+  password: z.string().min(6, 'Password must be at least 6 characters').optional(),
+  confirmPassword: z.string().optional()
 })
 
 export default defineEventHandler(async (event) => {
   try {
-    const body = await readBody(event)
-    const { email, password } = signupSchema.parse(body)
+    // Get Firebase token from Authorization header
+    const authHeader = getHeader(event, 'authorization')
+    const token = authHeader?.replace('Bearer ', '')
 
-    // Check database availability first
-    try {
-      await prisma.$queryRaw`SELECT 1`
-    } catch (dbError) {
-      // Database not available
-      if (process.env.NODE_ENV === 'development') {
-        // Development mode: use mock authentication
-        const mockSessionId = 'dev-session-' + Date.now()
-        
-        setCookie(event, 'session-id', mockSessionId, {
-          httpOnly: true,
-          secure: false,
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 30 // 30 days
-        })
-
-        return {
-          user: {
-            id: 'dev-user-' + Date.now(),
-            email: email
-          }
-        }
-      } else {
-        // Production mode: return service unavailable
-        throw createError({
-          statusCode: 503,
-          statusMessage: 'Service temporarily unavailable. Please try again later.'
-        })
-      }
-    }
-
-    // Production mode or development with database: use real authentication
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    })
-
-    if (existingUser) {
+    if (!token) {
       throw createError({
-        statusCode: 400,
-        statusMessage: 'Email is already registered'
+        statusCode: 401,
+        statusMessage: 'No authentication token provided'
       })
     }
 
-    // Create user
-    const passwordHash = await hashPassword(password)
-    const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash
-      }
-    })
+    // Verify Firebase token
+    let firebaseUser
+    try {
+      firebaseUser = await verifyFirebaseToken(token)
+    } catch (error) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Invalid authentication token'
+      })
+    }
+
+    const body = await readBody(event)
+    const { email } = signupSchema.parse(body)
+
+    // Ensure email matches Firebase user
+    if (firebaseUser.email !== email) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Email mismatch'
+      })
+    }
+
+    // Check if user already exists in Firestore
+    let user = await firestoreHelpers.getUserByFirebaseUid(firebaseUser.uid)
+
+    if (!user) {
+      // Create new user in Firestore
+      user = await firestoreHelpers.createUser({
+        firebaseUid: firebaseUser.uid,
+        email: firebaseUser.email!,
+        emailVerified: firebaseUser.email_verified || false
+      })
+    }
 
     // Create session
     const sessionId = await createSession(user.id)
@@ -83,19 +75,18 @@ export default defineEventHandler(async (event) => {
       }
     }
   } catch (error: any) {
+    if (error instanceof ZodError) {
+      throw createError({
+        statusCode: 422,
+        statusMessage: error.issues[0]?.message || 'Validation failed'
+      })
+    }
+
     if (error.statusCode) {
       throw error
     }
     
     console.error('Signup error:', error)
-    
-    // Check for database connection errors
-    if (error.message?.includes("Can't reach database server")) {
-      throw createError({
-        statusCode: 503,
-        statusMessage: 'Database unavailable. Please try again later.'
-      })
-    }
     
     throw createError({
       statusCode: 500,

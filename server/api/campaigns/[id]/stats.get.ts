@@ -1,5 +1,5 @@
 import { getUserFromEvent } from '~/server/utils/auth'
-import { prisma } from '~/server/utils/db'
+import { firestoreHelpers, getFirestore, Collections } from '~/server/utils/firestore'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
@@ -21,60 +21,38 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    // Verify campaign ownership
-    const campaign = await prisma.campaign.findUnique({
-      where: { 
-        id: campaignId,
-        userId: user.id
-      }
-    })
+    const db = getFirestore()
+    const campaignDoc = await db.collection(Collections.CAMPAIGNS).doc(campaignId).get()
 
-    if (!campaign) {
+    if (!campaignDoc.exists) {
       throw createError({
         statusCode: 404,
         statusMessage: 'Campaign not found'
       })
     }
 
-    // Get daily stats for the last 30 days
+    const campaignData = campaignDoc.data()
+    if (!campaignData || campaignData.userId !== user.id) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Campaign not found'
+      })
+    }
+
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const fromDate = thirtyDaysAgo.toISOString().split('T')[0]
 
-    const dailyStats = await prisma.campaignStatsDaily.findMany({
-      where: {
-        campaignId,
-        date: {
-          gte: thirtyDaysAgo
-        }
-      },
-      orderBy: {
-        date: 'asc'
-      }
-    })
-
-    // Calculate totals
-    const totals = dailyStats.reduce(
-      (acc, stat) => ({
-        visits: acc.visits + stat.visits,
-        renders: acc.renders + stat.renders,
-        downloads: acc.downloads + stat.downloads
-      }),
-      { visits: 0, renders: 0, downloads: 0 }
-    )
+    const stats = await firestoreHelpers.getCampaignStatsSince(campaignId, fromDate)
 
     return {
       campaign: {
-        id: campaign.id,
-        name: campaign.name,
-        slug: campaign.slug
+        id: campaignId,
+        name: campaignData.name,
+        slug: campaignData.slug
       },
-      totals,
-      dailyStats: dailyStats.map(stat => ({
-        date: stat.date.toISOString().split('T')[0],
-        visits: stat.visits,
-        renders: stat.renders,
-        downloads: stat.downloads
-      }))
+      totals: stats.totals,
+      dailyStats: stats.dailyStats
     }
   } catch (error: any) {
     if (error.statusCode) {

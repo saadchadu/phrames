@@ -1,5 +1,5 @@
 import { getUserFromEvent } from '~/server/utils/auth'
-import { prisma } from '~/server/utils/db'
+import { firestoreHelpers, getFirestore, Collections } from '~/server/utils/firestore'
 
 export default defineEventHandler(async (event) => {
   const user = await getUserFromEvent(event)
@@ -19,46 +19,35 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Campaign ID is required'
     })
   }
-  
-  const campaign = await prisma.campaign.findFirst({
-    where: { 
-      id: campaignId,
-      userId: user.id
-    },
-    include: {
-      frameAsset: true,
-      _count: {
-        select: {
-          stats: true
-        }
-      }
-    }
-  })
-  
+
+  const db = getFirestore()
+  const campaignDoc = await db.collection(Collections.CAMPAIGNS).doc(campaignId).get()
+
+  if (!campaignDoc.exists) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: 'Campaign not found'
+    })
+  }
+
+  const campaignData = campaignDoc.data()
+  if (!campaignData || campaignData.userId !== user.id) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: 'Campaign not found'
+    })
+  }
+
+  const campaign = await firestoreHelpers.getCampaignById(campaignId)
+
   if (!campaign) {
     throw createError({
       statusCode: 404,
       statusMessage: 'Campaign not found'
     })
   }
-  
+
   return {
-    id: campaign.id,
-    name: campaign.name,
-    slug: campaign.slug,
-    description: campaign.description,
-    visibility: campaign.visibility,
-    status: campaign.status,
-    aspectRatio: campaign.aspectRatio,
-    createdAt: campaign.createdAt,
-    updatedAt: campaign.updatedAt,
-    frameAsset: {
-      id: campaign.frameAsset.id,
-      width: campaign.frameAsset.width,
-      height: campaign.frameAsset.height,
-      storageKey: campaign.frameAsset.storageKey,
-      sizeBytes: campaign.frameAsset.sizeBytes
-    },
-    statsCount: campaign._count.stats
+    campaign
   }
 })

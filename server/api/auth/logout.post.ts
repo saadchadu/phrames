@@ -10,7 +10,11 @@ export default defineEventHandler(async (event) => {
     }
 
     // Clear session cookie
-    deleteCookie(event, 'session-id')
+    deleteCookie(event, 'session-id', {
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    })
 
     return { success: true }
   } catch (error) {

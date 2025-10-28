@@ -8,6 +8,8 @@ export interface ImageInfo {
   sizeBytes: number
 }
 
+const MIN_DIMENSION = 1080
+
 export async function validatePngWithAlpha(buffer: Buffer): Promise<ImageInfo> {
   try {
     const image = sharp(buffer)
@@ -20,10 +22,21 @@ export async function validatePngWithAlpha(buffer: Buffer): Promise<ImageInfo> {
     if (!metadata.hasAlpha) {
       throw new Error('PNG must have transparency (alpha channel)')
     }
+
+    const width = metadata.width || 0
+    const height = metadata.height || 0
+
+    if (!width || !height) {
+      throw new Error('Unable to determine image dimensions')
+    }
+
+    if (width < MIN_DIMENSION || height < MIN_DIMENSION) {
+      throw new Error(`PNG must be at least ${MIN_DIMENSION}px on both sides`)
+    }
     
     return {
-      width: metadata.width || 0,
-      height: metadata.height || 0,
+      width,
+      height,
       hasAlpha: metadata.hasAlpha,
       format: metadata.format,
       sizeBytes: buffer.length
@@ -47,4 +60,12 @@ export function generateAssetKey(userId: string, type: 'frame' | 'thumb', extens
   const timestamp = Date.now()
   const random = Math.random().toString(36).substring(2, 8)
   return `${type}s/${userId}/${timestamp}-${random}.${extension}`
+}
+
+export function toAspectRatio(width: number, height: number): string {
+  const gcd = (a: number, b: number): number => (b === 0 ? Math.abs(a) : gcd(b, a % b))
+  const divisor = gcd(width, height)
+  const ratioWidth = Math.round(width / divisor)
+  const ratioHeight = Math.round(height / divisor)
+  return `${ratioWidth}:${ratioHeight}`
 }

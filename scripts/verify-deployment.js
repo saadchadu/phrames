@@ -6,21 +6,18 @@
  */
 
 const requiredEnvVars = {
-  // Database
-  'DATABASE_URL': 'PostgreSQL connection string',
+// Firebase Public Config
+'NUXT_PUBLIC_FIREBASE_API_KEY': 'Firebase Web API key',
+'NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN': 'Firebase Auth domain',
+'NUXT_PUBLIC_FIREBASE_PROJECT_ID': 'Firebase project ID',
+'NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET': 'Firebase storage bucket',
+'NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID': 'Firebase messaging sender ID',
+'NUXT_PUBLIC_FIREBASE_APP_ID': 'Firebase app ID',
   
-  // Firebase Public Config
-  'NUXT_PUBLIC_FIREBASE_API_KEY': 'Firebase Web API key',
-  'NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN': 'Firebase Auth domain',
-  'NUXT_PUBLIC_FIREBASE_PROJECT_ID': 'Firebase project ID',
-  'NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET': 'Firebase storage bucket',
-  'NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID': 'Firebase messaging sender ID',
-  'NUXT_PUBLIC_FIREBASE_APP_ID': 'Firebase app ID',
-  
-  // Firebase Admin Config
-  'FIREBASE_ADMIN_PROJECT_ID': 'Firebase Admin project ID',
-  'FIREBASE_ADMIN_CLIENT_EMAIL': 'Firebase Admin service account email',
-  'FIREBASE_ADMIN_PRIVATE_KEY': 'Firebase Admin service account private key',
+// Firebase Admin Config
+'FIREBASE_PROJECT_ID': 'Firebase Admin project ID',
+'FIREBASE_CLIENT_EMAIL': 'Firebase Admin service account email',
+'FIREBASE_PRIVATE_KEY': 'Firebase Admin service account private key',
   
   // Storage
   'S3_ENDPOINT': 'S3-compatible storage endpoint',
@@ -51,15 +48,11 @@ for (const [key, description] of Object.entries(requiredEnvVars)) {
     console.log(`✅ ${key}: Set`)
     
     // Additional validations
-    if (key === 'DATABASE_URL' && !value.startsWith('postgres://')) {
-      warnings.push(`⚠️  ${key}: Should start with 'postgres://'`)
-    }
-    
     if (key === 'NUXT_PUBLIC_SITE_URL' && !value.startsWith('https://')) {
       warnings.push(`⚠️  ${key}: Should use HTTPS in production`)
     }
     
-    if (key === 'FIREBASE_ADMIN_PRIVATE_KEY' && !value.includes('BEGIN PRIVATE KEY')) {
+    if (key === 'FIREBASE_PRIVATE_KEY' && !value.includes('BEGIN PRIVATE KEY')) {
       warnings.push(`⚠️  ${key}: Should be a valid private key`)
     }
   }
@@ -80,7 +73,7 @@ if (warnings.length > 0) {
 if (allValid) {
   console.log('\n🎉 All required environment variables are set!')
   console.log('\n📝 Next Steps:')
-  console.log('   1. Run database migrations: npx prisma migrate deploy')
+  console.log('   1. Verify Firestore security rules are deployed')
   console.log('   2. Deploy to Vercel: vercel --prod')
   console.log('   3. Configure custom domain: phrames.cleffon.com')
   console.log('   4. Test all functionality')

@@ -7,7 +7,7 @@ export default defineNuxtPlugin(() => {
     const { initAuth } = useAuth()
 
     initAuth().catch((error) => {
-      console.error('Failed to initialize Firebase auth:', error)
+      console.error('Failed to initialize auth state:', error)
     })
   })
 })

@@ -1,5 +1,7 @@
 # Production Troubleshooting Guide
 
+> **Note:** Production now uses Firebase Authentication + Firestore. Legacy PostgreSQL-specific checks (e.g., `DATABASE_URL`) can be skipped.
+
 ## 🚨 Current Issue: FUNCTION_INVOCATION_FAILED
 
 The Vercel deployment is crashing with a 500 Internal Server Error. This is typically caused by missing environment variables or configuration issues.

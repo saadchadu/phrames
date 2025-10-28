@@ -26,8 +26,8 @@ The app automatically detects when you're in development mode without a database
 - **Any email/password works** in development mode
 - Minimum 6 characters for password
 
-### Production Mode (Database Required)
-When you have a proper `DATABASE_URL` configured, the app uses real database authentication with bcrypt password hashing.
+### Production Mode (Firebase Required)
+When Firebase credentials are configured, the app uses real authentication backed by Firebase Authentication and persists creator sessions in Firestore.
 
 ## 📁 Key Files
 
@@ -38,10 +38,9 @@ When you have a proper `DATABASE_URL` configured, the app uses real database aut
 - `server/api/auth/` - Auth API endpoints with dev/prod modes
 - `middleware/auth.global.ts` - Route protection
 
-### Database
-- `prisma/schema.prisma` - Database schema
-- `server/utils/db.ts` - Prisma client setup
-- `server/utils/auth.ts` - Auth utilities (bcrypt, sessions)
+### Data Layer
+- `server/utils/firestore.ts` - Firestore client + helpers
+- `server/utils/auth.ts` - Auth utilities (Firebase, sessions)
 
 ## 🧪 Testing Flow
 
@@ -55,8 +54,16 @@ When you have a proper `DATABASE_URL` configured, the app uses real database aut
 
 ### Development (.env)
 ```bash
-DATABASE_URL=postgres://user:password@localhost:5432/phrames  # Optional for dev
 SESSION_SECRET=your-long-random-session-secret-key-here
+FIREBASE_PROJECT_ID=your-project-id                           # Optional for dev
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com  # Optional for dev
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n" # Optional for dev
+NUXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key            # Optional for dev
+NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com # Optional for dev
+NUXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id               # Optional for dev
+NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com  # Optional for dev
+NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789            # Optional for dev
+NUXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef123456      # Optional for dev
 S3_ENDPOINT=https://your-s3-endpoint.com                      # Optional for dev
 S3_ACCESS_KEY_ID=your-access-key                              # Optional for dev
 S3_SECRET_ACCESS_KEY=your-secret-key                          # Optional for dev
@@ -76,8 +83,8 @@ The console shows many errors from browser extensions (password managers, etc.).
 - `background.js:1 Unchecked runtime.lastError`
 - `Could not establish connection. Receiving end does not exist`
 
-### Database Connection
-If you see "Can't reach database server" errors, that's expected in development mode without a local PostgreSQL server. The app automatically falls back to mock authentication.
+### Firebase Connection
+If you see errors about missing Firebase credentials in development, that's expected when you haven't configured them yet. The app automatically falls back to mock authentication.
 
 ## 🎯 Next Steps
 
@@ -102,4 +109,4 @@ If you see "Can't reach database server" errors, that's expected in development 
 - App automatically uses mock authentication
 - For real database testing, set up PostgreSQL locally
 
-Your Phrames app is production-ready and just needs a database + S3 storage for full functionality!
+Your Phrames app is production-ready—just wire up Firebase + S3 storage for full functionality!

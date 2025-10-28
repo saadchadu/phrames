@@ -14,14 +14,7 @@ export function validateEnvironment(options: { strict?: boolean } = {}) {
     const config = useRuntimeConfig()
     const strict = options.strict ?? process.env.NODE_ENV === 'production'
 
-    const requiredVars: ConfigPath[] = [
-      'databaseUrl',
-      'sessionSecret',
-      's3Bucket',
-      's3AccessKeyId',
-      's3SecretAccessKey',
-      's3PublicBaseUrl'
-    ]
+    const requiredVars: ConfigPath[] = ['sessionSecret', 's3Bucket', 's3AccessKeyId', 's3SecretAccessKey', 's3PublicBaseUrl']
 
     const missing = requiredVars
       .filter((path) => {
