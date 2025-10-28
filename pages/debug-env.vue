@@ -141,4 +141,3 @@ useSeoMeta({
   description: 'Debug production environment configuration'
 })
 </script>
-</template>
