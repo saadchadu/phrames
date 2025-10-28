@@ -15,7 +15,7 @@ export async function getUserFromEvent(event: H3Event) {
       // Get user from Firestore by Firebase UID
       const user = await firestoreHelpers.getUserByFirebaseUid(firebaseUser.uid)
 
-      if (user && user.status === 'active') {
+      if (user && (user as any).status === 'active') {
         return user
       }
     } catch (error) {
@@ -37,9 +37,9 @@ export async function getUserFromEvent(event: H3Event) {
     }
 
     // Get user from session
-    const user = await firestoreHelpers.getUserById(session.userId)
+    const user = await firestoreHelpers.getUserById((session as any).userId)
 
-    if (!user || user.status !== 'active') {
+    if (!user || (user as any).status !== 'active') {
       return null
     }
 
