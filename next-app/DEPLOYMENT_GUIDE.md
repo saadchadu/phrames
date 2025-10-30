@@ -3,6 +3,7 @@
 ## 🚀 Deploy to Vercel (Recommended)
 
 ### 1. Prepare Your Repository
+
 ```bash
 cd next-app
 git init
@@ -13,6 +14,7 @@ git push -u origin main
 ```
 
 ### 2. Connect to Vercel
+
 1. Go to [vercel.com](https://vercel.com)
 2. Click "New Project"
 3. Import your GitHub repository
@@ -22,6 +24,7 @@ git push -u origin main
 7. Output Directory: (leave empty)
 
 ### 3. Environment Variables
+
 Add these in Vercel dashboard under Settings → Environment Variables:
 
 ```env
@@ -36,7 +39,9 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.vercel.app
 ```
 
 ### 4. Database Setup
+
 After deployment, run database migration:
+
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -51,6 +56,7 @@ npm run db:push
 ```
 
 ### 5. Custom Domain (Optional)
+
 1. Go to Vercel dashboard → Settings → Domains
 2. Add your custom domain
 3. Update `NEXT_PUBLIC_SITE_URL` environment variable
@@ -58,18 +64,21 @@ npm run db:push
 ## 🗄️ Database Options (Free Tiers)
 
 ### Option 1: Neon (Recommended)
+
 1. Go to [neon.tech](https://neon.tech)
 2. Create free account
 3. Create new project
 4. Copy connection string to `DATABASE_URL`
 
 ### Option 2: Supabase
+
 1. Go to [supabase.com](https://supabase.com)
 2. Create new project
 3. Go to Settings → Database
 4. Copy connection string to `DATABASE_URL`
 
 ### Option 3: Railway
+
 1. Go to [railway.app](https://railway.app)
 2. Create new project
 3. Add PostgreSQL service
@@ -78,12 +87,14 @@ npm run db:push
 ## 📦 Storage Options (Free Tiers)
 
 ### Option 1: Cloudflare R2 (Recommended)
+
 1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com)
 2. Create R2 bucket
 3. Generate API tokens
 4. Set up custom domain for public access
 
 ### Option 2: AWS S3
+
 1. Create S3 bucket
 2. Set up IAM user with S3 permissions
 3. Configure bucket policy for public read access
@@ -91,16 +102,19 @@ npm run db:push
 ## 🔧 Troubleshooting
 
 ### Build Errors
+
 - Make sure all environment variables are set
 - Check that `DATABASE_URL` is accessible from Vercel
 - Verify S3 credentials are correct
 
 ### Runtime Errors
+
 - Check Vercel function logs
 - Ensure database is accessible
 - Verify all API routes are working
 
 ### Database Connection Issues
+
 - Make sure database allows external connections
 - Check connection string format
 - Verify SSL settings if required
@@ -118,12 +132,14 @@ npm run db:push
 ## 🎯 No Firebase Required
 
 This app is completely independent and doesn't use:
+
 - ❌ Firebase Authentication
 - ❌ Firebase Firestore
 - ❌ Firebase Storage
 - ❌ Firebase Functions
 
 Instead it uses:
+
 - ✅ PostgreSQL with Prisma
 - ✅ Email/password authentication
 - ✅ Session-based auth
