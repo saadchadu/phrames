@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions  Session[]
+  campaigns Campaign[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Campaign {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  slug        String            @unique
+  visibility  CampaignVisibility @default(PUBLIC)
+  status      CampaignStatus    @default(ACTIVE)
+  frameAssetId String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  userId      String
+
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  frameAsset Asset        @relation(fields: [frameAssetId], references: [id])
+  stats      CampaignStat[]
+
+  @@map("campaigns")
+}
+
+model Asset {
+  id         String    @id @default(cuid())
+  filename   String
+  storageKey String    @unique
+  mimeType   String
+  sizeBytes  Int
+  width      Int?
+  height     Int?
+  createdAt  DateTime  @default(now())
+
+  campaigns Campaign[]
+
+  @@map("assets")
+}
+
+model CampaignStat {
+  id         String   @id @default(cuid())
+  campaignId String
+  date       DateTime @db.Date
+  visits     Int      @default(0)
+  renders    Int      @default(0)
+  downloads  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, date])
+  @@map("campaign_stats")
+}
+
+enum CampaignVisibility {
+  PUBLIC
+  UNLISTED
+}
+
+enum CampaignStatus {
+  ACTIVE
+  ARCHIVED
+  SUSPENDED
+}
