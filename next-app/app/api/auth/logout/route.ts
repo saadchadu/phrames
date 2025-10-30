@@ -1,25 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { firestoreHelpers } from '@/lib/firestore'
+import { deleteSession } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = cookies()
-    const sessionId = cookieStore.get('session-id')?.value
+    const sessionToken = cookies().get('session-token')?.value
 
-    if (sessionId) {
+    if (sessionToken) {
       // Delete session from database
-      await firestoreHelpers.deleteSession(sessionId)
+      await deleteSession(sessionToken)
     }
 
     // Clear session cookie
-    cookieStore.delete('session-id')
+    cookies().delete('session-token')
 
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Logout error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { message: 'Internal server error' },
       { status: 500 }
     )
   }

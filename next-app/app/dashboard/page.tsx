@@ -1,11 +1,10 @@
 'use client'
 
-import { useAuth } from '@/lib/auth-context'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -16,34 +15,40 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { PlusIcon, PhotoIcon, EyeIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline'
 
+interface User {
+  id: string
+  email: string
+}
+
 export default function DashboardPage() {
-  const { user, loading, logout } = useAuth()
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && !user) {
+    checkAuth()
+  }, [])
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/auth/me')
+      if (response.ok) {
+        const userData = await response.json()
+        setUser(userData.user)
+      } else {
+        router.push('/login')
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error)
       router.push('/login')
+    } finally {
+      setLoading(false)
     }
-  }, [user, loading, router])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-25">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-sm text-gray-600">Loading your dashboard...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return null
   }
 
   const handleLogout = async () => {
     try {
-      await logout()
+      await fetch('/api/auth/logout', { method: 'POST' })
       router.push('/')
     } catch (error) {
       console.error('Logout failed:', error)
@@ -54,6 +59,21 @@ export default function DashboardPage() {
     return email.split('@')[0].slice(0, 2).toUpperCase()
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-25">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00dd78] mx-auto mb-4"></div>
+          <p className="text-sm text-gray-600">Loading your dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-gray-25">
       {/* Navigation */}
@@ -61,16 +81,16 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between items-center">
             <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">Phrames</h1>
+              <div className="w-6 h-6 bg-[#00dd78] rounded mr-2"></div>
+              <h1 className="text-xl font-bold text-[#002400]">phrames</h1>
             </div>
             <div className="flex items-center gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="tertiary" className="relative h-8 w-8 rounded-full">
+                  <Button variant="secondary" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.photoURL || ''} alt={user.email || ''} />
-                      <AvatarFallback className="text-xs">
-                        {getUserInitials(user.email || 'U')}
+                      <AvatarFallback className="text-xs bg-[#00dd78] text-[#002400]">
+                        {getUserInitials(user.email)}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -99,7 +119,7 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-[#002400]">Dashboard</h1>
           <p className="mt-2 text-gray-600">
             Manage your frame campaigns and track their performance
           </p>
@@ -115,7 +135,7 @@ export default function DashboardPage() {
               <PhotoIcon className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">0</div>
+              <div className="text-2xl font-bold text-[#002400]">0</div>
               <p className="text-xs text-gray-600">
                 +0 from last month
               </p>
@@ -130,7 +150,7 @@ export default function DashboardPage() {
               <EyeIcon className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">0</div>
+              <div className="text-2xl font-bold text-[#002400]">0</div>
               <p className="text-xs text-gray-600">
                 +0 from last month
               </p>
@@ -145,7 +165,7 @@ export default function DashboardPage() {
               <ArrowDownTrayIcon className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">0</div>
+              <div className="text-2xl font-bold text-[#002400]">0</div>
               <p className="text-xs text-gray-600">
                 +0 from last month
               </p>
@@ -157,10 +177,10 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium text-gray-600">
                 Active Campaigns
               </CardTitle>
-              <div className="h-2 w-2 bg-green-500 rounded-full" />
+              <div className="h-2 w-2 bg-[#00dd78] rounded-full" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">0</div>
+              <div className="text-2xl font-bold text-[#002400]">0</div>
               <p className="text-xs text-gray-600">
                 Currently active
               </p>
@@ -174,11 +194,15 @@ export default function DashboardPage() {
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-6">
               <PhotoIcon className="w-8 h-8 text-gray-400" />
             </div>
-            <CardTitle className="text-xl mb-2">No campaigns yet</CardTitle>
+            <CardTitle className="text-xl mb-2 text-[#002400]">No campaigns yet</CardTitle>
             <CardDescription className="text-center mb-6 max-w-sm">
               Get started by creating your first frame campaign. Upload your design and start sharing!
             </CardDescription>
-            <Button size="lg" className="flex items-center gap-2" onClick={() => router.push('/create')}>
+            <Button 
+              size="lg" 
+              className="flex items-center gap-2 bg-[#00dd78] text-[#002400] hover:bg-[#00dd78]/90" 
+              onClick={() => router.push('/dashboard/campaigns/new')}
+            >
               <PlusIcon className="w-4 h-4" />
               Create your first campaign
             </Button>

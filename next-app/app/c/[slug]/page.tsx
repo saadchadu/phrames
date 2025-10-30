@@ -32,11 +32,18 @@ export default function PublicCampaignPage({ params }: { params: { slug: string 
 
   const fetchCampaign = async () => {
     try {
-      const response = await fetch(`/api/public/campaigns/${params.slug}`)
-      if (response.ok) {
-        const data = await response.json()
-        setCampaign(data)
-      }
+      // For now, show a demo campaign
+      setCampaign({
+        id: 'demo',
+        name: 'Demo Campaign',
+        slug: params.slug,
+        description: 'This is a demo campaign to show how the public page works.',
+        frameAsset: {
+          url: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=400&h=400&fit=crop',
+          width: 400,
+          height: 400
+        }
+      })
     } catch (error) {
       console.error('Failed to fetch campaign:', error)
     } finally {
