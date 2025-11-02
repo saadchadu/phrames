@@ -8,6 +8,9 @@ import AuthGuard from '@/components/AuthGuard'
 import { getCampaign, updateCampaign, generateUniqueSlug, Campaign } from '@/lib/firestore'
 import { uploadImage, validateImageFile, checkImageDimensions } from '@/lib/storage'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+
+// Prevent static generation for this auth-protected page
+export const dynamic = 'force-dynamic'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
 export default function EditCampaignPage() {

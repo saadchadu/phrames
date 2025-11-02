@@ -9,6 +9,9 @@ import { uploadImage, validateImageFile, checkImageDimensions } from '@/lib/stor
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
+// Prevent static generation for this auth-protected page
+export const dynamic = 'force-dynamic'
+
 export default function CreateCampaignPage() {
   const { user } = useAuth()
   const router = useRouter()

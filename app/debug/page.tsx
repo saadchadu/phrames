@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { getUserCampaigns, getAllCampaigns, getCampaignBySlug } from '@/lib/firestore'
+
+// Prevent static generation for this debug page
+export const dynamic = 'force-dynamic'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 

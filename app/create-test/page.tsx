@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { createCampaign, generateUniqueSlug } from '@/lib/firestore'
+
+// Prevent static generation for this test page
+export const dynamic = 'force-dynamic'
 import { useRouter } from 'next/navigation'
 
 export default function CreateTestPage() {

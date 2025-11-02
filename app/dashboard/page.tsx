@@ -8,6 +8,9 @@ import AuthGuard from '@/components/AuthGuard'
 import CampaignCard from '@/components/CampaignCard'
 import ShareModal from '@/components/ShareModal'
 import { getUserCampaigns, deleteCampaign, Campaign } from '@/lib/firestore'
+
+// Prevent static generation for this auth-protected page
+export const dynamic = 'force-dynamic'
 import { toast } from '@/components/ui/toaster'
 import { PlusIcon } from '@heroicons/react/24/outline'
 

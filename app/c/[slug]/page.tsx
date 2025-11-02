@@ -7,6 +7,9 @@ import { ShareIcon, ArrowDownTrayIcon, PhotoIcon, MagnifyingGlassMinusIcon, Magn
 import LoadingSpinner from '@/components/LoadingSpinner'
 import html2canvas from 'html2canvas'
 
+// Prevent static generation for this dynamic page
+export const dynamic = 'force-dynamic'
+
 interface ImageTransform {
   x: number
   y: number
@@ -357,20 +360,37 @@ export default function CampaignPage() {
       console.log('🔄 Loading frame via proxy:', proxyUrl)
       
       frameImg.crossOrigin = 'anonymous'
-      frameImg.src = proxyUrl
       
       await new Promise<void>((resolve, reject) => {
         frameImg.onload = () => {
           console.log('✅ Frame PNG loaded via proxy, size:', frameImg.width, 'x', frameImg.height)
           resolve()
         }
-        frameImg.onerror = (e) => {
-          console.error('❌ Frame failed to load via proxy:', e)
-          console.error('Proxy URL was:', proxyUrl)
-          reject(e)
+        frameImg.onerror = async (e) => {
+          console.warn('⚠️ Proxy failed, trying direct URL...')
+          
+          // Fallback: try direct URL without crossOrigin
+          const fallbackImg = new Image()
+          fallbackImg.onload = () => {
+            console.log('✅ Frame loaded via fallback')
+            // Copy properties to main image
+            frameImg.width = fallbackImg.width
+            frameImg.height = fallbackImg.height
+            frameImg.src = fallbackImg.src
+            resolve()
+          }
+          fallbackImg.onerror = () => {
+            console.error('❌ Both proxy and direct loading failed')
+            reject(new Error('Frame loading failed'))
+          }
+          fallbackImg.src = campaign.frameURL
         }
+        
+        // Start with proxy
+        frameImg.src = proxyUrl
+        
         // Add timeout to avoid hanging
-        setTimeout(() => reject(new Error('Frame load timeout')), 10000)
+        setTimeout(() => reject(new Error('Frame load timeout')), 15000)
       })
 
       // Draw frame PNG on top (transparent areas will show user photo)

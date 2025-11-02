@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { createCampaign, getCampaignBySlug, generateUniqueSlug } from '@/lib/firestore'
 
+// Prevent static generation for this test page
+export const dynamic = 'force-dynamic'
+
 export default function TestCampaignPage() {
   const { user } = useAuth()
   const [testResult, setTestResult] = useState<any>(null)

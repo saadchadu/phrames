@@ -2,6 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 
+// Prevent static generation for this test page
+export const dynamic = 'force-dynamic'
+
 export default function TestUIPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [userImage, setUserImage] = useState<HTMLImageElement | null>(null)

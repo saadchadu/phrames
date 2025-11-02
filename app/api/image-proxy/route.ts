@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -9,18 +12,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'URL parameter required' }, { status: 400 })
     }
 
-    console.log('🔄 Proxying image:', imageUrl)
+    // Validate URL to prevent abuse
+    if (!imageUrl.startsWith('https://firebasestorage.googleapis.com/')) {
+      return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 })
+    }
 
-    // Fetch the image from Firebase Storage
+    console.log('🔄 Proxying Firebase image')
+
+    // Fetch the image from Firebase Storage with timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
     const response = await fetch(imageUrl, {
+      signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; ImageProxy/1.0)'
+        'User-Agent': 'Mozilla/5.0 (compatible; ImageProxy/1.0)',
+        'Accept': 'image/*'
       }
     })
+
+    clearTimeout(timeoutId)
     
     if (!response.ok) {
-      console.error('❌ Failed to fetch image:', response.status, response.statusText)
-      return NextResponse.json({ error: 'Failed to fetch image' }, { status: response.status })
+      console.error('❌ Failed to fetch image:', response.status)
+      return NextResponse.json({ error: `Failed to fetch image: ${response.status}` }, { status: response.status })
     }
 
     const imageBuffer = await response.arrayBuffer()
@@ -41,6 +56,15 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('❌ Image proxy error:', error)
+    
+    // Return a more specific error for debugging
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        return NextResponse.json({ error: 'Request timeout' }, { status: 408 })
+      }
+      return NextResponse.json({ error: `Proxy error: ${error.message}` }, { status: 500 })
+    }
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
