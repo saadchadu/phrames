@@ -16,7 +16,7 @@ const firebaseConfig = {
 const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId']
 const missingKeys = requiredKeys.filter(key => !firebaseConfig[key as keyof typeof firebaseConfig])
 
-if (missingKeys.length > 0) {
+if (missingKeys.length > 0 && typeof window !== 'undefined') {
   console.error('Missing Firebase configuration keys:', missingKeys)
   throw new Error(`Missing Firebase configuration: ${missingKeys.join(', ')}`)
 }
