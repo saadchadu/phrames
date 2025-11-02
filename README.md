@@ -1,303 +1,166 @@
-# 🎨 Phrames - Free Twibbonize Clone
+# Phrames - Photo Frame Campaign Platform
 
-> Create beautiful photo frame campaigns with Firebase & Nuxt 3. No ads, no watermarks, completely free.
+A complete, production-ready web application for creating and sharing custom photo frame campaigns. Built with Next.js 14, Firebase, and TailwindCSS.
 
-![Status](https://img.shields.io/badge/status-ready--to--use-success)
-![Nuxt](https://img.shields.io/badge/nuxt-3.x-00DC82)
-![Firebase](https://img.shields.io/badge/firebase-enabled-orange)
-![TypeScript](https://img.shields.io/badge/typescript-5.x-blue)
+## 🚀 Features
 
----
+- **Authentication**: Firebase Auth with email/password and Google sign-in
+- **Campaign Management**: Create, edit, delete, and share frame campaigns
+- **Image Processing**: Client-side image composition with HTML5 Canvas
+- **Real-time Database**: Firestore for campaign data and user management
+- **File Storage**: Firebase Storage for frame images
+- **Responsive Design**: Mobile-first design with TailwindCSS
+- **SEO Optimized**: Next.js App Router with proper metadata
+- **Production Ready**: Optimized build with proper error handling
 
-## ✅ Status: Ready to Use!
+## 🛠️ Tech Stack
 
-All features are implemented and working:
-- ✅ User authentication with Firebase
-- ✅ Campaign creation with PNG frames
-- ✅ Shareable links for each campaign
-- ✅ Client-side image composition
-- ✅ Analytics (visits, renders, downloads)
-- ✅ Campaign management (edit, archive, update)
-
----
-
-## 📚 Documentation
-
-**Start here:**
-- 📖 **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick start guide (3 steps!)
-- 📘 **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Complete setup instructions
-- 📗 **[CAMPAIGN_CREATION_GUIDE.md](CAMPAIGN_CREATION_GUIDE.md)** - How to create campaigns
-- 📙 **[READY_TO_USE.md](READY_TO_USE.md)** - Full feature overview
-
----
-
-## ✨ Features
-
-- 🔥 **Firebase Authentication** - Email/password sign-in
-- 🗄️ **Firestore Database** - No PostgreSQL needed!
-- 🎨 **Image Composition** - Client-side canvas processing
-- 📊 **Analytics** - Track visits, renders, downloads
-- 🔗 **Shareable Links** - `/c/your-slug` for each campaign
-- 📱 **Responsive Design** - Works on all devices
-- 🚀 **Production Ready** - Deploy anywhere
-- 💯 **Free Forever** - No ads, no watermarks
-
----
-
-## 🚀 Quick Start (5 Minutes)
-
-### ⚡ Your app is ready! Just enable Firebase Storage:
-
-**👉 [START_HERE.md](START_HERE.md) - Complete 5-minute setup guide**
-
-### Quick Steps:
-1. **Enable Firebase Storage** (2 min) - Firebase Console → Storage → Get Started
-2. **Update Storage Rules** (1 min) - Allow public read access
-3. **Restart Server** (30 sec) - `npm run dev`
-4. **Create Campaign** (2 min) - Upload PNG frame, get shareable link
-5. **Done!** 🎉
-
-### Prerequisites:
-- ✅ Node.js 18+
-- ✅ Firebase project (FREE tier)
-- ✅ No credit card needed
-- ✅ No paid plans required
-
-**Everything is FREE forever!** See [FREE_ALTERNATIVES.md](FREE_ALTERNATIVES.md) for details.
-
----
-
-## 📖 How It Works
-
-### For Campaign Creators:
-1. **Sign up** and log in
-2. **Create a campaign** with a PNG frame
-3. **Get a shareable link** (`/c/your-slug`)
-4. **Share the link** with your audience
-5. **Monitor analytics** (visits, renders, downloads)
-
-### For End Users:
-1. **Click the campaign link**
-2. **Upload their photo**
-3. **Adjust position and zoom**
-4. **Download the result** (PNG or JPEG)
-5. No login required, privacy-first!
-
----
-
-## 🎨 Frame Requirements
-
-Your PNG frame must have:
-- ✅ Transparency (alpha channel)
-- ✅ Minimum size: 1080x1080 pixels
-- ✅ PNG format
-
----
-
-## 🔧 Configuration
-
-See [SETUP_GUIDE.md](SETUP_GUIDE.md) for complete setup instructions.
-
-**Required Environment Variables:**
-```env
-# Firebase Client
-NUXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NUXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
-NUXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
-
-# Firebase Admin
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-
-# Session Secret
-SESSION_SECRET=<generate-with-openssl-rand-base64-32>
-```
-
-### 4. Run Development Server
-```bash
-npm run dev
-```
-
-Visit **http://localhost:3000** 🎉
-
----
-
-## 📖 Documentation
-
-- **[FIREBASE_SETUP.md](./FIREBASE_SETUP.md)** - Complete Firebase setup guide
-- **[FIRESTORE_DATABASE.md](./FIRESTORE_DATABASE.md)** - Firestore configuration
-- **[QUICK_START.md](./QUICK_START.md)** - Detailed quick start
-- **[FINAL_PROJECT_STATUS.md](./FINAL_PROJECT_STATUS.md)** - Complete project overview
-
----
-
-## 🏗️ Tech Stack
-
-- **Framework**: [Nuxt 3](https://nuxt.com/) - Vue.js framework with SSR
-- **Language**: [TypeScript](https://www.typescriptlang.org/) - Type safety
-- **UI**: [Nuxt UI](https://ui.nuxt.com/) + [Tailwind CSS](https://tailwindcss.com/)
-- **Authentication**: [Firebase Auth](https://firebase.google.com/docs/auth)
-- **Database**: [Cloud Firestore](https://firebase.google.com/docs/firestore)
-- **Storage**: S3-compatible (AWS S3, Cloudflare R2, etc.)
-- **Deployment**: [Vercel](https://vercel.com/)
-
----
-
-## 🎯 What's Working
-
-### ✅ Fully Functional
-- Firebase Authentication (Email/Password + Google)
-- User management in Firestore
-- Session management
-- Protected routes
-- Dashboard
-- Responsive UI
-
-### 🔨 Ready to Implement
-- Campaign creation
-- Frame upload to S3
-- Image composition
-- Public campaign pages
-- Analytics
-
----
+- **Framework**: Next.js 14 (App Router)
+- **Authentication**: Firebase Auth
+- **Database**: Firebase Firestore
+- **Storage**: Firebase Storage
+- **Styling**: TailwindCSS
+- **Icons**: Heroicons
+- **Language**: TypeScript
+- **Deployment**: Vercel/Firebase Hosting compatible
 
 ## 📁 Project Structure
 
 ```
 phrames/
-├── server/
-│   ├── api/              # API endpoints
-│   │   ├── auth/         # Authentication
-│   │   ├── campaigns/    # Campaign management
-│   │   └── public/       # Public endpoints
-│   └── utils/            # Server utilities
-│       ├── firebase.ts   # Firebase Admin
-│       ├── firestore.ts  # Firestore client
-│       └── auth.ts       # Auth helpers
-├── pages/                # Vue pages
-│   ├── index.vue         # Landing page
-│   ├── login.vue         # Login page
-│   ├── signup.vue        # Signup page
-│   └── dashboard/        # Dashboard pages
-├── components/           # Vue components
-├── composables/          # Reusable logic
-├── plugins/              # Nuxt plugins
-└── middleware/           # Route middleware
+├── app/
+│   ├── c/[slug]/          # Public campaign pages
+│   ├── create/            # Campaign creation
+│   ├── dashboard/         # User dashboard
+│   ├── login/             # Login page
+│   ├── signup/            # Signup page
+│   ├── layout.tsx         # Root layout
+│   └── page.tsx           # Landing page
+├── components/
+│   ├── AuthProvider.tsx   # Authentication context
+│   ├── AuthGuard.tsx      # Route protection
+│   ├── CampaignCard.tsx   # Campaign display component
+│   ├── Navbar.tsx         # Navigation component
+│   └── ui/                # UI components
+├── lib/
+│   ├── auth.ts            # Authentication utilities
+│   ├── firebase.ts        # Firebase configuration
+│   ├── firestore.ts       # Database operations
+│   └── storage.ts         # File upload utilities
+└── public/                # Static assets
 ```
 
----
+## 🔧 Quick Start
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Firebase Setup
+
+1. Create a new Firebase project at [Firebase Console](https://console.firebase.google.com)
+2. Enable Authentication (Email/Password and Google)
+3. Create a Firestore database
+4. Enable Firebase Storage
+5. Get your Firebase configuration
+
+### 3. Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in your Firebase credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+Update `.env.local` with your Firebase config:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+```
+
+### 4. Run Development Server
+
+```bash
+npm run dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000)
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions for Vercel and Firebase Hosting.
 
-1. **Push to GitHub**
-```bash
-git push origin main
-```
+## 📱 How It Works
 
-2. **Import to Vercel**
-- Go to [vercel.com](https://vercel.com)
-- Import your repository
-- Framework: Nuxt 3
-- Add environment variables
+### For Campaign Creators
 
-3. **Deploy**
-- Click Deploy
-- Done! 🎉
+1. **Sign Up/Login**: Create account or sign in with Google
+2. **Create Campaign**: Upload PNG frame, set name and visibility
+3. **Share**: Get shareable link for your campaign
+4. **Manage**: View, edit, or delete campaigns from dashboard
 
-See [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) for details.
+### For Visitors
 
----
-
-## 💰 Cost
-
-### Free Tier (Perfect for getting started)
-- **Firebase Auth**: Unlimited
-- **Firestore**: 1GB storage, 50K reads/day
-- **Vercel**: Hobby plan (free)
-- **Total**: $0/month
-
-### Estimated Cost (1000 active users)
-- Firebase: $0-5/month
-- S3 Storage: $1-5/month
-- Vercel Pro: $20/month (optional)
-- **Total**: $1-30/month
-
----
+1. **Visit Campaign**: Use shared link to access campaign
+2. **Upload Photo**: Choose any image to add the frame
+3. **Download/Share**: Save or share the framed photo
 
 ## 🔒 Security
 
-- ✅ Firebase Authentication
-- ✅ HttpOnly session cookies
-- ✅ Secure cookies in production
-- ✅ CSRF protection
-- ✅ Input validation (Zod)
-- ✅ Firestore security rules
+- Firebase Authentication for secure user management
+- Firestore security rules for data protection
+- Client-side image processing (no server uploads)
+- Input validation and sanitization
+- Protected routes with authentication guards
 
----
+## 🎨 Customization
 
-## 🤝 Contributing
+### Styling
+- Modify `tailwind.config.js` for theme customization
+- Update colors in component files
+- Add custom CSS in `app/globals.css`
 
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+### Features
+- Add new campaign fields in `lib/firestore.ts`
+- Extend authentication in `lib/auth.ts`
+- Add new pages in `app/` directory
 
----
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Firebase Config**: Ensure all environment variables are set correctly
+2. **Build Errors**: Run `npm run build` to check for issues
+3. **Auth Issues**: Verify Firebase Auth is enabled in console
+4. **Storage Issues**: Check Firebase Storage rules and bucket configuration
+
+### Debug Mode
+
+Enable debug logging:
+
+```env
+NEXT_PUBLIC_DEBUG=true
+```
+
+## 📊 Performance
+
+- Static generation for landing page
+- Dynamic rendering for user-specific content
+- Client-side image processing for fast frame application
+- Firebase CDN for global asset delivery
+- Optimized build with Next.js
 
 ## 📄 License
 
-MIT License - feel free to use for any purpose.
+This project is licensed under the MIT License.
 
 ---
 
-## 🙏 Acknowledgments
-
-- Inspired by [Twibbonize](https://www.twibbonize.com/)
-- Built with [Nuxt 3](https://nuxt.com/)
-- Powered by [Firebase](https://firebase.google.com/)
-- UI by [Nuxt UI](https://ui.nuxt.com/)
-
----
-
-## 📞 Support
-
-- 📧 Issues: [GitHub Issues](https://github.com/yourusername/phrames/issues)
-- 📖 Docs: See documentation files in repo
-- 💬 Discussions: [GitHub Discussions](https://github.com/yourusername/phrames/discussions)
-
----
-
-## ⭐ Show Your Support
-
-If you find this project useful:
-- ⭐ Star the repository
-- 🐛 Report bugs
-- 💡 Suggest features
-- 🤝 Contribute code
-- 📢 Share with others
-
----
-
-## 🎊 Status
-
-**✅ Production Ready**
-
-- Authentication: 100%
-- Database: 100%
-- UI: 100%
-- Image Processing: 100%
-- Campaign Features: 80%
-
-**Ready to deploy and use!** 🚀
-
----
-
-Made with ❤️ using Nuxt 3 & Firebase
+Built with ❤️ using Next.js and Firebase

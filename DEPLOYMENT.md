@@ -1,164 +1,298 @@
-# Deployment Guide for Phrames
+# Deployment Guide - Phrames Next.js App
 
-## Prerequisites
+This guide will help you deploy your Phrames application to production using Vercel or Firebase Hosting.
 
-1. **Firebase Project Setup**
-   - Create a Firebase project at https://console.firebase.google.com
-   - Enable Authentication with Email/Password provider
-   - Create a service account key for Firebase Admin SDK
-   - Note down all configuration values
+## 🚀 Quick Deploy to Vercel (Recommended)
 
-2. **Database Setup**
-   - Set up a PostgreSQL database (recommended: Supabase, Railway, or Neon)
-   - Run migrations: `npx prisma migrate deploy`
+### Prerequisites
+- GitHub account
+- Vercel account
+- Firebase project set up
 
-3. **Storage Setup**
-   - Set up S3-compatible storage (Cloudflare R2 recommended)
-   - Create a bucket for assets
-   - Configure CORS for web uploads
-
-## Vercel Deployment
-
-### 1. Connect Repository
-- Import your repository to Vercel
-- Select "Nuxt.js" as the framework preset
-
-### 2. Environment Variables
-Add all environment variables from `.env.example`:
-
-**Database & Storage:**
-```
-DATABASE_URL=your_postgresql_connection_string
-S3_ENDPOINT=https://your-account-id.r2.cloudflarestorage.com
-S3_ACCESS_KEY_ID=your_r2_access_key
-S3_SECRET_ACCESS_KEY=your_r2_secret_key
-S3_BUCKET=phrames-assets
-S3_PUBLIC_BASE_URL=https://your-custom-domain.com/
-NUXT_PUBLIC_SITE_URL=https://phrames.cleffon.com
-```
-
-**Firebase Configuration:**
-```
-NUXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NUXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
-NUXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
-FIREBASE_ADMIN_PROJECT_ID=your-project-id
-FIREBASE_ADMIN_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
-FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n"
-```
-
-### 3. Build Settings
-- **Framework Preset**: Nuxt.js
-- **Build Command**: `npm run build`
-- **Output Directory**: (leave blank)
-- **Install Command**: `npm install`
-
-### 4. Domain Configuration
-- Add custom domain: `phrames.cleffon.com`
-- Configure DNS: CNAME `phrames` → `cname.vercel-dns.com`
-
-## Post-Deployment Checklist
-
-### 1. Database Migration
+### Step 1: Push to GitHub
 ```bash
-npx prisma migrate deploy
+git add .
+git commit -m "Initial commit"
+git push origin main
 ```
 
-### 2. Firebase Security Rules
-Update Firestore security rules if using Firestore for user data:
+### Step 2: Deploy to Vercel
+1. Go to [vercel.com](https://vercel.com) and sign in
+2. Click "New Project"
+3. Import your GitHub repository
+4. Configure project settings:
+   - Framework Preset: Next.js
+   - Root Directory: `next-app` (if in monorepo)
+   - Build Command: `npm run build`
+   - Output Directory: `.next`
+
+### Step 3: Add Environment Variables
+In Vercel dashboard, go to Settings > Environment Variables and add:
+
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+```
+
+### Step 4: Deploy
+Click "Deploy" and wait for the build to complete.
+
+## 🔥 Deploy to Firebase Hosting
+
+### Prerequisites
+- Firebase CLI installed: `npm install -g firebase-tools`
+- Firebase project created
+
+### Step 1: Initialize Firebase Hosting
+```bash
+cd next-app
+firebase login
+firebase init hosting
+```
+
+Select:
+- Use an existing project
+- Choose your Firebase project
+- Public directory: `out`
+- Configure as single-page app: Yes
+- Set up automatic builds: No
+
+### Step 2: Configure Next.js for Static Export
+Update `next.config.js`:
+
+```javascript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'export',
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
+}
+
+module.exports = nextConfig
+```
+
+### Step 3: Build and Deploy
+```bash
+npm run build
+firebase deploy
+```
+
+## 🔧 Production Configuration
+
+### Firebase Security Rules
+
+#### Firestore Rules
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Users collection
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Campaigns collection
+    match /campaigns/{campaignId} {
+      allow read: if resource.data.visibility == 'Public' || 
+                     (request.auth != null && request.auth.uid == resource.data.createdBy);
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.createdBy &&
+                       validateCampaign(request.resource.data);
+      allow update: if request.auth != null && 
+                       request.auth.uid == resource.data.createdBy &&
+                       validateCampaign(request.resource.data);
+      allow delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+    }
+  }
+  
+  function validateCampaign(data) {
+    return data.keys().hasAll(['campaignName', 'slug', 'visibility', 'frameURL', 'status', 'createdBy']) &&
+           data.campaignName is string &&
+           data.slug is string &&
+           data.visibility in ['Public', 'Unlisted'] &&
+           data.frameURL is string &&
+           data.status in ['Active', 'Inactive'] &&
+           data.createdBy is string;
+  }
+}
+```
+
+#### Storage Rules
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /campaigns/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && 
+                      request.auth.uid == userId &&
+                      request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+                      request.resource.contentType.matches('image/png');
     }
   }
 }
 ```
 
-### 3. CORS Configuration
-Configure CORS for your S3 bucket to allow web uploads:
-```json
-[
-  {
-    "AllowedOrigins": ["https://phrames.cleffon.com"],
-    "AllowedMethods": ["GET", "PUT", "POST"],
-    "AllowedHeaders": ["*"],
-    "MaxAgeSeconds": 3000
-  }
-]
+### Environment Variables for Production
+
+#### Required Variables
+```env
+# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY=your-production-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+
+# Optional: Analytics
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
-### 4. Test Core Functionality
-- [ ] User signup/login works
-- [ ] Campaign creation works
-- [ ] Image upload works
-- [ ] Public campaign pages load
-- [ ] Image composition works
-- [ ] Download functionality works
-- [ ] Analytics tracking works
+## 🔒 Security Checklist
 
-### 5. Performance Optimization
-- [ ] Enable Vercel Analytics
-- [ ] Configure CDN caching headers
-- [ ] Optimize images with Vercel Image Optimization
-- [ ] Monitor Core Web Vitals
+### Before Going Live
 
-### 6. Security Checklist
-- [ ] All environment variables are secure
-- [ ] Firebase security rules are configured
-- [ ] CORS is properly configured
-- [ ] Rate limiting is in place
-- [ ] Input validation is working
+- [ ] Firebase security rules are properly configured
+- [ ] Environment variables are set in production
+- [ ] Firebase Auth domains include your production domain
+- [ ] CORS is configured for your domain in Firebase
+- [ ] SSL certificate is active (automatic with Vercel/Firebase)
+- [ ] Error monitoring is set up (optional: Sentry)
 
-## Monitoring & Maintenance
+### Firebase Console Settings
+
+1. **Authentication**:
+   - Add your production domain to authorized domains
+   - Configure OAuth redirect URIs for Google sign-in
+
+2. **Firestore**:
+   - Deploy security rules
+   - Set up indexes if needed
+
+3. **Storage**:
+   - Deploy security rules
+   - Configure CORS if needed
+
+## 📊 Performance Optimization
+
+### Next.js Optimizations
+```javascript
+// next.config.js
+const nextConfig = {
+  // Enable compression
+  compress: true,
+  
+  // Optimize images
+  images: {
+    domains: ['storage.googleapis.com', 'firebasestorage.googleapis.com'],
+    formats: ['image/webp', 'image/avif'],
+  },
+  
+  // Enable experimental features
+  experimental: {
+    optimizeCss: true,
+  },
+}
+```
+
+### Firebase Performance
+- Enable Firebase Performance Monitoring
+- Use Firebase CDN for global distribution
+- Implement proper caching strategies
+
+## 🐛 Troubleshooting
+
+### Common Deployment Issues
+
+#### Build Failures
+```bash
+# Clear cache and reinstall
+rm -rf .next node_modules package-lock.json
+npm install
+npm run build
+```
+
+#### Environment Variable Issues
+- Ensure all `NEXT_PUBLIC_` variables are set
+- Check for typos in variable names
+- Verify Firebase project configuration
+
+#### Firebase Connection Issues
+- Check Firebase project ID matches environment
+- Verify API keys are correct
+- Ensure Firebase services are enabled
+
+### Debug Production Issues
+
+#### Enable Debug Mode
+```env
+NEXT_PUBLIC_DEBUG=true
+```
+
+#### Check Browser Console
+- Look for Firebase authentication errors
+- Check network requests for failed API calls
+- Verify environment variables are loaded
+
+## 📈 Monitoring
+
+### Set Up Analytics
+```javascript
+// lib/analytics.js
+import { getAnalytics } from 'firebase/analytics'
+import { app } from './firebase'
+
+export const analytics = getAnalytics(app)
+```
 
 ### Error Tracking
-Consider adding error tracking:
-- Sentry for error monitoring
-- Vercel Analytics for performance
-- Firebase Analytics for user behavior
+Consider integrating:
+- Sentry for error tracking
+- Firebase Crashlytics
+- Vercel Analytics
 
-### Database Maintenance
-- Regular backups
-- Monitor query performance
-- Clean up old data periodically
+## 🔄 CI/CD Pipeline
 
-### Updates
-- Keep dependencies updated
-- Monitor security advisories
-- Test updates in staging environment
+### GitHub Actions (Optional)
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Vercel
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+      - run: npm ci
+      - run: npm run build
+      - uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+```
 
-## Troubleshooting
+## 📞 Support
 
-### Common Issues
+If you encounter issues during deployment:
 
-1. **Firebase Auth not working**
-   - Check Firebase configuration
-   - Verify domain is added to authorized domains
-   - Check browser console for errors
+1. Check the [troubleshooting section](#-troubleshooting)
+2. Review Firebase console for errors
+3. Check Vercel deployment logs
+4. Open an issue on GitHub
 
-2. **Database connection issues**
-   - Verify DATABASE_URL is correct
-   - Check database server status
-   - Ensure migrations are applied
+---
 
-3. **Image upload failures**
-   - Check S3 credentials
-   - Verify CORS configuration
-   - Check bucket permissions
-
-4. **Build failures**
-   - Check all environment variables are set
-   - Verify Node.js version compatibility
-   - Check for TypeScript errors
-
-### Support
-For deployment issues, check:
-- Vercel deployment logs
-- Browser developer console
-- Server logs in Vercel dashboard
+Your Phrames app is now ready for production! 🎉
