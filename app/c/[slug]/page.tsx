@@ -343,16 +343,23 @@ export default function CampaignPage() {
         userImg.onerror = reject
       })
 
-      // Draw user's photo with their positioning/scaling
+      // Draw user's photo with EXACT same positioning as preview
       const scaleFactor = 1080 / 400 // Scale from 400px preview to 1080px download
       
       ctx.save()
-      ctx.translate(540, 540) // Center of 1080px canvas
-      ctx.scale(transform.scale * scaleFactor, transform.scale * scaleFactor)
-      ctx.translate(transform.x * scaleFactor, transform.y * scaleFactor)
-      ctx.drawImage(userImg, -userImg.width / 2, -userImg.height / 2)
+      
+      // Use EXACT same transform logic as preview canvas
+      ctx.translate(1080 / 2, 1080 / 2) // Center of 1080px canvas (same as size/2 in preview)
+      ctx.scale(transform.scale, transform.scale) // Use original scale (not multiplied by scaleFactor)
+      ctx.translate(transform.x * scaleFactor, transform.y * scaleFactor) // Scale the position
+      
+      // Draw user image (scale the image itself for high-res)
+      const imageWidth = userImg.width * scaleFactor
+      const imageHeight = userImg.height * scaleFactor
+      ctx.drawImage(userImg, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight)
+      
       ctx.restore()
-      console.log('✅ User photo drawn as background layer')
+      console.log('✅ User photo drawn with exact preview positioning')
 
       // Step 2: Load and draw frame PNG via proxy (FOREGROUND LAYER with transparency)
       const frameImg = new Image()
