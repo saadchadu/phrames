@@ -10,40 +10,6 @@ import html2canvas from 'html2canvas'
 // Prevent static generation for this dynamic page
 export const dynamic = 'force-dynamic'
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  try {
-    const { getCampaignBySlug } = await import('@/lib/firestore')
-    const campaign = await getCampaignBySlug(params.slug)
-    
-    if (!campaign) {
-      return {
-        title: 'Campaign Not Found - Phrames',
-      }
-    }
-
-    return {
-      title: `${campaign.campaignName} - Phrames`,
-      description: campaign.description || `Create your photo with the ${campaign.campaignName} frame on Phrames`,
-      openGraph: {
-        title: `${campaign.campaignName} - Phrames`,
-        description: campaign.description || `Create your photo with the ${campaign.campaignName} frame`,
-        images: [campaign.frameURL],
-        url: `https://phrames.cleffon.com/c/${params.slug}`,
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title: `${campaign.campaignName} - Phrames`,
-        description: campaign.description || `Create your photo with the ${campaign.campaignName} frame`,
-        images: [campaign.frameURL],
-      },
-    }
-  } catch (error) {
-    return {
-      title: 'Campaign - Phrames',
-    }
-  }
-}
-
 interface ImageTransform {
   x: number
   y: number
