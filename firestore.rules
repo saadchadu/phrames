@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidCampaign() {
+      return request.resource.data.keys().hasAll(['campaignName', 'slug', 'visibility', 'frameURL', 'status', 'createdBy', 'supportersCount']) &&
+             request.resource.data.campaignName is string &&
+             request.resource.data.campaignName.size() > 0 &&
+             request.resource.data.campaignName.size() <= 100 &&
+             request.resource.data.slug is string &&
+             request.resource.data.slug.matches('^[a-z0-9-]+$') &&
+             request.resource.data.slug.size() > 0 &&
+             request.resource.data.slug.size() <= 100 &&
+             request.resource.data.visibility in ['Public', 'Unlisted'] &&
+             request.resource.data.frameURL is string &&
+             request.resource.data.frameURL.matches('^https://.*') &&
+             request.resource.data.status in ['Active', 'Inactive'] &&
+             request.resource.data.supportersCount is int &&
+             request.resource.data.supportersCount >= 0;
+    }
+    
+    function isValidUser() {
+      return request.resource.data.keys().hasAll(['uid', 'email']) &&
+             request.resource.data.uid is string &&
+             request.resource.data.email is string &&
+             request.resource.data.email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Anyone can read user profiles (for displaying creator info)
+      allow read: if true;
+      
+      // Only the user can create their own profile
+      allow create: if isOwner(userId) && isValidUser();
+      
+      // Only the user can update their own profile
+      allow update: if isOwner(userId) && isValidUser();
+      
+      // Only the user can delete their own profile
+      allow delete: if isOwner(userId);
+    }
+    
+    // Campaigns collection
+    match /campaigns/{campaignId} {
+      // Anyone can read public or unlisted campaigns
+      allow read: if true;
+      
+      // Only authenticated users can create campaigns
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.createdBy) &&
+                      isValidCampaign();
+      
+      // Only the campaign owner can update their campaign
+      allow update: if isAuthenticated() && 
+                      isOwner(resource.data.createdBy) &&
+                      isValidCampaign() &&
+                      // Prevent changing the owner
+                      request.resource.data.createdBy == resource.data.createdBy;
+      
+      // Only the campaign owner can delete their campaign
+      allow delete: if isAuthenticated() && isOwner(resource.data.createdBy);
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

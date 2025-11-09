@@ -53,8 +53,12 @@ export const metadata: Metadata = {
     google: 'GHsv_9A2fyvKJclSaSw8FMozx-K6KiiG42rSm74BoRs',
   },
   icons: {
-    icon: '/icons/favicon.png',
+    icon: [
+      { url: '/icons/favicon.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/favicon.png', sizes: '16x16', type: 'image/png' },
+    ],
     apple: '/icons/favicon.png',
+    shortcut: '/icons/favicon.png',
   },
   manifest: '/manifest.json',
 }
