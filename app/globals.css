@@ -1,29 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Mona+Sans:wght@200;300;400;500;600;700;800;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 140 100% 98%;
+    --foreground: 0 0% 100%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 150 100% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 150 100% 7%;
+    --primary: 150 100% 7%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 158 100% 43%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 140 100% 96%;
+    --muted-foreground: 150 100% 20%;
+    --accent: 158 100% 43%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 140 50% 85%;
+    --input: 140 50% 85%;
+    --ring: 158 100% 43%;
     --radius: 0.75rem;
   }
 
@@ -95,6 +95,8 @@
 
 /* Phrames brand colors */
 :root {
-  --phrames-green: #00dd78;
-  --phrames-dark: #002400;
+  --phrames-primary: #002400;
+  --phrames-secondary: #00dd78;
+  --phrames-bg: #F2FFF2;
+  --phrames-foreground: #ffffff;
 }

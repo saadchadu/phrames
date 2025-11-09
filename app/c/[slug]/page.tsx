@@ -536,11 +536,11 @@ export default function CampaignPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{campaign.campaignName}</h1>
+          <h1 className="text-3xl font-bold text-primary mb-2">{campaign.campaignName}</h1>
           {campaign.description && (
             <p className="text-gray-600 max-w-2xl mx-auto mb-4">{campaign.description}</p>
           )}
@@ -548,7 +548,7 @@ export default function CampaignPage() {
             <span>{campaign.supportersCount} supporters</span>
             <span>•</span>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              campaign.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+              campaign.status === 'Active' ? 'bg-secondary/20 text-primary' : 'bg-gray-100 text-gray-800'
             }`}>
               {campaign.status}
             </span>
@@ -589,7 +589,7 @@ export default function CampaignPage() {
                 <div
                   className={`absolute inset-0 w-full h-full ${
                     isDragging ? 'cursor-grabbing' : 'cursor-grab'
-                  } ${isDragging ? 'bg-green-400 bg-opacity-10' : ''}`}
+                  } ${isDragging ? 'bg-secondary bg-opacity-10' : ''}`}
                   style={{ zIndex: 3 }}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
@@ -637,7 +637,7 @@ export default function CampaignPage() {
             {!userImage && (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full bg-teal-500 hover:bg-teal-600 text-white px-8 py-4 rounded-full flex items-center justify-center space-x-3 transition-colors"
+                className="w-full bg-secondary hover:bg-secondary/90 text-primary px-8 py-4 rounded-full flex items-center justify-center space-x-3 transition-colors font-medium"
               >
                 <PhotoIcon className="w-6 h-6" />
                 <span className="text-lg font-medium">Choose Your Photo</span>
@@ -660,7 +660,7 @@ export default function CampaignPage() {
               <div className="bg-white rounded-lg shadow-md p-4">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full text-green-600 hover:text-green-700 font-medium text-sm"
+                  className="w-full text-secondary hover:text-secondary/90 font-medium text-sm transition-colors"
                 >
                   Change Photo
                 </button>
@@ -712,11 +712,11 @@ export default function CampaignPage() {
                   <button
                     onClick={handleDownload}
                     disabled={processing}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center space-x-2 disabled:opacity-50 transition-colors"
+                    className="w-full bg-secondary hover:bg-secondary/90 text-primary px-4 py-3 rounded-lg font-medium flex items-center justify-center space-x-2 disabled:opacity-50 transition-colors"
                   >
                     {processing ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
                         <span>Processing...</span>
                       </>
                     ) : (
@@ -730,7 +730,7 @@ export default function CampaignPage() {
                   <button
                     onClick={handleShare}
                     disabled={processing}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center space-x-2 disabled:opacity-50 transition-colors"
+                    className="w-full bg-primary hover:bg-primary/90 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center space-x-2 disabled:opacity-50 transition-colors"
                   >
                     <ShareIcon className="h-5 w-5" />
                     <span>Share Framed Photo</span>

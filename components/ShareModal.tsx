@@ -62,7 +62,7 @@ export default function ShareModal({ isOpen, onClose, campaignName, campaignUrl 
             Share <strong>{campaignName}</strong> with others so they can add this frame to their photos.
           </p>
           
-          <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center space-x-2 p-3 bg-background rounded-lg">
             <input
               type="text"
               value={campaignUrl}
@@ -71,7 +71,7 @@ export default function ShareModal({ isOpen, onClose, campaignName, campaignUrl 
             />
             <button
               onClick={handleCopy}
-              className="flex items-center space-x-1 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+              className="flex items-center space-x-1 px-3 py-1 bg-secondary text-primary rounded text-sm hover:bg-secondary/90 transition-colors"
             >
               {copied ? (
                 <>
@@ -92,14 +92,14 @@ export default function ShareModal({ isOpen, onClose, campaignName, campaignUrl 
           {canShare && (
             <button
               onClick={handleShare}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium"
+              className="flex-1 bg-secondary hover:bg-secondary/90 text-primary px-4 py-2 rounded-md font-medium transition-colors"
             >
               Share
             </button>
           )}
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md font-medium"
+            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md font-medium transition-colors"
           >
             Close
           </button>

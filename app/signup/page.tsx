@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { signUpWithEmail, signInWithGoogle } from '@/lib/auth'
 import AuthGuard from '@/components/AuthGuard'
 
@@ -59,25 +60,31 @@ export default function SignupPage() {
 
   return (
     <AuthGuard requireAuth={false}>
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Create your account</h2>
-            <p className="mt-2 text-gray-600">
-              Start creating beautiful frame campaigns today
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white py-12 px-4">
+        {/* Form Container */}
+        <div className="w-full max-w-[480px] flex flex-col items-center">
+          {/* Header */}
+          <div className="flex flex-col items-center gap-2 mb-8 w-full">
+            <h2 className="text-primary text-[36px] font-bold leading-tight text-center">
+              Create your account
+            </h2>
+            <p className="text-primary/70 text-[16px] font-normal leading-[24px] text-center max-w-md">
+              Join Phrames and start creating beautiful photo frames.
             </p>
           </div>
           
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-sm w-full">
               <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
           
-          <form onSubmit={handleEmailSignup} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
+          {/* Form Card */}
+          <form onSubmit={handleEmailSignup} className="w-full bg-[#f2fff266] border border-[#00240033] rounded-2xl p-8 sm:p-10 flex flex-col gap-4 shadow-sm">
+            {/* Email Field */}
+            <div className="flex flex-col gap-2 w-full">
+              <label htmlFor="email" className="text-primary text-[15px] font-semibold">
+                Email address
               </label>
               <input
                 id="email"
@@ -86,28 +93,30 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[15px] placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
             </div>
             
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            {/* Password Field */}
+            <div className="flex flex-col gap-2 w-full">
+              <label htmlFor="password" className="text-primary text-[15px] font-semibold">
                 Password
               </label>
               <input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="Create a password (min 6 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[15px] placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
             </div>
             
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
+            {/* Confirm Password Field */}
+            <div className="flex flex-col gap-2 w-full">
+              <label htmlFor="confirmPassword" className="text-primary text-[15px] font-semibold">
+                Confirm password
               </label>
               <input
                 id="confirmPassword"
@@ -116,35 +125,43 @@ export default function SignupPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[15px] placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
             </div>
             
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+              className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3.5 rounded-sm text-[16px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-sm hover:shadow-md"
             >
-              {loading ? 'Creating account...' : 'Sign Up'}
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                  <span>Creating account...</span>
+                </>
+              ) : (
+                'Create Account'
+              )}
             </button>
-          </form>
-          
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
-              </div>
+
+            {/* Divider */}
+            <div className="flex items-center justify-center gap-4 w-full my-2">
+              <div className="flex-1 h-px bg-[#00240020]" />
+              <span className="text-[#00240099] text-[13px] font-medium whitespace-nowrap">
+                Or continue with
+              </span>
+              <div className="flex-1 h-px bg-[#00240020]" />
             </div>
             
+            {/* Google Button */}
             <button
               onClick={handleGoogleSignup}
               disabled={loading}
-              className="mt-3 w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+              type="button"
+              className="w-full inline-flex items-center justify-center gap-3 bg-white border border-[#00240020] hover:bg-gray-50 hover:border-[#00240033] text-primary px-6 py-3.5 rounded-sm text-[15px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -164,13 +181,16 @@ export default function SignupPage() {
               </svg>
               Continue with Google
             </button>
-          </div>
-          
-          <div className="mt-6 text-center text-sm">
-            <span className="text-gray-600">Already have an account? </span>
-            <Link href="/login" className="font-medium text-green-600 hover:text-green-500">
-              Sign in
-            </Link>
+          </form>
+
+          {/* Sign In Link */}
+          <div className="flex items-center justify-center gap-2 w-full mt-6">
+            <p className="text-[14px] text-center">
+              <span className="text-primary/70">Already have an account? </span>
+              <Link href="/login" className="text-secondary hover:text-secondary/90 font-semibold transition-colors">
+                Sign in here
+              </Link>
+            </p>
           </div>
         </div>
       </div>

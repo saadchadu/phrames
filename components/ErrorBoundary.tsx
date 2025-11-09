@@ -42,13 +42,13 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
             <div className="space-y-3">
               <button
                 onClick={() => window.location.reload()}
-                className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium"
+                className="w-full bg-secondary hover:bg-secondary/90 text-primary px-4 py-2 rounded-md font-medium transition-colors"
               >
                 Reload Page
               </button>
               <button
                 onClick={() => this.setState({ hasError: false })}
-                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md font-medium"
+                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md font-medium transition-colors"
               >
                 Try Again
               </button>

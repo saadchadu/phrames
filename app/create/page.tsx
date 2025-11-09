@@ -133,18 +133,18 @@ export default function CreateCampaignPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
             <Link
               href="/dashboard"
-              className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4"
+              className="inline-flex items-center text-primary hover:text-secondary mb-4 transition-colors"
             >
               <ArrowLeftIcon className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Create New Campaign</h1>
+            <h1 className="text-3xl font-bold text-primary">Create New Campaign</h1>
             <p className="text-gray-600 mt-1">
               Upload your frame and set up your campaign details
             </p>
@@ -170,7 +170,7 @@ export default function CreateCampaignPage() {
                   value={formData.campaignName}
                   onChange={(e) => handleNameChange(e.target.value)}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary"
                   placeholder="Enter campaign name"
                 />
               </div>
@@ -190,7 +190,7 @@ export default function CreateCampaignPage() {
                     value={formData.slug}
                     onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
                     required
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary"
                     placeholder="campaign-slug"
                   />
                 </div>
@@ -206,7 +206,7 @@ export default function CreateCampaignPage() {
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary"
                   placeholder="Describe your campaign (optional)"
                 />
               </div>
@@ -223,7 +223,7 @@ export default function CreateCampaignPage() {
                       value="Public"
                       checked={formData.visibility === 'Public'}
                       onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value as 'Public' | 'Unlisted' }))}
-                      className="mr-2 text-green-600 focus:ring-green-500"
+                      className="mr-2 text-secondary focus:ring-secondary"
                     />
                     <span className="text-sm text-gray-700">Public - Anyone can find and use this frame</span>
                   </label>
@@ -233,7 +233,7 @@ export default function CreateCampaignPage() {
                       value="Unlisted"
                       checked={formData.visibility === 'Unlisted'}
                       onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value as 'Public' | 'Unlisted' }))}
-                      className="mr-2 text-green-600 focus:ring-green-500"
+                      className="mr-2 text-secondary focus:ring-secondary"
                     />
                     <span className="text-sm text-gray-700">Unlisted - Only people with the link can access</span>
                   </label>
@@ -302,7 +302,7 @@ export default function CreateCampaignPage() {
                 <button
                   type="submit"
                   disabled={loading || !file}
-                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-secondary text-primary rounded-md hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   {loading ? 'Creating...' : 'Create Campaign'}
                 </button>
