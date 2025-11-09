@@ -76,7 +76,12 @@ export default function EditCampaignPage() {
   }
 
   const handleSlugChange = async (slug: string) => {
-    setFormData(prev => ({ ...prev, slug }))
+    // Automatically convert spaces and special characters to hyphens
+    const sanitizedSlug = slug
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+    setFormData(prev => ({ ...prev, slug: sanitizedSlug }))
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -196,27 +201,27 @@ export default function EditCampaignPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header */}
           <div className="mb-8">
             <Link
               href="/dashboard"
-              className="inline-flex items-center text-primary hover:text-secondary mb-4 transition-colors"
+              className="inline-flex items-center text-primary hover:text-secondary mb-4 transition-colors text-[15px] font-medium"
             >
               <ArrowLeftIcon className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Link>
-            <h1 className="text-3xl font-bold text-primary">Edit Campaign</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-[38px] font-bold text-primary leading-tight">Edit Campaign</h1>
+            <p className="text-primary/70 text-[16px] mt-2">
               Update your campaign details and frame image
             </p>
           </div>
 
           {/* Form */}
-          <div className="bg-white rounded-lg shadow-md p-8">
+          <div className="bg-[#f2fff266] border border-[#00240033] rounded-2xl p-8 sm:p-10 shadow-sm">
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-sm">
                 <p className="text-red-600 text-sm">{error}</p>
               </div>
             )}
@@ -224,7 +229,7 @@ export default function EditCampaignPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Campaign Name */}
               <div>
-                <label htmlFor="campaignName" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="campaignName" className="block text-[16px] font-semibold text-primary mb-2">
                   Campaign Name *
                 </label>
                 <input
@@ -233,19 +238,19 @@ export default function EditCampaignPage() {
                   value={formData.campaignName}
                   onChange={(e) => handleNameChange(e.target.value)}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary"
+                  className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
                   placeholder="Enter campaign name"
                 />
               </div>
 
               {/* URL Slug */}
               <div>
-                <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="slug" className="block text-[16px] font-semibold text-primary mb-2">
                   URL Slug *
                 </label>
                 <div className="flex">
-                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                    phrames.com/c/
+                  <span className="inline-flex items-center px-3 rounded-l-sm border border-r-0 border-[#00240033] bg-gray-50 text-primary/60 text-[14px]">
+                    phrames.com/campaign/
                   </span>
                   <input
                     id="slug"
@@ -253,15 +258,16 @@ export default function EditCampaignPage() {
                     value={formData.slug}
                     onChange={(e) => handleSlugChange(e.target.value)}
                     required
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary"
+                    className="flex-1 px-4 py-3 border border-[#00240033] rounded-r-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
                     placeholder="campaign-slug"
                   />
                 </div>
+                <p className="text-[13px] text-primary/60 mt-1">Only lowercase letters, numbers, and hyphens allowed</p>
               </div>
 
               {/* Description */}
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="description" className="block text-[16px] font-semibold text-primary mb-2">
                   Description
                 </label>
                 <textarea
@@ -269,75 +275,87 @@ export default function EditCampaignPage() {
                   value={formData.description}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary"
+                  className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white resize-none"
                   placeholder="Describe your campaign (optional)"
                 />
               </div>
 
               {/* Visibility */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-[16px] font-semibold text-primary mb-2">
                   Visibility *
                 </label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
+                <div className="flex flex-col gap-3">
+                  <label className="flex items-start gap-2 cursor-pointer">
                     <input
                       type="radio"
                       value="Public"
                       checked={formData.visibility === 'Public'}
                       onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value as 'Public' | 'Unlisted' }))}
-                      className="mr-2 text-secondary focus:ring-secondary"
+                      className="mt-1 text-secondary focus:ring-secondary"
                     />
-                    <span className="text-sm text-gray-700">Public - Anyone can find and use this frame</span>
+                    <div className="flex flex-col">
+                      <span className="text-primary text-[16px] font-medium">Public</span>
+                      <span className="text-primary/60 text-[14px]">Anyone can find and use this campaign</span>
+                    </div>
                   </label>
-                  <label className="flex items-center">
+                  <label className="flex items-start gap-2 cursor-pointer">
                     <input
                       type="radio"
                       value="Unlisted"
                       checked={formData.visibility === 'Unlisted'}
                       onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value as 'Public' | 'Unlisted' }))}
-                      className="mr-2 text-secondary focus:ring-secondary"
+                      className="mt-1 text-secondary focus:ring-secondary"
                     />
-                    <span className="text-sm text-gray-700">Unlisted - Only people with the link can access</span>
+                    <div className="flex flex-col">
+                      <span className="text-primary text-[16px] font-medium">Unlisted</span>
+                      <span className="text-primary/60 text-[14px]">Only people with the link can access</span>
+                    </div>
                   </label>
                 </div>
               </div>
 
               {/* Status */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-[16px] font-semibold text-primary mb-2">
                   Status *
                 </label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
+                <div className="flex flex-col gap-3">
+                  <label className="flex items-start gap-2 cursor-pointer">
                     <input
                       type="radio"
                       value="Active"
                       checked={formData.status === 'Active'}
                       onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'Active' | 'Inactive' }))}
-                      className="mr-2 text-secondary focus:ring-secondary"
+                      className="mt-1 text-secondary focus:ring-secondary"
                     />
-                    <span className="text-sm text-gray-700">Active - Campaign is live and accessible</span>
+                    <div className="flex flex-col">
+                      <span className="text-primary text-[16px] font-medium">Active</span>
+                      <span className="text-primary/60 text-[14px]">Campaign is live and accessible</span>
+                    </div>
                   </label>
-                  <label className="flex items-center">
+                  <label className="flex items-start gap-2 cursor-pointer">
                     <input
                       type="radio"
                       value="Inactive"
                       checked={formData.status === 'Inactive'}
                       onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'Active' | 'Inactive' }))}
-                      className="mr-2 text-secondary focus:ring-secondary"
+                      className="mt-1 text-secondary focus:ring-secondary"
                     />
-                    <span className="text-sm text-gray-700">Inactive - Campaign is paused</span>
+                    <div className="flex flex-col">
+                      <span className="text-primary text-[16px] font-medium">Inactive</span>
+                      <span className="text-primary/60 text-[14px]">Campaign is paused</span>
+                    </div>
                   </label>
                 </div>
               </div>
 
               {/* File Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-[16px] font-semibold text-primary mb-2">
                   Frame Image
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <div className="border-2 border-dashed border-[#00240033] rounded-lg p-6 text-center bg-white">
                   {preview ? (
                     <div className="space-y-4">
                       <img
@@ -345,11 +363,11 @@ export default function EditCampaignPage() {
                         alt="Preview"
                         className="mx-auto max-h-64 rounded-lg"
                       />
-                      <div className="space-x-2">
+                      <div className="flex gap-3 justify-center">
                         <button
                           type="button"
                           onClick={() => document.getElementById('file-upload')?.click()}
-                          className="bg-secondary hover:bg-secondary/90 text-primary px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                          className="bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all"
                         >
                           Change Image
                         </button>
@@ -360,7 +378,7 @@ export default function EditCampaignPage() {
                               setFile(null)
                               setPreview(campaign?.frameURL || null)
                             }}
-                            className="text-red-600 hover:text-red-700 text-sm"
+                            className="border border-red-400 text-red-400 hover:bg-red-50 px-6 py-3 rounded-sm text-[16px] font-semibold transition-all"
                           >
                             Cancel Changes
                           </button>
@@ -376,11 +394,11 @@ export default function EditCampaignPage() {
                         <button
                           type="button"
                           onClick={() => document.getElementById('file-upload')?.click()}
-                          className="bg-secondary hover:bg-secondary/90 text-primary px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                          className="bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all"
                         >
                           Upload New Frame
                         </button>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-2 text-[12px] text-primary/60">
                           PNG only, min 1080x1080px, max 10MB, transparency required
                         </p>
                       </div>
@@ -397,17 +415,17 @@ export default function EditCampaignPage() {
               </div>
 
               {/* Submit Button */}
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-end gap-3">
                 <Link
                   href="/dashboard"
-                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="inline-flex items-center justify-center px-6 py-3 border border-[#00240020] rounded-sm text-primary hover:bg-gray-50 text-[16px] font-medium transition-all"
                 >
                   Cancel
                 </Link>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-6 py-2 bg-secondary text-primary rounded-md hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                  className="px-6 py-3 bg-secondary text-primary rounded-sm hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold text-[16px]"
                 >
                   {saving ? 'Saving...' : 'Save Changes'}
                 </button>

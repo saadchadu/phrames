@@ -51,10 +51,10 @@ export default function LoginPage() {
         <div className="w-full max-w-[480px] flex flex-col items-center">
           {/* Header */}
           <div className="flex flex-col items-center gap-2 mb-8 w-full">
-            <h2 className="text-primary text-[36px] font-bold leading-tight text-center">
+            <h2 className="text-primary text-[38px] font-bold leading-tight text-center">
               Sign in to Phrames
             </h2>
-            <p className="text-primary/70 text-[16px] font-normal leading-[24px] text-center max-w-md">
+            <p className="text-primary/70 text-[16px] font-normal leading-normal text-center max-w-md">
               Welcome back! Please sign in to your account.
             </p>
           </div>
@@ -69,7 +69,7 @@ export default function LoginPage() {
           <form onSubmit={handleEmailLogin} className="w-full bg-[#f2fff266] border border-[#00240033] rounded-2xl p-8 sm:p-10 flex flex-col gap-4 shadow-sm">
             {/* Email Field */}
             <div className="flex flex-col gap-2 w-full">
-              <label htmlFor="email" className="text-primary text-[15px] font-semibold">
+              <label htmlFor="email" className="text-primary text-[16px] font-semibold">
                 Email address
               </label>
               <input
@@ -79,13 +79,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[15px] placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
             </div>
             
             {/* Password Field */}
             <div className="flex flex-col gap-2 w-full">
-              <label htmlFor="password" className="text-primary text-[15px] font-semibold">
+              <label htmlFor="password" className="text-primary text-[16px] font-semibold">
                 Password
               </label>
               <input
@@ -95,7 +95,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[15px] placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
             </div>
             
@@ -103,7 +103,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3.5 rounded-sm text-[16px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-sm hover:shadow-md"
+              className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {loading ? (
                 <>
@@ -129,7 +129,7 @@ export default function LoginPage() {
               onClick={handleGoogleLogin}
               disabled={loading}
               type="button"
-              className="w-full inline-flex items-center justify-center gap-3 bg-white border border-[#00240020] hover:bg-gray-50 hover:border-[#00240033] text-primary px-6 py-3.5 rounded-sm text-[15px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="w-full inline-flex items-center justify-center gap-3 bg-white border border-[#00240020] hover:bg-gray-50 hover:border-[#00240033] text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path

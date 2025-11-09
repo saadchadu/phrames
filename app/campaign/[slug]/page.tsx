@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { getCampaignBySlug, incrementSupportersCount, Campaign } from '@/lib/firestore'
-import { ShareIcon, ArrowDownTrayIcon, PhotoIcon, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon } from '@heroicons/react/24/outline'
+import { getUserProfile, UserProfile } from '@/lib/auth'
+import { ArrowDownTrayIcon, PhotoIcon, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon } from '@heroicons/react/24/outline'
 import LoadingSpinner from '@/components/LoadingSpinner'
-import html2canvas from 'html2canvas'
 
 // Prevent static generation for this dynamic page
 export const dynamic = 'force-dynamic'
@@ -21,6 +21,7 @@ export default function CampaignPage() {
   const slug = params.slug as string
   
   const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [creatorProfile, setCreatorProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [userImage, setUserImage] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
@@ -31,6 +32,8 @@ export default function CampaignPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const rafRef = useRef<number | null>(null)
+  const pendingTransformRef = useRef<ImageTransform | null>(null)
 
   useEffect(() => {
     if (slug) {
@@ -44,6 +47,12 @@ export default function CampaignPage() {
       const campaignData = await getCampaignBySlug(slug)
       console.log('Campaign data loaded:', campaignData)
       setCampaign(campaignData)
+
+      // Load creator profile
+      if (campaignData?.createdBy) {
+        const profile = await getUserProfile(campaignData.createdBy)
+        setCreatorProfile(profile)
+      }
     } catch (error) {
       console.error('Error loading campaign:', error)
     } finally {
@@ -287,11 +296,29 @@ export default function CampaignPage() {
       x: e.clientX - rect.left - dragStart.x,
       y: e.clientY - rect.top - dragStart.y
     }
-    setTransform(newTransform)
+    
+    // Store the pending transform
+    pendingTransformRef.current = newTransform
+    
+    // Use requestAnimationFrame for smooth updates
+    if (!rafRef.current) {
+      rafRef.current = requestAnimationFrame(() => {
+        if (pendingTransformRef.current) {
+          setTransform(pendingTransformRef.current)
+          pendingTransformRef.current = null
+        }
+        rafRef.current = null
+      })
+    }
   }
 
   const handleMouseUp = () => {
     setIsDragging(false)
+    // Cancel any pending animation frame
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+    }
   }
 
   const handleZoom = (delta: number) => {
@@ -441,69 +468,6 @@ export default function CampaignPage() {
     }
   }
 
-  const handleShare = async () => {
-    if (!userImage || !campaign) return
-
-    setProcessing(true)
-    
-    try {
-      console.log('🎯 Starting html2canvas share...')
-      
-      // Get the final image container
-      const target = document.getElementById('final-image-container')
-      if (!target) {
-        // Fallback: copy campaign link
-        await navigator.clipboard.writeText(window.location.href)
-        alert('Campaign link copied to clipboard!')
-        return
-      }
-
-      // Capture the visual representation for sharing
-      const canvas = await html2canvas(target, {
-        useCORS: true,
-        scale: 2,
-        backgroundColor: null,
-        logging: false,
-        allowTaint: true,
-        foreignObjectRendering: false
-      })
-
-      // Convert to blob for sharing
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          await navigator.clipboard.writeText(window.location.href)
-          alert('Campaign link copied to clipboard!')
-          return
-        }
-
-        const file = new File([blob], 'framed-photo.png', { type: 'image/png' })
-        
-        if (navigator.share && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: campaign.campaignName,
-            text: `Check out my photo with the ${campaign.campaignName} frame!`,
-            files: [file]
-          })
-        } else {
-          // Fallback: copy campaign link
-          await navigator.clipboard.writeText(window.location.href)
-          alert('Campaign link copied to clipboard!')
-        }
-      }, 'image/png', 1.0)
-
-    } catch (error) {
-      console.error('Error sharing:', error)
-      try {
-        await navigator.clipboard.writeText(window.location.href)
-        alert('Campaign link copied to clipboard!')
-      } catch (clipboardError) {
-        console.error('Clipboard error:', clipboardError)
-      }
-    } finally {
-      setProcessing(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -536,35 +500,64 @@ export default function CampaignPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">{campaign.campaignName}</h1>
-          {campaign.description && (
-            <p className="text-gray-600 max-w-2xl mx-auto mb-4">{campaign.description}</p>
-          )}
-          <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
-            <span>{campaign.supportersCount} supporters</span>
-            <span>•</span>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              campaign.status === 'Active' ? 'bg-secondary/20 text-primary' : 'bg-gray-100 text-gray-800'
-            }`}>
-              {campaign.status}
-            </span>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-11">
+        {/* Compact Header - Shows when photo is uploaded */}
+        {userImage && (
+          <div className="mb-8 bg-white border border-[#00240010] rounded-2xl p-7">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* Left - Title & Creator */}
+              <div className="flex-1">
+                <h1 className="text-[22px] font-semibold text-primary mb-1">{campaign.campaignName}</h1>
+                <div className="flex items-center gap-2 text-[14px]">
+                  {creatorProfile && (
+                    <div className="flex items-center gap-2">
+                      {creatorProfile.photoURL ? (
+                        <img
+                          src={creatorProfile.photoURL}
+                          alt={creatorProfile.displayName || 'Creator'}
+                          className="w-7 h-7 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-secondary/20 flex items-center justify-center">
+                          <span className="text-primary font-medium text-[12px]">
+                            {(creatorProfile.displayName || 'U').charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <span className="text-primary/70">{creatorProfile.displayName || 'Anonymous'}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Right - Stats */}
+              <div className="flex items-center gap-3 text-[14px]">
+                <span className="text-primary/60">{campaign.supportersCount} supporters</span>
+                <span className="text-primary/30">•</span>
+                <div className="flex items-center gap-2">
+                  <div className={`w-[9px] h-[9px] rounded-full ${
+                    campaign.status === 'Active' ? 'bg-secondary' : 'bg-gray-400'
+                  }`} />
+                  <span className="text-primary/60">{campaign.status}</span>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="max-w-md mx-auto">
-          {/* Frame Preview Section */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-4">Frame Preview</h2>
+        <div className={`mx-auto ${userImage ? 'max-w-6xl' : 'max-w-5xl'}`}>
+          <div className={`grid grid-cols-1 ${userImage ? 'lg:grid-cols-2' : 'lg:grid-cols-2'} gap-9`}>
+            {/* Left Column - Frame Preview */}
+            <div className="flex flex-col gap-4">
+              <div className="bg-white border border-[#00240010] rounded-2xl p-7">
+                <h2 className="text-[19px] font-semibold text-primary mb-4">Frame Preview</h2>
             
-            {/* Layered Frame Display */}
-            <div 
-              id="final-image-container" 
-              className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4 relative w-full max-w-[400px] mx-auto"
-            >
+                {/* Layered Frame Display */}
+                <div 
+                  id="final-image-container" 
+                  className="aspect-square bg-white rounded-xl overflow-hidden mb-4 relative w-full border border-[#00240010]"
+                >
               {/* User Photo Canvas (Background Layer) */}
               {userImage && (
                 <canvas
@@ -572,7 +565,10 @@ export default function CampaignPage() {
                   width={400}
                   height={400}
                   className="absolute inset-0 w-full h-full"
-                  style={{ zIndex: 1 }}
+                  style={{ 
+                    zIndex: 1,
+                    willChange: isDragging ? 'transform' : 'auto'
+                  }}
                 />
               )}
               
@@ -589,8 +585,12 @@ export default function CampaignPage() {
                 <div
                   className={`absolute inset-0 w-full h-full ${
                     isDragging ? 'cursor-grabbing' : 'cursor-grab'
-                  } ${isDragging ? 'bg-secondary bg-opacity-10' : ''}`}
-                  style={{ zIndex: 3 }}
+                  } select-none`}
+                  style={{ 
+                    zIndex: 3,
+                    touchAction: 'none',
+                    userSelect: 'none'
+                  }}
                   onMouseDown={handleMouseDown}
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
@@ -616,139 +616,216 @@ export default function CampaignPage() {
                       x: touch.clientX - rect.left - dragStart.x,
                       y: touch.clientY - rect.top - dragStart.y
                     }
-                    setTransform(newTransform)
+                    
+                    // Store the pending transform
+                    pendingTransformRef.current = newTransform
+                    
+                    // Use requestAnimationFrame for smooth updates
+                    if (!rafRef.current) {
+                      rafRef.current = requestAnimationFrame(() => {
+                        if (pendingTransformRef.current) {
+                          setTransform(pendingTransformRef.current)
+                          pendingTransformRef.current = null
+                        }
+                        rafRef.current = null
+                      })
+                    }
                   }}
-                  onTouchEnd={() => setIsDragging(false)}
+                  onTouchEnd={() => {
+                    setIsDragging(false)
+                    // Cancel any pending animation frame
+                    if (rafRef.current) {
+                      cancelAnimationFrame(rafRef.current)
+                      rafRef.current = null
+                    }
+                  }}
                 />
               )}
               
-              {isDragging && (
-                <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-black text-white px-2 py-1 rounded text-xs" style={{ zIndex: 4 }}>
-                  Drag to position
+                  {isDragging && (
+                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-primary text-white px-2.5 py-1 rounded-md text-xs font-medium" style={{ zIndex: 4 }}>
+                      Drag to position
+                    </div>
+                  )}
                 </div>
-              )}
+
+                <p className="text-[14px] text-primary/60 text-center mb-5">
+                  {!userImage ? 'Your photo will appear behind the transparent areas' : 'Drag to reposition'}
+                </p>
+
+                {/* Upload Button */}
+                {!userImage && (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full bg-secondary hover:bg-secondary/90 text-primary px-7 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all font-semibold text-[16px]"
+                  >
+                    <PhotoIcon className="w-6 h-6" />
+                    <span>Choose Photo</span>
+                  </button>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </div>
             </div>
 
-            <p className="text-sm text-gray-500 text-center mb-4">
-              {!userImage ? 'Click to upload your photo' : 'Your photo will appear behind the transparent areas'}
-            </p>
+            {/* Right Column - Campaign Details (before photo) or Controls (after photo) */}
+            {!userImage ? (
+              <div className="flex flex-col gap-4">
+                {/* Campaign Details */}
+                <div className="bg-white border border-[#00240010] rounded-2xl p-8">
+                  <h1 className="text-[26px] font-semibold text-primary mb-1 leading-tight">{campaign.campaignName}</h1>
+                  {campaign.description && (
+                    <p className="text-primary/70 text-[16px] leading-relaxed mb-4">{campaign.description}</p>
+                  )}
+                  
+                  {/* Stats */}
+                  <div className="flex items-center gap-3 text-[15px] mb-7 pb-7 border-b border-[#00240010]">
+                    <span className="text-primary/60">{campaign.supportersCount} supporters</span>
+                    <span className="text-primary/30">•</span>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-[10px] h-[10px] rounded-full ${
+                        campaign.status === 'Active' ? 'bg-secondary' : 'bg-gray-400'
+                      }`} />
+                      <span className="text-primary/60">{campaign.status}</span>
+                    </div>
+                  </div>
 
-            {/* Upload Button */}
-            {!userImage && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full bg-secondary hover:bg-secondary/90 text-primary px-8 py-4 rounded-full flex items-center justify-center space-x-3 transition-colors font-medium"
-              >
-                <PhotoIcon className="w-6 h-6" />
-                <span className="text-lg font-medium">Choose Your Photo</span>
-              </button>
-            )}
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-          </div>
-
-          {/* Photo Controls - Only show when image is loaded */}
-          {userImage && (
-            <div className="space-y-4">
-              {/* Change Photo Button */}
-              <div className="bg-white rounded-lg shadow-md p-4">
+                  {/* Creator Info */}
+                  <div className="flex items-center gap-3 text-[15px]">
+                    {creatorProfile && (
+                      <>
+                        {creatorProfile.photoURL ? (
+                          <img
+                            src={creatorProfile.photoURL}
+                            alt={creatorProfile.displayName || 'Creator'}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center">
+                            <span className="text-primary font-semibold text-[18px]">
+                              {(creatorProfile.displayName || 'U').charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-primary font-semibold">{creatorProfile.displayName || 'Anonymous'}</p>
+                          {campaign.createdAt && (
+                            <p className="text-primary/60 text-[14px]">
+                              Created {new Date(campaign.createdAt).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric', 
+                                year: 'numeric' 
+                              })}
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {/* Change Photo Button */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full text-secondary hover:text-secondary/90 font-medium text-sm transition-colors"
+                  className="w-full bg-white border border-[#00240010] hover:border-[#00240020] text-primary px-7 py-4 rounded-2xl font-semibold text-[16px] transition-all"
                 >
                   Change Photo
                 </button>
-              </div>
 
-              {/* Zoom Controls */}
-              <div className="bg-white rounded-lg shadow-md p-4">
-                <div className="flex items-center justify-center space-x-4">
-                  <button
-                    onClick={() => handleZoom(-0.1)}
-                    className="p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                    title="Zoom Out"
-                  >
-                    <MagnifyingGlassMinusIcon className="h-5 w-5" />
-                  </button>
+                {/* Adjust & Download Section */}
+                <div className="bg-white border border-[#00240010] rounded-2xl p-7">
+                  <h3 className="text-[19px] font-semibold text-primary mb-5">Adjust & Download</h3>
                   
-                  <span className="text-sm text-gray-600 min-w-16 text-center font-mono">
-                    {Math.round(transform.scale * 100)}%
-                  </span>
-                  
-                  <button
-                    onClick={() => handleZoom(0.1)}
-                    className="p-3 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                    title="Zoom In"
-                  >
-                    <MagnifyingGlassPlusIcon className="h-5 w-5" />
-                  </button>
-                </div>
+                  {/* Zoom Slider */}
+                  <div className="mb-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[14px] font-medium text-primary">Zoom</label>
+                      <span className="text-[14px] text-primary/70 font-semibold">
+                        {Math.round(transform.scale * 100)}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleZoom(-0.1)}
+                        className="p-2.5 hover:bg-[#00240005] rounded-xl transition-all"
+                        title="Zoom Out"
+                      >
+                        <MagnifyingGlassMinusIcon className="h-6 w-6 text-primary" />
+                      </button>
+                      
+                      <input
+                        type="range"
+                        min="10"
+                        max="500"
+                        value={Math.round(transform.scale * 100)}
+                        onChange={(e) => {
+                          const newScale = parseInt(e.target.value) / 100
+                          setTransform(prev => ({ ...prev, scale: newScale }))
+                        }}
+                        className="flex-1 h-2 bg-[#00240010] rounded-xl appearance-none cursor-pointer slider"
+                        style={{
+                          background: `linear-gradient(to right, #00dd78 0%, #00dd78 ${((transform.scale * 100 - 10) / (500 - 10)) * 100}%, #00240010 ${((transform.scale * 100 - 10) / (500 - 10)) * 100}%, #00240010 100%)`
+                        }}
+                      />
+                      
+                      <button
+                        onClick={() => handleZoom(0.1)}
+                        className="p-2.5 hover:bg-[#00240005] rounded-xl transition-all"
+                        title="Zoom In"
+                      >
+                        <MagnifyingGlassPlusIcon className="h-6 w-6 text-primary" />
+                      </button>
+                    </div>
+                  </div>
 
-                <div className="flex justify-center mt-3">
                   <button
                     onClick={handleReset}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                    className="w-full px-6 py-3.5 bg-white border border-[#00240010] hover:border-[#00240020] text-primary rounded-2xl text-[14px] font-medium transition-all mb-5"
                   >
                     Reset Position
                   </button>
-                </div>
 
-                <div className="text-center mt-3">
-                  <p className="text-xs text-gray-500">
-                    🖱️ Drag to move • 🔍 Use zoom buttons • Your photo goes behind the frame
+                  <p className="text-[13px] text-primary/60 text-center mb-5">
+                    Drag to move • Use slider to zoom
                   </p>
-                </div>
-              </div>
 
-              {/* Download Section */}
-              <div className="bg-white rounded-lg shadow-md p-4">
-                <div className="space-y-3">
+                  {/* Divider */}
+                  <div className="border-t border-[#00240010] my-5"></div>
+
+                  {/* Download Button */}
                   <button
                     onClick={handleDownload}
                     disabled={processing}
-                    className="w-full bg-secondary hover:bg-secondary/90 text-primary px-4 py-3 rounded-lg font-medium flex items-center justify-center space-x-2 disabled:opacity-50 transition-colors"
+                    className="w-full bg-secondary hover:bg-secondary/90 text-primary px-7 py-4 rounded-2xl font-semibold text-[16px] flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
                   >
                     {processing ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                         <span>Processing...</span>
                       </>
                     ) : (
                       <>
-                        <ArrowDownTrayIcon className="h-5 w-5" />
-                        <span>Download Final Image</span>
+                        <ArrowDownTrayIcon className="h-6 w-6" />
+                        <span>Download Image</span>
                       </>
                     )}
                   </button>
-                  
-                  <button
-                    onClick={handleShare}
-                    disabled={processing}
-                    className="w-full bg-primary hover:bg-primary/90 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center space-x-2 disabled:opacity-50 transition-colors"
-                  >
-                    <ShareIcon className="h-5 w-5" />
-                    <span>Share Framed Photo</span>
-                  </button>
-                  
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500">
-                      💡 Download includes the frame with your photo showing through transparent areas
-                    </p>
-                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Hidden canvas for high-resolution rendering */}
-        <canvas ref={canvasRef} className="hidden" />
+          {/* Hidden canvas for high-resolution rendering */}
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
       </div>
     </div>
   )

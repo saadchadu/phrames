@@ -133,182 +133,211 @@ export default function CreateCampaignPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white py-12 px-4">
+        {/* Form Container */}
+        <div className="w-full max-w-[900px] flex flex-col items-center">
           {/* Header */}
-          <div className="mb-8">
+          <div className="flex flex-col items-center gap-2 mb-8 w-full">
             <Link
               href="/dashboard"
-              className="inline-flex items-center text-primary hover:text-secondary mb-4 transition-colors"
+              className="self-start inline-flex items-center text-primary hover:text-secondary mb-4 transition-colors text-[15px] font-medium"
             >
               <ArrowLeftIcon className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Link>
-            <h1 className="text-3xl font-bold text-primary">Create New Campaign</h1>
-            <p className="text-gray-600 mt-1">
-              Upload your frame and set up your campaign details
+            <h2 className="text-primary text-[38px] font-bold leading-tight text-center">
+              Create New Campaign
+            </h2>
+            <p className="text-primary/70 text-[16px] font-normal leading-normal text-center max-w-md">
+              Upload a PNG frame and set up your campaign
             </p>
           </div>
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-sm w-full">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
+          
+          {/* Form Card */}
+          <form onSubmit={handleSubmit} className="w-full bg-[#f2fff266] border border-[#00240033] rounded-2xl p-8 sm:p-10 flex flex-col gap-6 shadow-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left Column - Form Fields */}
+              <div className="flex flex-col gap-6">
+                {/* Campaign Name */}
+                <div className="flex flex-col gap-2 w-full">
+                  <label htmlFor="campaignName" className="text-primary text-[16px] font-semibold">
+                    Campaign Name
+                  </label>
+                  <input
+                    id="campaignName"
+                    type="text"
+                    value={formData.campaignName}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                    placeholder="Enter campaign name"
+                  />
+                </div>
 
-          {/* Form */}
-          <div className="bg-white rounded-lg shadow-md p-8">
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600 text-sm">{error}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Campaign Name */}
-              <div>
-                <label htmlFor="campaignName" className="block text-sm font-medium text-gray-700 mb-2">
-                  Campaign Name *
-                </label>
-                <input
-                  id="campaignName"
-                  type="text"
-                  value={formData.campaignName}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary"
-                  placeholder="Enter campaign name"
-                />
-              </div>
-
-              {/* URL Slug */}
-              <div>
-                <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-2">
-                  URL Slug *
-                </label>
-                <div className="flex">
-                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                    phrames.com/c/
-                  </span>
+                {/* URL Slug */}
+                <div className="flex flex-col gap-2 w-full">
+                  <label htmlFor="slug" className="text-primary text-[16px] font-semibold">
+                    URL Slug
+                  </label>
                   <input
                     id="slug"
                     type="text"
                     value={formData.slug}
-                    onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                    onChange={(e) => {
+                      // Automatically convert spaces and special characters to hyphens
+                      const sanitizedSlug = e.target.value
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/(^-|-$)/g, '')
+                      setFormData(prev => ({ ...prev, slug: sanitizedSlug }))
+                    }}
                     required
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-r-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary"
-                    placeholder="campaign-slug"
+                    className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                    placeholder="campaign-url-slug"
+                  />
+                  <p className="text-[13px] text-primary/60">Only lowercase letters, numbers, and hyphens allowed</p>
+                </div>
+
+                {/* Description */}
+                <div className="flex flex-col gap-2 w-full">
+                  <label htmlFor="description" className="text-primary text-[16px] font-semibold">
+                    Description
+                  </label>
+                  <textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white resize-none"
+                    placeholder="Optional description for your campaign"
                   />
                 </div>
-              </div>
 
-              {/* Description */}
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary"
-                  placeholder="Describe your campaign (optional)"
-                />
-              </div>
-
-              {/* Visibility */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Visibility *
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="Public"
-                      checked={formData.visibility === 'Public'}
-                      onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value as 'Public' | 'Unlisted' }))}
-                      className="mr-2 text-secondary focus:ring-secondary"
-                    />
-                    <span className="text-sm text-gray-700">Public - Anyone can find and use this frame</span>
+                {/* Visibility */}
+                <div className="flex flex-col gap-2 w-full">
+                  <label className="text-primary text-[16px] font-semibold">
+                    Visibility
                   </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="Unlisted"
-                      checked={formData.visibility === 'Unlisted'}
-                      onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value as 'Public' | 'Unlisted' }))}
-                      className="mr-2 text-secondary focus:ring-secondary"
-                    />
-                    <span className="text-sm text-gray-700">Unlisted - Only people with the link can access</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* File Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Frame Image *
-                </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  {preview ? (
-                    <div className="space-y-4">
-                      <img
-                        src={preview}
-                        alt="Preview"
-                        className="mx-auto max-h-64 rounded-lg"
+                  <div className="flex flex-col gap-3">
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="Public"
+                        checked={formData.visibility === 'Public'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value as 'Public' | 'Unlisted' }))}
+                        className="mt-1 text-secondary focus:ring-secondary"
                       />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFile(null)
-                          setPreview(null)
-                        }}
-                        className="text-red-600 hover:text-red-700 text-sm"
-                      >
-                        Remove image
-                      </button>
-                    </div>
-                  ) : (
-                    <div>
-                      <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                      <div className="mt-4">
-                        <label htmlFor="file-upload" className="cursor-pointer">
-                          <span className="mt-2 block text-sm font-medium text-gray-900">
-                            Upload PNG frame
-                          </span>
-                          <input
-                            id="file-upload"
-                            type="file"
-                            accept=".png"
-                            onChange={handleFileChange}
-                            className="sr-only"
-                          />
-                        </label>
-                        <p className="mt-1 text-xs text-gray-500">
-                          PNG only, min 1080x1080px, max 10MB, transparency required
-                        </p>
+                      <div className="flex flex-col">
+                        <span className="text-primary text-[16px] font-medium">Public</span>
+                        <span className="text-primary/60 text-[14px]">Anyone can find and use this campaign</span>
                       </div>
-                    </div>
-                  )}
+                    </label>
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value="Unlisted"
+                        checked={formData.visibility === 'Unlisted'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value as 'Public' | 'Unlisted' }))}
+                        className="mt-1 text-secondary focus:ring-secondary"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-primary text-[16px] font-medium">Unlisted</span>
+                        <span className="text-primary/60 text-[14px]">Only people with the link can access</span>
+                      </div>
+                    </label>
+                  </div>
                 </div>
               </div>
 
-              {/* Submit Button */}
-              <div className="flex justify-end space-x-4">
-                <Link
-                  href="/dashboard"
-                  className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </Link>
-                <button
-                  type="submit"
-                  disabled={loading || !file}
-                  className="px-6 py-2 bg-secondary text-primary rounded-md hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                >
-                  {loading ? 'Creating...' : 'Create Campaign'}
-                </button>
+              {/* Right Column - File Upload */}
+              <div className="flex flex-col gap-2 w-full">
+                  <label className="text-primary text-[16px] font-semibold">
+                    Frame Image
+                  </label>
+                  <div className="border-2 border-dashed border-[#00240033] rounded-lg p-8 flex flex-col items-center justify-center gap-4 bg-white min-h-[400px]">
+                    {preview ? (
+                      <div className="flex flex-col items-center gap-4 w-full">
+                        <img
+                          src={preview}
+                          alt="Preview"
+                          className="max-h-64 rounded-lg"
+                        />
+                        <div className="flex gap-3">
+                          <label htmlFor="file-upload-change" className="cursor-pointer">
+                            <div className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all">
+                              Change Image
+                            </div>
+                            <input
+                              id="file-upload-change"
+                              type="file"
+                              accept=".png"
+                              onChange={handleFileChange}
+                              className="sr-only"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFile(null)
+                              setPreview(null)
+                            }}
+                            className="inline-flex items-center justify-center gap-2.5 border border-red-400 text-red-400 hover:bg-red-50 px-6 py-3 rounded-sm text-[16px] font-semibold transition-all"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-5">
+                        <svg className="w-12 h-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <div className="flex flex-col items-center gap-4">
+                          <p className="text-gray-500 text-[14px] text-center">
+                            Drag and drop your PNG file here, or click to browse
+                          </p>
+                          <label htmlFor="file-upload" className="cursor-pointer">
+                            <div className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all">
+                              Upload PNG Frame
+                            </div>
+                            <input
+                              id="file-upload"
+                              type="file"
+                              accept=".png"
+                              onChange={handleFileChange}
+                              className="sr-only"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-primary/60 text-[12px] leading-[18px]">
+                    PNG format with transparency required • Minimum size: 1080×1080px • Maximum file size: 10MB
+                  </p>
+                </div>
               </div>
-            </form>
-          </div>
+            {/* Submit Button - Full Width Below Both Columns */}
+            <button
+              type="submit"
+              disabled={loading || !file}
+              className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  <span>Creating...</span>
+                </>
+              ) : (
+                'Create Campaign'
+              )}
+            </button>
+          </form>
         </div>
       </div>
     </AuthGuard>

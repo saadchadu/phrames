@@ -30,12 +30,12 @@ export const signInWithEmail = async (email: string, password: string) => {
   }
 }
 
-export const signUpWithEmail = async (email: string, password: string) => {
+export const signUpWithEmail = async (email: string, password: string, displayName?: string, photoURL?: string) => {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password)
     
-    // Create user profile in Firestore
-    await createUserProfile(result.user)
+    // Create user profile in Firestore with custom data
+    await createUserProfile(result.user, displayName, photoURL)
     
     return { user: result.user, error: null }
   } catch (error: any) {
@@ -66,22 +66,22 @@ export const logout = async () => {
 }
 
 // User profile management
-export const createUserProfile = async (user: User) => {
+export const createUserProfile = async (user: User, customDisplayName?: string, customPhotoURL?: string) => {
   if (!user) return
 
   const userRef = doc(db, 'users', user.uid)
   const userSnap = await getDoc(userRef)
 
   if (!userSnap.exists()) {
-    const { uid, email, displayName, photoURL } = user
+    const { uid, email } = user
     const createdAt = new Date()
 
     try {
       await setDoc(userRef, {
         uid,
         email,
-        displayName,
-        photoURL,
+        displayName: customDisplayName || user.displayName || email?.split('@')[0] || 'User',
+        photoURL: customPhotoURL || user.photoURL || '',
         createdAt
       })
     } catch (error) {

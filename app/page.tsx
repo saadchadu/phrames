@@ -40,12 +40,11 @@ export default function Home() {
           <div className="flex flex-col lg:flex-row gap-8 items-center">
             {/* Left Side - Content (60%) */}
             <div className="w-full lg:w-[50%] text-left">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-primary mb-6">
+              <h1 className="text-[38px] sm:text-[48px] lg:text-[56px] font-bold text-primary mb-6 leading-tight">
                 Create Beautiful Photo Frames And 
-                <span className="text-secondary block">Share to
-the Globe</span>
+                <span className="text-secondary block">Share to the Globe</span>
               </h1>
-              <p className="text-xl text-gray-600 mb-8">
+              <p className="text-[18px] text-primary/80 mb-8 leading-relaxed">
                 Phrames is a free, easy-to-use platform for creating custom photo frame campaigns. Upload your PNG frames and let visitors create personalized images instantly.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -53,13 +52,13 @@ the Globe</span>
                   <>
                     <Link
                       href="/dashboard"
-                      className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-[26px] py-[18px] rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
                     >
                       Go to Dashboard
                     </Link>
                     <Link
                       href="/create"
-                      className="inline-flex items-center justify-center gap-2.5 bg-primary hover:bg-primary/90 text-white px-[26px] py-[18px] rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2.5 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
                     >
                       Create a Campaign
                     </Link>
@@ -68,13 +67,13 @@ the Globe</span>
                   <>
                     <Link
                       href="/signup"
-                      className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-[26px] py-[18px] rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
                     >
                       Get Started
                     </Link>
                     <Link
                       href="/login"
-                      className="inline-flex items-center justify-center gap-2.5 bg-primary hover:bg-primary/90 text-white px-[26px] py-[18px] rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2.5 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
                     >
                       Create a Campaign
                     </Link>
@@ -103,7 +102,7 @@ the Globe</span>
       {/* How It Works Section */}
       <section className="py-[6em] px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#00dd781a' }}>
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-center text-gray-900 mb-12">
+          <h2 className="text-[38px] font-bold text-center text-primary mb-12">
             How It Works
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -112,8 +111,8 @@ the Globe</span>
                 <span className="text-secondary text-[28px] font-bold leading-[33.6px]">1</span>
               </div>
               <div className="flex flex-col gap-3 w-full">
-                <h3 className="text-primary text-[30px] font-semibold leading-[36px]">Sign Up</h3>
-                <p className="text-primary text-[15px] font-normal leading-[22.5px]">
+                <h3 className="text-primary text-[24px] font-semibold leading-tight">Sign Up</h3>
+                <p className="text-primary text-[16px] font-normal leading-relaxed">
                   Create your free creator account and start building your first campaign.
                 </p>
               </div>
@@ -123,8 +122,8 @@ the Globe</span>
                 <span className="text-secondary text-[28px] font-bold leading-[33.6px]">2</span>
               </div>
               <div className="flex flex-col gap-3 w-full">
-                <h3 className="text-primary text-[30px] font-semibold leading-[36px]">Upload Frame</h3>
-                <p className="text-primary text-[15px] font-normal leading-[22.5px]">
+                <h3 className="text-primary text-[24px] font-semibold leading-tight">Upload Frame</h3>
+                <p className="text-primary text-[16px] font-normal leading-relaxed">
                   Upload a PNG image with transparency to create your custom frame design.
                 </p>
               </div>
@@ -134,8 +133,8 @@ the Globe</span>
                 <span className="text-secondary text-[28px] font-bold leading-[33.6px]">3</span>
               </div>
               <div className="flex flex-col gap-3 w-full">
-                <h3 className="text-primary text-[30px] font-semibold leading-[36px]">Share Link</h3>
-                <p className="text-primary text-[15px] font-normal leading-[22.5px]">
+                <h3 className="text-primary text-[24px] font-semibold leading-tight">Share Link</h3>
+                <p className="text-primary text-[16px] font-normal leading-relaxed">
                   Get a unique link to share your campaign with friends and supporters.
                 </p>
               </div>
@@ -145,8 +144,8 @@ the Globe</span>
                 <span className="text-secondary text-[28px] font-bold leading-[33.6px]">4</span>
               </div>
               <div className="flex flex-col gap-3 w-full">
-                <h3 className="text-primary text-[30px] font-semibold leading-[36px]">Track Engagement</h3>
-                <p className="text-primary text-[15px] font-normal leading-[22.5px]">
+                <h3 className="text-primary text-[24px] font-semibold leading-tight">Track Engagement</h3>
+                <p className="text-primary text-[16px] font-normal leading-relaxed">
                   Monitor how many people are using your frame and sharing their photos.
                 </p>
               </div>
@@ -156,29 +155,29 @@ the Globe</span>
       </section>
 
       {/* CTA Section */}
-      <section className=" bg-primary overflow-hidden">
-        <div className=" mx-auto">
+      <section className="bg-primary overflow-hidden">
+        <div className="mx-auto">
           <div className="flex flex-col lg:flex-row items-center">
             {/* Left Column - Text */}
             <div className="w-full lg:w-1/2 pl-24">
               <div className="flex flex-col gap-5">
-                <h2 className="text-[40px] font-bold text-[#f2fff2] leading-[50px]">
-                  Turn your campaign into a shared visual moment.
+                <h2 className="text-[38px] font-bold text-[#f2fff2] leading-tight">
+                  Turn your campaign into<br/>  a shared visual moment.
                 </h2>
-                <p className="text-[19px] font-normal text-[#f2fff2] leading-[28.5px]">
-                  Create shareable photo frames that help your message spread across social media.
+                <p className="text-[18px] font-normal text-[#f2fff2] leading-relaxed">
+                  Create shareable photo frames that help your message spread<br/>across social media.
                 </p>
                 {user ? (
                   <Link
                     href="/create"
-                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-[26px] py-[18px] rounded-md text-[16px] font-medium transition-colors whitespace-nowrap w-fit"
+                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap w-fit"
                   >
                     Create Your Campaign
                   </Link>
                 ) : (
                   <Link
                     href="/signup"
-                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-[26px] py-[18px] rounded-md text-[16px] font-medium transition-colors whitespace-nowrap w-fit"
+                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap w-fit"
                   >
                     Get Started
                   </Link>
@@ -201,7 +200,7 @@ the Globe</span>
       </section>
 
       {/* Footer */}
-      <footer className="flex flex-col items-center justify-center gap-2.5 py-8 px- sm:px-6 lg:px-[95px]">
+      <footer className="flex flex-col items-center justify-center gap-2.5 py-8 px-4 sm:px-6 lg:px-[95px]">
         <div className="flex items-center justify-between w-full max-w-8xl">
           <Image
             src="/logos/Logo-black.svg"

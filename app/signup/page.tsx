@@ -3,14 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { signUpWithEmail, signInWithGoogle } from '@/lib/auth'
 import AuthGuard from '@/components/AuthGuard'
 
 export default function SignupPage() {
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [photoURL, setPhotoURL] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -32,7 +33,13 @@ export default function SignupPage() {
       return
     }
 
-    const { user, error: authError } = await signUpWithEmail(email, password)
+    if (!name.trim()) {
+      setError('Name is required')
+      setLoading(false)
+      return
+    }
+
+    const { user, error: authError } = await signUpWithEmail(email, password, name, photoURL)
     
     if (authError) {
       setError(authError)
@@ -65,10 +72,10 @@ export default function SignupPage() {
         <div className="w-full max-w-[480px] flex flex-col items-center">
           {/* Header */}
           <div className="flex flex-col items-center gap-2 mb-8 w-full">
-            <h2 className="text-primary text-[36px] font-bold leading-tight text-center">
+            <h2 className="text-primary text-[38px] font-bold leading-tight text-center">
               Create your account
             </h2>
-            <p className="text-primary/70 text-[16px] font-normal leading-[24px] text-center max-w-md">
+            <p className="text-primary/70 text-[16px] font-normal leading-normal text-center max-w-md">
               Join Phrames and start creating beautiful photo frames.
             </p>
           </div>
@@ -81,9 +88,25 @@ export default function SignupPage() {
           
           {/* Form Card */}
           <form onSubmit={handleEmailSignup} className="w-full bg-[#f2fff266] border border-[#00240033] rounded-2xl p-8 sm:p-10 flex flex-col gap-4 shadow-sm">
+            {/* Name Field */}
+            <div className="flex flex-col gap-2 w-full">
+              <label htmlFor="name" className="text-primary text-[16px] font-semibold">
+                Full Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                placeholder="Enter your full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+              />
+            </div>
+
             {/* Email Field */}
             <div className="flex flex-col gap-2 w-full">
-              <label htmlFor="email" className="text-primary text-[15px] font-semibold">
+              <label htmlFor="email" className="text-primary text-[16px] font-semibold">
                 Email address
               </label>
               <input
@@ -93,13 +116,13 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[15px] placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
             </div>
             
             {/* Password Field */}
             <div className="flex flex-col gap-2 w-full">
-              <label htmlFor="password" className="text-primary text-[15px] font-semibold">
+              <label htmlFor="password" className="text-primary text-[16px] font-semibold">
                 Password
               </label>
               <input
@@ -109,13 +132,13 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[15px] placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
             </div>
             
             {/* Confirm Password Field */}
             <div className="flex flex-col gap-2 w-full">
-              <label htmlFor="confirmPassword" className="text-primary text-[15px] font-semibold">
+              <label htmlFor="confirmPassword" className="text-primary text-[16px] font-semibold">
                 Confirm password
               </label>
               <input
@@ -125,15 +148,31 @@ export default function SignupPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[15px] placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
+            </div>
+
+            {/* Photo URL Field (Optional) */}
+            <div className="flex flex-col gap-2 w-full">
+              <label htmlFor="photoURL" className="text-primary text-[16px] font-semibold">
+                Profile Photo URL <span className="text-primary/50 font-normal">(optional)</span>
+              </label>
+              <input
+                id="photoURL"
+                type="url"
+                placeholder="https://example.com/photo.jpg"
+                value={photoURL}
+                onChange={(e) => setPhotoURL(e.target.value)}
+                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+              />
+              <p className="text-[13px] text-primary/60">Add a link to your profile photo</p>
             </div>
             
             {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3.5 rounded-sm text-[16px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-sm hover:shadow-md"
+              className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
               {loading ? (
                 <>
@@ -159,7 +198,7 @@ export default function SignupPage() {
               onClick={handleGoogleSignup}
               disabled={loading}
               type="button"
-              className="w-full inline-flex items-center justify-center gap-3 bg-white border border-[#00240020] hover:bg-gray-50 hover:border-[#00240033] text-primary px-6 py-3.5 rounded-sm text-[15px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="w-full inline-flex items-center justify-center gap-3 bg-white border border-[#00240020] hover:bg-gray-50 hover:border-[#00240033] text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
