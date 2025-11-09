@@ -45,8 +45,6 @@ const nextConfig = {
     serverComponentsExternalPackages: ['firebase-admin'],
   },
   
-  // Output configuration for Vercel
-  output: 'standalone',
 }
 
 module.exports = nextConfig

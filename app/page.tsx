@@ -164,7 +164,7 @@ the Globe</span>
             {/* Right Column - Image */}
             <div className="w-full lg:w-1/2">
               <Image
-                src="/images/strip.png"
+                src="/images/Strip.png"
                 alt="CTA Visual"
                 width={720}
                 height={455}
@@ -179,7 +179,7 @@ the Globe</span>
       <footer className="flex flex-col items-center justify-center gap-2.5 py-8 px- sm:px-6 lg:px-[95px]">
         <div className="flex items-center justify-between w-full max-w-8xl">
           <Image
-            src="/logos/logo-black.svg"
+            src="/logos/Logo-black.svg"
             alt="Phrames Logo"
             width={103}
             height={25}

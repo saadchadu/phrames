@@ -22,7 +22,7 @@ export default function Navbar() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
               <Image
-                src="/logos/logo-black.svg"
+                src="/logos/Logo-black.svg"
                 alt="Phrames"
                 width={120}
                 height={32}
