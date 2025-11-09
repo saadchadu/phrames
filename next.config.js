@@ -13,6 +13,7 @@ const nextConfig = {
   
   // Image optimization settings
   images: {
+    formats: ['image/webp', 'image/avif'],
     domains: [
       'firebasestorage.googleapis.com',
       'lh3.googleusercontent.com'

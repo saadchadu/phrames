@@ -7,8 +7,33 @@ import { useAuth } from '@/components/AuthProvider'
 export default function Home() {
   const { user } = useAuth()
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Phrames',
+    url: 'https://phrames.cleffon.com',
+    description: 'Create and share custom photo frame campaigns online for free.',
+    applicationCategory: 'DesignApplication',
+    operatingSystem: 'All',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    creator: {
+      '@type': 'Organization',
+      name: 'Cleffon',
+      url: 'https://cleffon.com',
+    },
+  }
+
   return (
-    <main className="min-h-screen bg-white">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="py-[6em] px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
@@ -193,5 +218,6 @@ the Globe</span>
         </div>
       </footer>
     </main>
+    </>
   )
 }
