@@ -97,10 +97,11 @@ const nextConfig = {
     return config
   },
   
-  // Experimental features for better performance
-  experimental: {
-    serverComponentsExternalPackages: ['firebase-admin'],
-  },
+  // Server external packages
+  serverExternalPackages: ['firebase-admin'],
+  
+  // Turbopack configuration (empty to silence warning)
+  turbopack: {},
   
 }
 
