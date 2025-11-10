@@ -44,12 +44,12 @@ export function Toaster() {
   }, [])
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-3 w-96">
+    <div className="fixed top-4 right-4 left-4 sm:left-auto z-50 space-y-3 sm:w-96 max-w-full">
       {currentToasts.map((toast) => (
         <div
           key={toast.id}
           className={cn(
-            "flex items-start gap-3 p-4 rounded-lg border untitled-ui-shadow-lg bg-white",
+            "flex items-start gap-3 p-4 rounded-xl border untitled-ui-shadow-lg bg-white animate-slide-in-right",
             toast.type === 'success' && 'border-green-200',
             toast.type === 'error' && 'border-red-200',
             toast.type === 'info' && 'border-blue-200'
@@ -68,19 +68,20 @@ export function Toaster() {
           </div>
           
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900">
+            <p className="text-sm font-semibold text-gray-900">
               {toast.type === 'success' && 'Success'}
               {toast.type === 'error' && 'Error'}
               {toast.type === 'info' && 'Info'}
             </p>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-gray-600 mt-1 break-words">
               {toast.message}
             </p>
           </div>
           
           <button
             onClick={() => removeToast(toast.id)}
-            className="flex-shrink-0 p-1 rounded-md text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="flex-shrink-0 p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:scale-95 transition-all"
+            aria-label="Close notification"
           >
             <XMarkIcon className="h-4 w-4" />
           </button>

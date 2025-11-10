@@ -35,30 +35,30 @@ export default function Home() {
       />
       <main className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="py-[6em] px-4 sm:px-6 lg:px-8">
+      <section className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row gap-8 items-center">
-            {/* Left Side - Content (60%) */}
-            <div className="w-full lg:w-[50%] text-left">
-              <h1 className="text-[38px] sm:text-[48px] lg:text-[56px] font-bold text-primary mb-6 leading-tight">
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
+            {/* Left Side - Content */}
+            <div className="w-full lg:w-[55%] text-center lg:text-left">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold text-primary mb-4 sm:mb-6 leading-tight">
                 Create Beautiful Photo Frames And 
-                <span className="text-secondary block">Share to the Globe</span>
+                <span className="text-secondary block mt-1">Share to the Globe</span>
               </h1>
-              <p className="text-[18px] text-primary/80 mb-8 leading-relaxed">
+              <p className="text-base sm:text-lg text-primary/80 mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0">
                 Phrames is a free, easy-to-use platform for creating custom photo frame campaigns. Upload your PNG frames and let visitors create personalized images instantly.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
                 {user ? (
                   <>
                     <Link
                       href="/dashboard"
-                      className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all shadow-sm hover:shadow-md active:scale-95"
                     >
                       Go to Dashboard
                     </Link>
                     <Link
                       href="/create"
-                      className="inline-flex items-center justify-center gap-2.5 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2.5 bg-primary hover:bg-primary/90 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all shadow-sm hover:shadow-md active:scale-95"
                     >
                       Create a Campaign
                     </Link>
@@ -67,13 +67,13 @@ export default function Home() {
                   <>
                     <Link
                       href="/signup"
-                      className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all shadow-sm hover:shadow-md active:scale-95"
                     >
                       Get Started
                     </Link>
                     <Link
                       href="/login"
-                      className="inline-flex items-center justify-center gap-2.5 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap"
+                      className="inline-flex items-center justify-center gap-2.5 bg-primary hover:bg-primary/90 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all shadow-sm hover:shadow-md active:scale-95"
                     >
                       Create a Campaign
                     </Link>
@@ -82,15 +82,15 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Side - Image (40%) */}
-            <div className="w-full lg:w-[50%] flex justify-end">
-              <div className="w-[70%] relative">
+            {/* Right Side - Image */}
+            <div className="w-full lg:w-[45%] flex justify-center lg:justify-end mt-8 lg:mt-0">
+              <div className="w-full max-w-sm lg:max-w-md relative">
                 <Image
                   src="/images/Hero.png"
                   alt="Phrames Hero"
                   width={450}
                   height={490}
-                  className="w-full h-auto rounded-lg"
+                  className="w-full h-auto rounded-2xl shadow-lg"
                   priority
                 />
               </div>
@@ -100,52 +100,52 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-[6em] px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#00dd781a' }}>
+      <section className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#00dd781a' }}>
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-[38px] font-bold text-center text-primary mb-12">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[38px] font-bold text-center text-primary mb-8 sm:mb-12">
             How It Works
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="flex flex-col items-start gap-5">
-              <div className="w-[50px] h-[50px] bg-primary rounded-full flex items-center justify-center">
-                <span className="text-secondary text-[28px] font-bold leading-[33.6px]">1</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+            <div className="flex flex-col items-center sm:items-start gap-4 sm:gap-5 bg-white/50 sm:bg-transparent p-6 sm:p-0 rounded-2xl sm:rounded-none">
+              <div className="w-12 h-12 sm:w-[50px] sm:h-[50px] bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-secondary text-2xl sm:text-[28px] font-bold">1</span>
               </div>
-              <div className="flex flex-col gap-3 w-full">
-                <h3 className="text-primary text-[24px] font-semibold leading-tight">Sign Up</h3>
-                <p className="text-primary text-[16px] font-normal leading-relaxed">
+              <div className="flex flex-col gap-2 sm:gap-3 w-full text-center sm:text-left">
+                <h3 className="text-primary text-xl sm:text-[24px] font-semibold leading-tight">Sign Up</h3>
+                <p className="text-primary/80 text-sm sm:text-base font-normal leading-relaxed">
                   Create your free creator account and start building your first campaign.
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-start gap-5">
-              <div className="w-[50px] h-[50px] bg-primary rounded-full flex items-center justify-center">
-                <span className="text-secondary text-[28px] font-bold leading-[33.6px]">2</span>
+            <div className="flex flex-col items-center sm:items-start gap-4 sm:gap-5 bg-white/50 sm:bg-transparent p-6 sm:p-0 rounded-2xl sm:rounded-none">
+              <div className="w-12 h-12 sm:w-[50px] sm:h-[50px] bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-secondary text-2xl sm:text-[28px] font-bold">2</span>
               </div>
-              <div className="flex flex-col gap-3 w-full">
-                <h3 className="text-primary text-[24px] font-semibold leading-tight">Upload Frame</h3>
-                <p className="text-primary text-[16px] font-normal leading-relaxed">
+              <div className="flex flex-col gap-2 sm:gap-3 w-full text-center sm:text-left">
+                <h3 className="text-primary text-xl sm:text-[24px] font-semibold leading-tight">Upload Frame</h3>
+                <p className="text-primary/80 text-sm sm:text-base font-normal leading-relaxed">
                   Upload a PNG image with transparency to create your custom frame design.
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-start gap-5">
-              <div className="w-[50px] h-[50px] bg-primary rounded-full flex items-center justify-center">
-                <span className="text-secondary text-[28px] font-bold leading-[33.6px]">3</span>
+            <div className="flex flex-col items-center sm:items-start gap-4 sm:gap-5 bg-white/50 sm:bg-transparent p-6 sm:p-0 rounded-2xl sm:rounded-none">
+              <div className="w-12 h-12 sm:w-[50px] sm:h-[50px] bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-secondary text-2xl sm:text-[28px] font-bold">3</span>
               </div>
-              <div className="flex flex-col gap-3 w-full">
-                <h3 className="text-primary text-[24px] font-semibold leading-tight">Share Link</h3>
-                <p className="text-primary text-[16px] font-normal leading-relaxed">
+              <div className="flex flex-col gap-2 sm:gap-3 w-full text-center sm:text-left">
+                <h3 className="text-primary text-xl sm:text-[24px] font-semibold leading-tight">Share Link</h3>
+                <p className="text-primary/80 text-sm sm:text-base font-normal leading-relaxed">
                   Get a unique link to share your campaign with friends and supporters.
                 </p>
               </div>
             </div>
-            <div className="flex flex-col items-start gap-5">
-              <div className="w-[50px] h-[50px] bg-primary rounded-full flex items-center justify-center">
-                <span className="text-secondary text-[28px] font-bold leading-[33.6px]">4</span>
+            <div className="flex flex-col items-center sm:items-start gap-4 sm:gap-5 bg-white/50 sm:bg-transparent p-6 sm:p-0 rounded-2xl sm:rounded-none">
+              <div className="w-12 h-12 sm:w-[50px] sm:h-[50px] bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-secondary text-2xl sm:text-[28px] font-bold">4</span>
               </div>
-              <div className="flex flex-col gap-3 w-full">
-                <h3 className="text-primary text-[24px] font-semibold leading-tight">Track Engagement</h3>
-                <p className="text-primary text-[16px] font-normal leading-relaxed">
+              <div className="flex flex-col gap-2 sm:gap-3 w-full text-center sm:text-left">
+                <h3 className="text-primary text-xl sm:text-[24px] font-semibold leading-tight">Track Engagement</h3>
+                <p className="text-primary/80 text-sm sm:text-base font-normal leading-relaxed">
                   Monitor how many people are using your frame and sharing their photos.
                 </p>
               </div>
@@ -159,25 +159,25 @@ export default function Home() {
         <div className="mx-auto">
           <div className="flex flex-col lg:flex-row items-center">
             {/* Left Column - Text */}
-            <div className="w-full lg:w-1/2 pl-24">
-              <div className="flex flex-col gap-5">
-                <h2 className="text-[38px] font-bold text-[#f2fff2] leading-tight">
-                  Turn your campaign into<br/>  a shared visual moment.
+            <div className="w-full lg:w-1/2 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-24 py-12 sm:py-16 lg:py-20">
+              <div className="flex flex-col gap-4 sm:gap-5 text-center lg:text-left">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[38px] font-bold text-[#f2fff2] leading-tight">
+                  Turn your campaign into a shared visual moment.
                 </h2>
-                <p className="text-[18px] font-normal text-[#f2fff2] leading-relaxed">
-                  Create shareable photo frames that help your message spread<br/>across social media.
+                <p className="text-base sm:text-lg text-[#f2fff2]/90 leading-relaxed">
+                  Create shareable photo frames that help your message spread across social media.
                 </p>
                 {user ? (
                   <Link
                     href="/create"
-                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap w-fit"
+                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all shadow-lg hover:shadow-xl active:scale-95 w-full sm:w-auto"
                   >
                     Create Your Campaign
                   </Link>
                 ) : (
                   <Link
                     href="/signup"
-                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-md text-[16px] font-medium transition-colors whitespace-nowrap w-fit"
+                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all shadow-lg hover:shadow-xl active:scale-95 w-full sm:w-auto"
                   >
                     Get Started
                   </Link>
@@ -186,13 +186,14 @@ export default function Home() {
             </div>
 
             {/* Right Column - Image */}
-            <div className="w-full lg:w-1/2">
+            <div className="w-full lg:w-1/2 order-first lg:order-last">
               <Image
                 src="/images/Strip.png"
                 alt="CTA Visual"
                 width={720}
                 height={455}
                 className="w-full h-auto"
+                priority
               />
             </div>
           </div>
@@ -200,18 +201,18 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="flex flex-col items-center justify-center gap-2.5 py-8 px-4 sm:px-6 lg:px-[95px]">
-        <div className="flex items-center justify-between w-full max-w-8xl">
-          <Image
-            src="/logos/Logo-black.svg"
-            alt="Phrames Logo"
-            width={103}
-            height={25}
-            className="h-[24.7px] w-[103px]"
-          />
-          <div className="flex items-center gap-[23px]">
-            <p className="text-primary text-[16px] font-medium leading-normal whitespace-nowrap">
-              copyright reserved to <a href="http://cleffon.com">cleffon</a>
+      <footer className="py-6 sm:py-8 px-4 sm:px-6 lg:px-8 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <Image
+              src="/logos/Logo-black.svg"
+              alt="Phrames Logo"
+              width={103}
+              height={25}
+              className="h-6 w-auto"
+            />
+            <p className="text-primary/70 text-sm sm:text-base font-medium text-center sm:text-right">
+              copyright reserved to <a href="http://cleffon.com" className="text-secondary hover:underline">cleffon</a>
             </p>
           </div>
         </div>

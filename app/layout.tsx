@@ -69,12 +69,21 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="font-sans">
+    <html lang="en" className="scroll-smooth">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="theme-color" content="#00dd78" />
+      </head>
+      <body className="font-sans antialiased">
         <ErrorBoundary>
           <AuthProvider>
             <Navbar />
-            {children}
+            <main className="min-h-screen">
+              {children}
+            </main>
             <Toaster />
           </AuthProvider>
         </ErrorBoundary>

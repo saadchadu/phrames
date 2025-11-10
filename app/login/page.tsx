@@ -46,30 +46,30 @@ export default function LoginPage() {
 
   return (
     <AuthGuard requireAuth={false}>
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white py-12 px-4">
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center bg-white py-8 sm:py-12 px-4">
         {/* Form Container */}
         <div className="w-full max-w-[480px] flex flex-col items-center">
           {/* Header */}
-          <div className="flex flex-col items-center gap-2 mb-8 w-full">
-            <h2 className="text-primary text-[38px] font-bold leading-tight text-center">
+          <div className="flex flex-col items-center gap-2 mb-6 sm:mb-8 w-full">
+            <h2 className="text-primary text-2xl sm:text-3xl md:text-[38px] font-bold leading-tight text-center">
               Sign in to Phrames
             </h2>
-            <p className="text-primary/70 text-[16px] font-normal leading-normal text-center max-w-md">
+            <p className="text-primary/70 text-sm sm:text-base font-normal leading-normal text-center max-w-md px-4">
               Welcome back! Please sign in to your account.
             </p>
           </div>
           
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-sm w-full">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl w-full">
               <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
           
           {/* Form Card */}
-          <form onSubmit={handleEmailLogin} className="w-full bg-[#f2fff266] border border-[#00240033] rounded-2xl p-8 sm:p-10 flex flex-col gap-4 shadow-sm">
+          <form onSubmit={handleEmailLogin} className="w-full bg-[#f2fff266] border border-[#00240033] rounded-2xl p-6 sm:p-8 md:p-10 flex flex-col gap-4 shadow-sm">
             {/* Email Field */}
             <div className="flex flex-col gap-2 w-full">
-              <label htmlFor="email" className="text-primary text-[16px] font-semibold">
+              <label htmlFor="email" className="text-primary text-sm sm:text-base font-semibold">
                 Email address
               </label>
               <input
@@ -79,13 +79,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
             </div>
             
             {/* Password Field */}
             <div className="flex flex-col gap-2 w-full">
-              <label htmlFor="password" className="text-primary text-[16px] font-semibold">
+              <label htmlFor="password" className="text-primary text-sm sm:text-base font-semibold">
                 Password
               </label>
               <input
@@ -95,7 +95,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
             </div>
             
@@ -103,7 +103,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 active:scale-95 text-primary px-6 py-3.5 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-sm"
             >
               {loading ? (
                 <>
@@ -118,7 +118,7 @@ export default function LoginPage() {
             {/* Divider */}
             <div className="flex items-center justify-center gap-4 w-full my-2">
               <div className="flex-1 h-px bg-[#00240020]" />
-              <span className="text-[#00240099] text-[13px] font-medium whitespace-nowrap">
+              <span className="text-[#00240099] text-xs sm:text-sm font-medium whitespace-nowrap">
                 Or continue with
               </span>
               <div className="flex-1 h-px bg-[#00240020]" />
@@ -129,7 +129,7 @@ export default function LoginPage() {
               onClick={handleGoogleLogin}
               disabled={loading}
               type="button"
-              className="w-full inline-flex items-center justify-center gap-3 bg-white border border-[#00240020] hover:bg-gray-50 hover:border-[#00240033] text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-3 bg-white border border-[#00240020] hover:bg-gray-50 hover:border-[#00240033] active:scale-95 text-primary px-6 py-3.5 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -154,10 +154,10 @@ export default function LoginPage() {
           </form>
 
           {/* Sign Up Link */}
-          <div className="flex items-center justify-center gap-2 w-full mt-6">
-            <p className="text-[14px] text-center">
+          <div className="flex items-center justify-center gap-2 w-full mt-4 sm:mt-6 px-4">
+            <p className="text-sm sm:text-base text-center">
               <span className="text-primary/70">Don&apos;t have an account? </span>
-              <Link href="/signup" className="text-secondary hover:text-secondary/90 font-semibold transition-colors">
+              <Link href="/signup" className="text-secondary hover:text-secondary/90 font-semibold transition-colors underline-offset-2 hover:underline">
                 Sign up here
               </Link>
             </p>

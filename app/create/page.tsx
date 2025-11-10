@@ -133,39 +133,39 @@ export default function CreateCampaignPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white py-12 px-4">
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-start bg-white py-6 sm:py-12 px-4">
         {/* Form Container */}
         <div className="w-full max-w-[900px] flex flex-col items-center">
           {/* Header */}
-          <div className="flex flex-col items-center gap-2 mb-8 w-full">
+          <div className="flex flex-col items-center gap-2 mb-6 sm:mb-8 w-full">
             <Link
               href="/dashboard"
-              className="self-start inline-flex items-center text-primary hover:text-secondary mb-4 transition-colors text-[15px] font-medium"
+              className="self-start inline-flex items-center text-primary hover:text-secondary active:scale-95 mb-3 sm:mb-4 transition-all text-sm sm:text-base font-medium"
             >
               <ArrowLeftIcon className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Link>
-            <h2 className="text-primary text-[38px] font-bold leading-tight text-center">
+            <h2 className="text-primary text-2xl sm:text-3xl md:text-[38px] font-bold leading-tight text-center">
               Create New Campaign
             </h2>
-            <p className="text-primary/70 text-[16px] font-normal leading-normal text-center max-w-md">
+            <p className="text-primary/70 text-sm sm:text-base font-normal leading-normal text-center max-w-md px-4">
               Upload a PNG frame and set up your campaign
             </p>
           </div>
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-sm w-full">
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl w-full">
               <p className="text-red-600 text-sm">{error}</p>
             </div>
           )}
           
           {/* Form Card */}
-          <form onSubmit={handleSubmit} className="w-full bg-[#f2fff266] border border-[#00240033] rounded-2xl p-8 sm:p-10 flex flex-col gap-6 shadow-sm">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <form onSubmit={handleSubmit} className="w-full bg-[#f2fff266] border border-[#00240033] rounded-2xl p-5 sm:p-8 md:p-10 flex flex-col gap-5 sm:gap-6 shadow-sm">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
               {/* Left Column - Form Fields */}
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4 sm:gap-6">
                 {/* Campaign Name */}
                 <div className="flex flex-col gap-2 w-full">
-                  <label htmlFor="campaignName" className="text-primary text-[16px] font-semibold">
+                  <label htmlFor="campaignName" className="text-primary text-sm sm:text-base font-semibold">
                     Campaign Name
                   </label>
                   <input
@@ -174,14 +174,14 @@ export default function CreateCampaignPage() {
                     value={formData.campaignName}
                     onChange={(e) => handleNameChange(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                    className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
                     placeholder="Enter campaign name"
                   />
                 </div>
 
                 {/* URL Slug */}
                 <div className="flex flex-col gap-2 w-full">
-                  <label htmlFor="slug" className="text-primary text-[16px] font-semibold">
+                  <label htmlFor="slug" className="text-primary text-sm sm:text-base font-semibold">
                     URL Slug
                   </label>
                   <input
@@ -197,15 +197,15 @@ export default function CreateCampaignPage() {
                       setFormData(prev => ({ ...prev, slug: sanitizedSlug }))
                     }}
                     required
-                    className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                    className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
                     placeholder="campaign-url-slug"
                   />
-                  <p className="text-[13px] text-primary/60">Only lowercase letters, numbers, and hyphens allowed</p>
+                  <p className="text-xs sm:text-sm text-primary/60">Only lowercase letters, numbers, and hyphens allowed</p>
                 </div>
 
                 {/* Description */}
                 <div className="flex flex-col gap-2 w-full">
-                  <label htmlFor="description" className="text-primary text-[16px] font-semibold">
+                  <label htmlFor="description" className="text-primary text-sm sm:text-base font-semibold">
                     Description
                   </label>
                   <textarea
@@ -213,41 +213,41 @@ export default function CreateCampaignPage() {
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
-                    className="w-full px-4 py-3 border border-[#00240033] rounded-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white resize-none"
+                    className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white resize-none"
                     placeholder="Optional description for your campaign"
                   />
                 </div>
 
                 {/* Visibility */}
                 <div className="flex flex-col gap-2 w-full">
-                  <label className="text-primary text-[16px] font-semibold">
+                  <label className="text-primary text-sm sm:text-base font-semibold">
                     Visibility
                   </label>
                   <div className="flex flex-col gap-3">
-                    <label className="flex items-start gap-2 cursor-pointer">
+                    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl hover:bg-white/50 transition-colors">
                       <input
                         type="radio"
                         value="Public"
                         checked={formData.visibility === 'Public'}
                         onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value as 'Public' | 'Unlisted' }))}
-                        className="mt-1 text-secondary focus:ring-secondary"
+                        className="mt-1 text-secondary focus:ring-secondary flex-shrink-0"
                       />
                       <div className="flex flex-col">
-                        <span className="text-primary text-[16px] font-medium">Public</span>
-                        <span className="text-primary/60 text-[14px]">Anyone can find and use this campaign</span>
+                        <span className="text-primary text-sm sm:text-base font-medium">Public</span>
+                        <span className="text-primary/60 text-xs sm:text-sm">Anyone can find and use this campaign</span>
                       </div>
                     </label>
-                    <label className="flex items-start gap-2 cursor-pointer">
+                    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl hover:bg-white/50 transition-colors">
                       <input
                         type="radio"
                         value="Unlisted"
                         checked={formData.visibility === 'Unlisted'}
                         onChange={(e) => setFormData(prev => ({ ...prev, visibility: e.target.value as 'Public' | 'Unlisted' }))}
-                        className="mt-1 text-secondary focus:ring-secondary"
+                        className="mt-1 text-secondary focus:ring-secondary flex-shrink-0"
                       />
                       <div className="flex flex-col">
-                        <span className="text-primary text-[16px] font-medium">Unlisted</span>
-                        <span className="text-primary/60 text-[14px]">Only people with the link can access</span>
+                        <span className="text-primary text-sm sm:text-base font-medium">Unlisted</span>
+                        <span className="text-primary/60 text-xs sm:text-sm">Only people with the link can access</span>
                       </div>
                     </label>
                   </div>
@@ -256,20 +256,20 @@ export default function CreateCampaignPage() {
 
               {/* Right Column - File Upload */}
               <div className="flex flex-col gap-2 w-full">
-                  <label className="text-primary text-[16px] font-semibold">
+                  <label className="text-primary text-sm sm:text-base font-semibold">
                     Frame Image
                   </label>
-                  <div className="border-2 border-dashed border-[#00240033] rounded-lg p-8 flex flex-col items-center justify-center gap-4 bg-white min-h-[400px]">
+                  <div className="border-2 border-dashed border-[#00240033] rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center gap-4 bg-white min-h-[300px] sm:min-h-[400px]">
                     {preview ? (
                       <div className="flex flex-col items-center gap-4 w-full">
                         <img
                           src={preview}
                           alt="Preview"
-                          className="max-h-64 rounded-lg"
+                          className="max-h-48 sm:max-h-64 rounded-xl shadow-md"
                         />
-                        <div className="flex gap-3">
-                          <label htmlFor="file-upload-change" className="cursor-pointer">
-                            <div className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                          <label htmlFor="file-upload-change" className="cursor-pointer flex-1 sm:flex-initial">
+                            <div className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 active:scale-95 text-primary px-5 sm:px-6 py-3 rounded-xl text-sm sm:text-base font-semibold transition-all w-full">
                               Change Image
                             </div>
                             <input
@@ -286,23 +286,23 @@ export default function CreateCampaignPage() {
                               setFile(null)
                               setPreview(null)
                             }}
-                            className="inline-flex items-center justify-center gap-2.5 border border-red-400 text-red-400 hover:bg-red-50 px-6 py-3 rounded-sm text-[16px] font-semibold transition-all"
+                            className="inline-flex items-center justify-center gap-2.5 border border-red-400 text-red-400 hover:bg-red-50 active:scale-95 px-5 sm:px-6 py-3 rounded-xl text-sm sm:text-base font-semibold transition-all"
                           >
                             Remove
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center gap-5">
-                        <svg className="w-12 h-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                      <div className="flex flex-col items-center gap-4 sm:gap-5">
+                        <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                           <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                        <div className="flex flex-col items-center gap-4">
-                          <p className="text-gray-500 text-[14px] text-center">
+                        <div className="flex flex-col items-center gap-3 sm:gap-4">
+                          <p className="text-gray-500 text-xs sm:text-sm text-center px-4">
                             Drag and drop your PNG file here, or click to browse
                           </p>
-                          <label htmlFor="file-upload" className="cursor-pointer">
-                            <div className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all">
+                          <label htmlFor="file-upload" className="cursor-pointer w-full sm:w-auto">
+                            <div className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 active:scale-95 text-primary px-5 sm:px-6 py-3 rounded-xl text-sm sm:text-base font-semibold transition-all w-full">
                               Upload PNG Frame
                             </div>
                             <input
@@ -317,7 +317,7 @@ export default function CreateCampaignPage() {
                       </div>
                     )}
                   </div>
-                  <p className="text-primary/60 text-[12px] leading-[18px]">
+                  <p className="text-primary/60 text-xs leading-relaxed">
                     PNG format with transparency required • Minimum size: 1080×1080px • Maximum file size: 10MB
                   </p>
                 </div>
@@ -326,7 +326,7 @@ export default function CreateCampaignPage() {
             <button
               type="submit"
               disabled={loading || !file}
-              className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 py-3 rounded-sm text-[16px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 active:scale-95 text-primary px-6 py-3.5 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {loading ? (
                 <>

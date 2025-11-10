@@ -501,26 +501,26 @@ export default function CampaignPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-11">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-11">
         {/* Compact Header - Shows when photo is uploaded */}
         {userImage && (
-          <div className="mb-8 bg-white border border-[#00240010] rounded-2xl p-7">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              {/* Left - Title & Creator */}
+          <div className="mb-6 sm:mb-8 bg-white border border-[#00240010] rounded-2xl p-4 sm:p-6 lg:p-7 shadow-sm">
+            <div className="flex flex-col gap-3">
+              {/* Title & Creator */}
               <div className="flex-1">
-                <h1 className="text-[22px] font-semibold text-primary mb-1">{campaign.campaignName}</h1>
-                <div className="flex items-center gap-2 text-[14px]">
+                <h1 className="text-lg sm:text-xl lg:text-[22px] font-semibold text-primary mb-2">{campaign.campaignName}</h1>
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
                   {creatorProfile && (
                     <div className="flex items-center gap-2">
                       {creatorProfile.photoURL ? (
                         <img
                           src={creatorProfile.photoURL}
                           alt={creatorProfile.displayName || 'Creator'}
-                          className="w-7 h-7 rounded-full object-cover"
+                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-secondary/20 flex items-center justify-center">
-                          <span className="text-primary font-medium text-[12px]">
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-secondary/20 flex items-center justify-center">
+                          <span className="text-primary font-medium text-xs">
                             {(creatorProfile.displayName || 'U').charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -531,12 +531,12 @@ export default function CampaignPage() {
                 </div>
               </div>
               
-              {/* Right - Stats */}
-              <div className="flex items-center gap-3 text-[14px]">
+              {/* Stats */}
+              <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm flex-wrap">
                 <span className="text-primary/60">{campaign.supportersCount} supporters</span>
                 <span className="text-primary/30">•</span>
-                <div className="flex items-center gap-2">
-                  <div className={`w-[9px] h-[9px] rounded-full ${
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className={`w-2 h-2 rounded-full ${
                     campaign.status === 'Active' ? 'bg-secondary' : 'bg-gray-400'
                   }`} />
                   <span className="text-primary/60">{campaign.status}</span>
@@ -547,16 +547,16 @@ export default function CampaignPage() {
         )}
 
         <div className={`mx-auto ${userImage ? 'max-w-6xl' : 'max-w-5xl'}`}>
-          <div className={`grid grid-cols-1 ${userImage ? 'lg:grid-cols-2' : 'lg:grid-cols-2'} gap-9`}>
+          <div className={`grid grid-cols-1 ${userImage ? 'lg:grid-cols-2' : 'lg:grid-cols-2'} gap-6 sm:gap-8 lg:gap-9`}>
             {/* Left Column - Frame Preview */}
-            <div className="flex flex-col gap-4">
-              <div className="bg-white border border-[#00240010] rounded-2xl p-7">
-                <h2 className="text-[19px] font-semibold text-primary mb-4">Frame Preview</h2>
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <div className="bg-white border border-[#00240010] rounded-2xl p-4 sm:p-6 lg:p-7 shadow-sm">
+                <h2 className="text-base sm:text-lg lg:text-[19px] font-semibold text-primary mb-3 sm:mb-4">Frame Preview</h2>
             
                 {/* Layered Frame Display */}
                 <div 
                   id="final-image-container" 
-                  className="aspect-square bg-white rounded-xl overflow-hidden mb-4 relative w-full border border-[#00240010]"
+                  className="aspect-square bg-white rounded-xl overflow-hidden mb-3 sm:mb-4 relative w-full border border-[#00240010] touch-none"
                 >
               {/* User Photo Canvas (Background Layer) */}
               {userImage && (
@@ -643,23 +643,23 @@ export default function CampaignPage() {
               )}
               
                   {isDragging && (
-                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-primary text-white px-2.5 py-1 rounded-md text-xs font-medium" style={{ zIndex: 4 }}>
+                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-primary text-white px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium shadow-lg" style={{ zIndex: 4 }}>
                       Drag to position
                     </div>
                   )}
                 </div>
 
-                <p className="text-[14px] text-primary/60 text-center mb-5">
-                  {!userImage ? 'Your photo will appear behind the transparent areas' : 'Drag to reposition'}
+                <p className="text-xs sm:text-sm text-primary/60 text-center mb-4 sm:mb-5">
+                  {!userImage ? 'Your photo will appear behind the transparent areas' : 'Drag to reposition • Pinch to zoom'}
                 </p>
 
                 {/* Upload Button */}
                 {!userImage && (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full bg-secondary hover:bg-secondary/90 text-primary px-7 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all font-semibold text-[16px]"
+                    className="w-full bg-secondary hover:bg-secondary/90 active:scale-95 text-primary px-6 sm:px-7 py-3.5 sm:py-4 rounded-2xl flex items-center justify-center gap-2 transition-all font-semibold text-base sm:text-lg shadow-sm"
                   >
-                    <PhotoIcon className="w-6 h-6" />
+                    <PhotoIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                     <span>Choose Photo</span>
                   </button>
                 )}
@@ -676,20 +676,20 @@ export default function CampaignPage() {
 
             {/* Right Column - Campaign Details (before photo) or Controls (after photo) */}
             {!userImage ? (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3 sm:gap-4">
                 {/* Campaign Details */}
-                <div className="bg-white border border-[#00240010] rounded-2xl p-8">
-                  <h1 className="text-[26px] font-semibold text-primary mb-1 leading-tight">{campaign.campaignName}</h1>
+                <div className="bg-white border border-[#00240010] rounded-2xl p-5 sm:p-6 lg:p-8 shadow-sm">
+                  <h1 className="text-xl sm:text-2xl lg:text-[26px] font-semibold text-primary mb-2 sm:mb-3 leading-tight">{campaign.campaignName}</h1>
                   {campaign.description && (
-                    <p className="text-primary/70 text-[16px] leading-relaxed mb-4">{campaign.description}</p>
+                    <p className="text-primary/70 text-sm sm:text-base leading-relaxed mb-4 sm:mb-5">{campaign.description}</p>
                   )}
                   
                   {/* Stats */}
-                  <div className="flex items-center gap-3 text-[15px] mb-7 pb-7 border-b border-[#00240010]">
+                  <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm mb-5 sm:mb-7 pb-5 sm:pb-7 border-b border-[#00240010] flex-wrap">
                     <span className="text-primary/60">{campaign.supportersCount} supporters</span>
                     <span className="text-primary/30">•</span>
-                    <div className="flex items-center gap-2">
-                      <div className={`w-[10px] h-[10px] rounded-full ${
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${
                         campaign.status === 'Active' ? 'bg-secondary' : 'bg-gray-400'
                       }`} />
                       <span className="text-primary/60">{campaign.status}</span>
@@ -697,18 +697,18 @@ export default function CampaignPage() {
                   </div>
 
                   {/* Creator Info */}
-                  <div className="flex items-center gap-3 text-[15px]">
+                  <div className="flex items-center gap-3 text-sm sm:text-base">
                     {creatorProfile && (
                       <>
                         {creatorProfile.photoURL ? (
                           <img
                             src={creatorProfile.photoURL}
                             alt={creatorProfile.displayName || 'Creator'}
-                            className="w-12 h-12 rounded-full object-cover"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center">
-                            <span className="text-primary font-semibold text-[18px]">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0">
+                            <span className="text-primary font-semibold text-base sm:text-lg">
                               {(creatorProfile.displayName || 'U').charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -716,7 +716,7 @@ export default function CampaignPage() {
                         <div>
                           <p className="text-primary font-semibold">{creatorProfile.displayName || 'Anonymous'}</p>
                           {campaign.createdAt && (
-                            <p className="text-primary/60 text-[14px]">
+                            <p className="text-primary/60 text-xs sm:text-sm">
                               Created {new Date(campaign.createdAt).toLocaleDateString('en-US', { 
                                 month: 'short', 
                                 day: 'numeric', 
@@ -731,34 +731,35 @@ export default function CampaignPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3 sm:gap-4">
                 {/* Change Photo Button */}
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-white border border-[#00240010] hover:border-[#00240020] text-primary px-7 py-4 rounded-2xl font-semibold text-[16px] transition-all"
+                  className="w-full bg-white border border-[#00240010] hover:border-[#00240020] active:scale-95 text-primary px-6 sm:px-7 py-3.5 sm:py-4 rounded-2xl font-semibold text-base sm:text-lg transition-all shadow-sm"
                 >
                   Change Photo
                 </button>
 
                 {/* Adjust & Download Section */}
-                <div className="bg-white border border-[#00240010] rounded-2xl p-7">
-                  <h3 className="text-[19px] font-semibold text-primary mb-5">Adjust & Download</h3>
+                <div className="bg-white border border-[#00240010] rounded-2xl p-5 sm:p-6 lg:p-7 shadow-sm">
+                  <h3 className="text-base sm:text-lg lg:text-[19px] font-semibold text-primary mb-4 sm:mb-5">Adjust & Download</h3>
                   
                   {/* Zoom Slider */}
-                  <div className="mb-5">
+                  <div className="mb-4 sm:mb-5">
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-[14px] font-medium text-primary">Zoom</label>
-                      <span className="text-[14px] text-primary/70 font-semibold">
+                      <label className="text-xs sm:text-sm font-medium text-primary">Zoom</label>
+                      <span className="text-xs sm:text-sm text-primary/70 font-semibold">
                         {Math.round(transform.scale * 100)}%
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <button
                         onClick={() => handleZoom(-0.1)}
-                        className="p-2.5 hover:bg-[#00240005] rounded-xl transition-all"
+                        className="p-2 sm:p-2.5 hover:bg-[#00240005] active:scale-95 rounded-xl transition-all flex-shrink-0"
                         title="Zoom Out"
+                        aria-label="Zoom out"
                       >
-                        <MagnifyingGlassMinusIcon className="h-6 w-6 text-primary" />
+                        <MagnifyingGlassMinusIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                       </button>
                       
                       <input
@@ -770,7 +771,7 @@ export default function CampaignPage() {
                           const newScale = parseInt(e.target.value) / 100
                           setTransform(prev => ({ ...prev, scale: newScale }))
                         }}
-                        className="flex-1 h-2 bg-[#00240010] rounded-xl appearance-none cursor-pointer slider"
+                        className="flex-1 h-2 bg-[#00240010] rounded-xl appearance-none cursor-pointer slider touch-none"
                         style={{
                           background: `linear-gradient(to right, #00dd78 0%, #00dd78 ${((transform.scale * 100 - 10) / (500 - 10)) * 100}%, #00240010 ${((transform.scale * 100 - 10) / (500 - 10)) * 100}%, #00240010 100%)`
                         }}
@@ -778,42 +779,43 @@ export default function CampaignPage() {
                       
                       <button
                         onClick={() => handleZoom(0.1)}
-                        className="p-2.5 hover:bg-[#00240005] rounded-xl transition-all"
+                        className="p-2 sm:p-2.5 hover:bg-[#00240005] active:scale-95 rounded-xl transition-all flex-shrink-0"
                         title="Zoom In"
+                        aria-label="Zoom in"
                       >
-                        <MagnifyingGlassPlusIcon className="h-6 w-6 text-primary" />
+                        <MagnifyingGlassPlusIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                       </button>
                     </div>
                   </div>
 
                   <button
                     onClick={handleReset}
-                    className="w-full px-6 py-3.5 bg-white border border-[#00240010] hover:border-[#00240020] text-primary rounded-2xl text-[14px] font-medium transition-all mb-5"
+                    className="w-full px-5 sm:px-6 py-3 sm:py-3.5 bg-white border border-[#00240010] hover:border-[#00240020] active:scale-95 text-primary rounded-2xl text-sm sm:text-base font-medium transition-all mb-4 sm:mb-5 shadow-sm"
                   >
                     Reset Position
                   </button>
 
-                  <p className="text-[13px] text-primary/60 text-center mb-5">
+                  <p className="text-xs sm:text-sm text-primary/60 text-center mb-4 sm:mb-5">
                     Drag to move • Use slider to zoom
                   </p>
 
                   {/* Divider */}
-                  <div className="border-t border-[#00240010] my-5"></div>
+                  <div className="border-t border-[#00240010] my-4 sm:my-5"></div>
 
                   {/* Download Button */}
                   <button
                     onClick={handleDownload}
                     disabled={processing}
-                    className="w-full bg-secondary hover:bg-secondary/90 text-primary px-7 py-4 rounded-2xl font-semibold text-[16px] flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+                    className="w-full bg-secondary hover:bg-secondary/90 active:scale-95 text-primary px-6 sm:px-7 py-3.5 sm:py-4 rounded-2xl font-semibold text-base sm:text-lg flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-sm"
                   >
                     {processing ? (
                       <>
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-primary"></div>
                         <span>Processing...</span>
                       </>
                     ) : (
                       <>
-                        <ArrowDownTrayIcon className="h-6 w-6" />
+                        <ArrowDownTrayIcon className="h-5 w-5 sm:h-6 sm:w-6" />
                         <span>Download Image</span>
                       </>
                     )}
