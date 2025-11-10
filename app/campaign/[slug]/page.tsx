@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { getCampaignBySlug, incrementSupportersCount, Campaign } from '@/lib/firestore'
+import { getCampaignBySlug, incrementSupportersCount, incrementCampaignVisit, incrementCampaignDownload, Campaign } from '@/lib/firestore'
 import { getUserProfile, UserProfile } from '@/lib/auth'
 import { ArrowDownTrayIcon, PhotoIcon, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon } from '@heroicons/react/24/outline'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import CampaignQRCode from '@/components/CampaignQRCode'
+import { useAuth } from '@/components/AuthProvider'
 
 // Prevent static generation for this dynamic page
 export const dynamic = 'force-dynamic'
@@ -19,6 +21,7 @@ interface ImageTransform {
 export default function CampaignPage() {
   const params = useParams()
   const slug = params.slug as string
+  const { user } = useAuth()
   
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [creatorProfile, setCreatorProfile] = useState<UserProfile | null>(null)
@@ -28,6 +31,7 @@ export default function CampaignPage() {
   const [transform, setTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [showQRCode, setShowQRCode] = useState(false)
   
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -52,6 +56,23 @@ export default function CampaignPage() {
       if (campaignData?.createdBy) {
         const profile = await getUserProfile(campaignData.createdBy)
         setCreatorProfile(profile)
+      }
+
+      // Track visit (only once per session)
+      if (campaignData?.id) {
+        const visitKey = `visited_${campaignData.id}`
+        const hasVisited = sessionStorage.getItem(visitKey)
+        
+        if (!hasVisited) {
+          try {
+            await incrementCampaignVisit(campaignData.id)
+            sessionStorage.setItem(visitKey, 'true')
+            console.log('Campaign visit tracked')
+          } catch (error) {
+            console.error('Error tracking visit:', error)
+            // Don't block page load on tracking error
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading campaign:', error)
@@ -454,10 +475,19 @@ export default function CampaignPage() {
         console.log('🎉 Single combined image downloaded!')
       }, 'image/png', 1.0)
 
-      // Increment supporters count
+      // Increment supporters count and track download
       if (campaign.id) {
         await incrementSupportersCount(campaign.id)
         setCampaign(prev => prev ? { ...prev, supportersCount: prev.supportersCount + 1 } : null)
+        
+        // Track download for analytics
+        try {
+          await incrementCampaignDownload(campaign.id)
+          console.log('Campaign download tracked')
+        } catch (error) {
+          console.error('Error tracking download:', error)
+          // Don't block download on tracking error
+        }
       }
 
     } catch (error) {
@@ -729,6 +759,31 @@ export default function CampaignPage() {
                     )}
                   </div>
                 </div>
+
+                {/* QR Code Section - Only visible to campaign owner */}
+                {user && campaign.createdBy === user.uid && (
+                  <div className="bg-white border border-[#00240010] rounded-2xl p-5 sm:p-6 lg:p-8 shadow-sm">
+                    <button
+                      onClick={() => setShowQRCode(!showQRCode)}
+                      className="w-full flex items-center justify-between text-left mb-4"
+                    >
+                      <h3 className="text-base sm:text-lg font-semibold text-primary">Campaign QR Code</h3>
+                      <span className="text-primary/60 text-sm">{showQRCode ? 'Hide' : 'Show'}</span>
+                    </button>
+                    {showQRCode && (
+                      <div className="pt-2">
+                        <p className="text-primary/70 text-xs sm:text-sm mb-4">
+                          Share your campaign with a QR code
+                        </p>
+                        <CampaignQRCode 
+                          slug={campaign.slug} 
+                          campaignName={campaign.campaignName}
+                          size={160}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-col gap-3 sm:gap-4">

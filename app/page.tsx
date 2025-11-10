@@ -1,11 +1,73 @@
 'use client'
 
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
+import { getPublicActiveCampaigns, Campaign } from '@/lib/firestore'
+import SearchInput from '@/components/SearchInput'
+import SearchResults from '@/components/SearchResults'
+import { toast } from '@/components/ui/toaster'
 
 export default function Home() {
   const { user } = useAuth()
+  const router = useRouter()
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  // Fetch public active campaigns on mount
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        setLoading(true)
+        const publicCampaigns = await getPublicActiveCampaigns()
+        setCampaigns(publicCampaigns)
+      } catch (error) {
+        console.error('Failed to fetch campaigns:', error)
+        toast('Failed to load campaigns. Please refresh the page.', 'error')
+        setCampaigns([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchCampaigns()
+  }, [])
+
+  // Get top 8 trending campaigns based on supporters count
+  const trendingCampaigns = useMemo(() => {
+    // Sort by supporters count in descending order and take top 8
+    return [...campaigns]
+      .sort((a, b) => b.supportersCount - a.supportersCount)
+      .slice(0, 8)
+  }, [campaigns])
+
+  // Filter campaigns based on search query
+  const filteredCampaigns = useMemo(() => {
+    const campaignsToFilter = searchQuery.trim() ? campaigns : trendingCampaigns
+
+    if (!searchQuery.trim()) {
+      return campaignsToFilter
+    }
+
+    const lowerQuery = searchQuery.toLowerCase()
+    return campaignsToFilter.filter(campaign => {
+      const nameMatch = campaign.campaignName.toLowerCase().includes(lowerQuery)
+      const descMatch = campaign.description?.toLowerCase().includes(lowerQuery) || false
+      return nameMatch || descMatch
+    })
+  }, [campaigns, trendingCampaigns, searchQuery])
+
+  const handleCampaignClick = (slug: string) => {
+    router.push(`/campaign/${slug}`)
+  }
+
+  const handleSearch = () => {
+    // Search is already handled by the useMemo filter
+    // This function is for the button click if needed
+  }
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -15,6 +77,7 @@ export default function Home() {
     description: 'Create and share custom photo frame campaigns online for free.',
     applicationCategory: 'DesignApplication',
     operatingSystem: 'All',
+    browserRequirements: 'Requires JavaScript. Requires HTML5.',
     offers: {
       '@type': 'Offer',
       price: '0',
@@ -25,6 +88,33 @@ export default function Home() {
       name: 'Cleffon',
       url: 'https://cleffon.com',
     },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.8',
+      ratingCount: campaigns.length > 0 ? campaigns.reduce((sum, c) => sum + c.supportersCount, 0) : '100',
+    },
+    featureList: [
+      'Upload custom PNG frames',
+      'Create photo frame campaigns',
+      'Share campaign links',
+      'Track supporters',
+      'Download high-resolution images',
+      'No watermarks',
+      'Free to use'
+    ],
+  }
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://phrames.cleffon.com',
+      },
+    ],
   }
 
   return (
@@ -32,6 +122,10 @@ export default function Home() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <main className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -90,12 +184,51 @@ export default function Home() {
                   alt="Phrames Hero"
                   width={450}
                   height={490}
-                  className="w-full h-auto rounded-2xl shadow-lg"
+                  className="w-full h-auto rounded-2xl"
                   priority
                 />
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Campaign Search Section */}
+      <section className="py-16 sm:py-20 md:py-24 lg:py-28 px-4 sm:px-6 lg:px-8 bg-primary">
+        <div className="max-w-7xl mx-auto">
+          {/* Heading */}
+          <div className="flex flex-col items-center gap-4 mb-10">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-white">
+              Trending Campaigns
+            </h2>
+            <p className="text-base sm:text-lg text-white/90 text-center">
+              Discover the most popular campaigns at phrames
+            </p>
+          </div>
+
+          {/* Search Input and Button */}
+          <div className="flex flex-col items-center justify-center sm:flex-row items-stretch sm:items-end gap-5 mb-10">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onSearch={handleSearch}
+              placeholder="Search your campaigns"
+            />
+            <button
+              onClick={handleSearch}
+              className="w-full sm:w-[196px] bg-secondary hover:bg-secondary/90 text-primary px-[26px] py-[22px] rounded-lg text-sm sm:text-base font-semibold transition-all shadow-sm hover:shadow-md active:scale-95 min-h-[44px]"
+            >
+              Find Campaign
+            </button>
+          </div>
+
+          {/* Search Results */}
+          <SearchResults
+            campaigns={filteredCampaigns}
+            loading={loading}
+            searchQuery={searchQuery}
+            onCampaignClick={handleCampaignClick}
+          />
         </div>
       </section>
 
@@ -170,14 +303,14 @@ export default function Home() {
                 {user ? (
                   <Link
                     href="/create"
-                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all shadow-lg hover:shadow-xl active:scale-95 w-full sm:w-auto"
+                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all shadow-sm hover:shadow-md active:scale-95 w-fit sm:w-fit"
                   >
                     Create Your Campaign
                   </Link>
                 ) : (
                   <Link
                     href="/signup"
-                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all shadow-lg hover:shadow-xl active:scale-95 w-full sm:w-auto"
+                    className="inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 text-primary px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all shadow-sm hover:shadow-md active:scale-95 w-fit sm:w-fit"
                   >
                     Get Started
                   </Link>

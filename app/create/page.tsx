@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
 import { createCampaign, generateUniqueSlug } from '@/lib/firestore'
-import { uploadImage, validateImageFile, checkImageDimensions } from '@/lib/storage'
+import { uploadImage, validateFrameImage } from '@/lib/storage'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
@@ -53,18 +53,13 @@ export default function CreateCampaignPage() {
     const selectedFile = e.target.files?.[0]
     if (!selectedFile) return
 
-    // Validate file
-    const validation = validateImageFile(selectedFile)
-    if (!validation.valid) {
-      setError(validation.error || 'Invalid file')
-      return
-    }
+    setError('Validating image...')
 
     try {
-      // Check dimensions
-      const dimensions = await checkImageDimensions(selectedFile)
-      if (dimensions.width < 1080 || dimensions.height < 1080) {
-        setError('Image must be at least 1080x1080 pixels')
+      // Validate frame image (checks transparency, aspect ratio, and dimensions)
+      const validation = await validateFrameImage(selectedFile)
+      if (!validation.valid) {
+        setError(validation.error || 'Invalid file')
         return
       }
 
@@ -189,12 +184,22 @@ export default function CreateCampaignPage() {
                     type="text"
                     value={formData.slug}
                     onChange={(e) => {
-                      // Automatically convert spaces and special characters to hyphens
-                      const sanitizedSlug = e.target.value
-                        .toLowerCase()
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/(^-|-$)/g, '')
+                      // Allow only lowercase letters, numbers, and hyphens
+                      let sanitizedSlug = e.target.value.toLowerCase()
+                      // Convert spaces to hyphens
+                      sanitizedSlug = sanitizedSlug.replace(/\s+/g, '-')
+                      // Remove invalid characters but keep hyphens
+                      sanitizedSlug = sanitizedSlug.replace(/[^a-z0-9-]/g, '')
+                      // Replace multiple consecutive hyphens with single hyphen
+                      sanitizedSlug = sanitizedSlug.replace(/--+/g, '-')
                       setFormData(prev => ({ ...prev, slug: sanitizedSlug }))
+                    }}
+                    onBlur={(e) => {
+                      // Clean up leading/trailing hyphens only on blur
+                      const cleanedSlug = e.target.value.replace(/^-+|-+$/g, '')
+                      if (cleanedSlug !== e.target.value) {
+                        setFormData(prev => ({ ...prev, slug: cleanedSlug }))
+                      }
                     }}
                     required
                     className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"

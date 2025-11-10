@@ -7,7 +7,7 @@ import {
   onAuthStateChanged,
   User
 } from 'firebase/auth'
-import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc, query, collection, where, getDocs } from 'firebase/firestore'
 import { auth, db } from './firebase'
 
 const googleProvider = new GoogleAuthProvider()
@@ -15,9 +15,77 @@ const googleProvider = new GoogleAuthProvider()
 export interface UserProfile {
   uid: string
   email: string
+  username?: string
   displayName?: string
+  bio?: string
   photoURL?: string
+  avatarURL?: string
+  totalDownloads: number
+  totalVisits: number
   createdAt: Date
+  joinedAt: Date
+}
+
+// Username validation
+export const validateUsername = (username: string): { valid: boolean; error?: string } => {
+  if (!username || username.length < 3) {
+    return { valid: false, error: 'Username must be at least 3 characters' }
+  }
+  if (username.length > 30) {
+    return { valid: false, error: 'Username must be less than 30 characters' }
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return { valid: false, error: 'Username can only contain letters, numbers, hyphens, and underscores' }
+  }
+  return { valid: true }
+}
+
+// Generate username from email
+export const generateUsernameFromEmail = (email: string): string => {
+  const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '')
+  return baseUsername || 'user'
+}
+
+// Check if username is unique
+export const isUsernameUnique = async (username: string, excludeUid?: string): Promise<boolean> => {
+  try {
+    const usersRef = collection(db, 'users')
+    const q = query(usersRef, where('username', '==', username.toLowerCase()))
+    const querySnapshot = await getDocs(q)
+    
+    if (querySnapshot.empty) {
+      return true
+    }
+    
+    // If excludeUid is provided, check if the only match is the current user
+    if (excludeUid && querySnapshot.size === 1) {
+      const doc = querySnapshot.docs[0]
+      return doc.id === excludeUid
+    }
+    
+    return false
+  } catch (error) {
+    console.error('Error checking username uniqueness:', error)
+    return false
+  }
+}
+
+// Get user by username
+export const getUserByUsername = async (username: string): Promise<UserProfile | null> => {
+  try {
+    const usersRef = collection(db, 'users')
+    const q = query(usersRef, where('username', '==', username.toLowerCase()))
+    const querySnapshot = await getDocs(q)
+    
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0]
+      return { ...doc.data(), uid: doc.id } as UserProfile
+    }
+    return null
+  } catch (error) {
+    console.error('Error getting user by username:', error)
+    return null
+  }
 }
 
 // Auth functions
@@ -75,18 +143,47 @@ export const createUserProfile = async (user: User, customDisplayName?: string, 
   if (!userSnap.exists()) {
     const { uid, email } = user
     const createdAt = new Date()
+    
+    // Generate initial username from email
+    let baseUsername = generateUsernameFromEmail(email || '')
+    let username = baseUsername
+    let counter = 1
+    
+    // Ensure username is unique
+    while (!(await isUsernameUnique(username))) {
+      username = `${baseUsername}${counter}`
+      counter++
+    }
 
     try {
       await setDoc(userRef, {
         uid,
         email,
+        username: username.toLowerCase(),
         displayName: customDisplayName || user.displayName || email?.split('@')[0] || 'User',
+        bio: '',
         photoURL: customPhotoURL || user.photoURL || '',
-        createdAt
+        avatarURL: customPhotoURL || user.photoURL || '',
+        totalDownloads: 0,
+        totalVisits: 0,
+        createdAt,
+        joinedAt: createdAt
       })
     } catch (error) {
       console.error('Error creating user profile:', error)
     }
+  }
+}
+
+// Update user profile
+export const updateUserProfile = async (uid: string, updates: Partial<UserProfile>) => {
+  try {
+    const userRef = doc(db, 'users', uid)
+    await setDoc(userRef, updates, { merge: true })
+    return { error: null }
+  } catch (error: any) {
+    console.error('Error updating user profile:', error)
+    return { error: error.message }
   }
 }
 

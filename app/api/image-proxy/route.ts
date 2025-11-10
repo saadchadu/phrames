@@ -3,8 +3,36 @@ import { NextRequest, NextResponse } from 'next/server'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// Simple in-memory rate limiting
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
+const RATE_LIMIT = 100 // requests per window
+const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minute
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const record = rateLimitMap.get(ip)
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
+    return true
+  }
+
+  if (record.count >= RATE_LIMIT) {
+    return false
+  }
+
+  record.count++
+  return true
+}
+
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    }
+
     const { searchParams } = new URL(request.url)
     const imageUrl = searchParams.get('url')
     
@@ -12,9 +40,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'URL parameter required' }, { status: 400 })
     }
 
-    // Validate URL to prevent abuse
+    // Validate URL to prevent SSRF attacks
     if (!imageUrl.startsWith('https://firebasestorage.googleapis.com/')) {
       return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 })
+    }
+
+    // Additional URL validation
+    try {
+      const url = new URL(imageUrl)
+      if (url.hostname !== 'firebasestorage.googleapis.com') {
+        return NextResponse.json({ error: 'Invalid hostname' }, { status: 400 })
+      }
+    } catch {
+      return NextResponse.json({ error: 'Malformed URL' }, { status: 400 })
     }
 
     console.log('🔄 Proxying Firebase image')

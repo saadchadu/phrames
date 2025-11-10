@@ -2,8 +2,9 @@
 
 import Image from 'next/image'
 import { Campaign } from '@/lib/firestore'
-import { PencilIcon, LinkIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { PencilIcon, LinkIcon, TrashIcon, QrCodeIcon } from '@heroicons/react/24/outline'
 import { toast } from '@/components/ui/toaster'
+import QRCode from 'qrcode'
 
 interface CampaignCardProps {
   campaign: Campaign
@@ -25,6 +26,35 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete }: Ca
     }
   }
 
+  const handleDownloadQR = async () => {
+    try {
+      const url = `${window.location.origin}/campaign/${campaign.slug}`
+      
+      // Generate QR code as data URL
+      const qrDataUrl = await QRCode.toDataURL(url, {
+        width: 512,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      })
+
+      // Download the QR code
+      const link = document.createElement('a')
+      link.href = qrDataUrl
+      link.download = `${campaign.slug}-qr.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      toast('QR code downloaded!', 'success')
+    } catch (error) {
+      console.error('Error downloading QR code:', error)
+      toast('Failed to download QR code', 'error')
+    }
+  }
+
   return (
     <div className="bg-white rounded-2xl border border-[#00240010] overflow-hidden hover:border-[#00240020] transition-all shadow-sm hover:shadow-md">
       {/* Image */}
@@ -43,6 +73,13 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete }: Ca
             aria-label="Edit campaign"
           >
             <PencilIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+          </button>
+          <button
+            onClick={handleDownloadQR}
+            className="bg-white/95 hover:bg-white active:scale-95 backdrop-blur-sm border border-[#00240020] hover:border-[#00240040] p-2 sm:p-3 rounded-lg sm:rounded-xl transition-all shadow-sm"
+            aria-label="Download QR code"
+          >
+            <QrCodeIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </button>
           <button
             onClick={handleCopyLink}

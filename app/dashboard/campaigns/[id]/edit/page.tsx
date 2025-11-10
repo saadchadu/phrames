@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
 import { getCampaign, updateCampaign, generateUniqueSlug, Campaign } from '@/lib/firestore'
-import { uploadImage, validateImageFile, checkImageDimensions } from '@/lib/storage'
+import { uploadImage, validateFrameImage } from '@/lib/storage'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 
 // Prevent static generation for this auth-protected page
@@ -75,31 +75,37 @@ export default function EditCampaignPage() {
     setFormData(prev => ({ ...prev, campaignName: name }))
   }
 
-  const handleSlugChange = async (slug: string) => {
-    // Automatically convert spaces and special characters to hyphens
-    const sanitizedSlug = slug
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
+  const handleSlugChange = (slug: string) => {
+    // Allow only lowercase letters, numbers, and hyphens
+    let sanitizedSlug = slug.toLowerCase()
+    // Convert spaces to hyphens
+    sanitizedSlug = sanitizedSlug.replace(/\s+/g, '-')
+    // Remove invalid characters but keep hyphens
+    sanitizedSlug = sanitizedSlug.replace(/[^a-z0-9-]/g, '')
+    // Replace multiple consecutive hyphens with single hyphen
+    sanitizedSlug = sanitizedSlug.replace(/--+/g, '-')
     setFormData(prev => ({ ...prev, slug: sanitizedSlug }))
+  }
+
+  const handleSlugBlur = () => {
+    // Clean up leading/trailing hyphens only on blur
+    const cleanedSlug = formData.slug.replace(/^-+|-+$/g, '')
+    if (cleanedSlug !== formData.slug) {
+      setFormData(prev => ({ ...prev, slug: cleanedSlug }))
+    }
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (!selectedFile) return
 
-    // Validate file
-    const validation = validateImageFile(selectedFile)
-    if (!validation.valid) {
-      setError(validation.error || 'Invalid file')
-      return
-    }
+    setError('Validating image...')
 
     try {
-      // Check dimensions
-      const dimensions = await checkImageDimensions(selectedFile)
-      if (dimensions.width < 1080 || dimensions.height < 1080) {
-        setError('Image must be at least 1080x1080 pixels')
+      // Validate frame image (checks transparency, aspect ratio, and dimensions)
+      const validation = await validateFrameImage(selectedFile)
+      if (!validation.valid) {
+        setError(validation.error || 'Invalid file')
         return
       }
 
@@ -257,6 +263,7 @@ export default function EditCampaignPage() {
                     type="text"
                     value={formData.slug}
                     onChange={(e) => handleSlugChange(e.target.value)}
+                    onBlur={handleSlugBlur}
                     required
                     className="flex-1 px-4 py-3 border border-[#00240033] rounded-r-sm text-[16px] text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
                     placeholder="campaign-slug"

@@ -1,7 +1,7 @@
 {
-  "name": "Phrames - Create Photo Frame Campaigns",
+  "name": "Phrames - Photo Frame Campaigns",
   "short_name": "Phrames",
-  "description": "Create and share beautiful photo frame campaigns online",
+  "description": "Create and share beautiful photo frame campaigns instantly",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -20,5 +20,40 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["photo", "social", "utilities"],
+  "screenshots": [
+    {
+      "src": "/images/Hero.png",
+      "sizes": "450x490",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create Campaign",
+      "short_name": "Create",
+      "description": "Create a new photo frame campaign",
+      "url": "/create",
+      "icons": [
+        {
+          "src": "/icons/favicon.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your campaigns",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/icons/favicon.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
 }

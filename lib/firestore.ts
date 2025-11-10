@@ -10,7 +10,8 @@ import {
   where, 
   orderBy, 
   serverTimestamp,
-  increment
+  increment,
+  setDoc
 } from 'firebase/firestore'
 import { db } from './firebase'
 
@@ -24,6 +25,7 @@ export interface Campaign {
   status: 'Active' | 'Inactive'
   supportersCount: number
   createdBy: string
+  createdByEmail?: string
   createdAt: any
 }
 
@@ -198,6 +200,54 @@ export const incrementSupportersCount = async (campaignId: string) => {
   }
 }
 
+// Get public active campaigns for landing page search
+export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
+  try {
+    console.log('getPublicActiveCampaigns: Fetching public active campaigns')
+    
+    const q = query(
+      collection(db, 'campaigns'),
+      where('visibility', '==', 'Public'),
+      where('status', '==', 'Active'),
+      orderBy('createdAt', 'desc')
+    )
+    
+    let querySnapshot
+    try {
+      querySnapshot = await getDocs(q)
+      console.log('getPublicActiveCampaigns: Query successful, found:', querySnapshot.size, 'campaigns')
+    } catch (orderError) {
+      console.warn('getPublicActiveCampaigns: OrderBy query failed, trying without ordering:', orderError)
+      // Fallback: query without ordering if index doesn't exist
+      const fallbackQuery = query(
+        collection(db, 'campaigns'),
+        where('visibility', '==', 'Public'),
+        where('status', '==', 'Active')
+      )
+      querySnapshot = await getDocs(fallbackQuery)
+      console.log('getPublicActiveCampaigns: Fallback query successful, found:', querySnapshot.size, 'campaigns')
+    }
+    
+    const campaigns = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Campaign[]
+    
+    // Sort manually if we couldn't use orderBy
+    campaigns.sort((a, b) => {
+      const aTime = a.createdAt?.toDate?.() || new Date(0)
+      const bTime = b.createdAt?.toDate?.() || new Date(0)
+      return bTime.getTime() - aTime.getTime()
+    })
+    
+    console.log('getPublicActiveCampaigns: Returning', campaigns.length, 'campaigns')
+    return campaigns
+  } catch (error) {
+    console.error('Error getting public active campaigns:', error)
+    return []
+  }
+}
+
 // Debug function to list all campaigns
 export const getAllCampaigns = async (): Promise<Campaign[]> => {
   try {
@@ -235,5 +285,255 @@ export const generateUniqueSlug = async (baseName: string): Promise<string> => {
     }
     slug = `${baseSlug}-${counter}`
     counter++
+  }
+}
+
+// Analytics and Stats Functions
+
+export interface DailyStats {
+  date: string // YYYY-MM-DD
+  visits: number
+  downloads: number
+}
+
+export interface CampaignStatsDaily {
+  campaignId: string
+  date: string
+  visits: number
+  downloads: number
+  createdAt: any
+  updatedAt: any
+}
+
+// Get today's date in YYYY-MM-DD format
+const getTodayDate = (): string => {
+  const today = new Date()
+  return today.toISOString().split('T')[0]
+}
+
+// Generate stat document ID
+const getStatDocId = (campaignId: string, date: string): string => {
+  return `${campaignId}-${date}`
+}
+
+// Increment campaign visit count
+export const incrementCampaignVisit = async (campaignId: string): Promise<void> => {
+  try {
+    const date = getTodayDate()
+    const statDocId = getStatDocId(campaignId, date)
+    const statRef = doc(db, 'CampaignStatsDaily', statDocId)
+    
+    const statSnap = await getDoc(statRef)
+    
+    if (statSnap.exists()) {
+      // Update existing document
+      await updateDoc(statRef, {
+        visits: increment(1),
+        updatedAt: serverTimestamp()
+      })
+    } else {
+      // Create new document
+      await updateDoc(statRef, {
+        campaignId,
+        date,
+        visits: 1,
+        downloads: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    }
+  } catch (error) {
+    // If document doesn't exist, create it
+    try {
+      const date = getTodayDate()
+      const statDocId = getStatDocId(campaignId, date)
+      const statRef = doc(db, 'CampaignStatsDaily', statDocId)
+      
+      await setDoc(statRef, {
+        campaignId,
+        date,
+        visits: 1,
+        downloads: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    } catch (createError) {
+      console.error('Error incrementing campaign visit:', createError)
+    }
+  }
+}
+
+// Increment campaign download count
+export const incrementCampaignDownload = async (campaignId: string): Promise<void> => {
+  try {
+    const date = getTodayDate()
+    const statDocId = getStatDocId(campaignId, date)
+    const statRef = doc(db, 'CampaignStatsDaily', statDocId)
+    
+    const statSnap = await getDoc(statRef)
+    
+    if (statSnap.exists()) {
+      // Update existing document
+      await updateDoc(statRef, {
+        downloads: increment(1),
+        updatedAt: serverTimestamp()
+      })
+    } else {
+      // Create new document
+      await updateDoc(statRef, {
+        campaignId,
+        date,
+        visits: 0,
+        downloads: 1,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    }
+  } catch (error) {
+    // If document doesn't exist, create it
+    try {
+      const date = getTodayDate()
+      const statDocId = getStatDocId(campaignId, date)
+      const statRef = doc(db, 'CampaignStatsDaily', statDocId)
+      
+      await setDoc(statRef, {
+        campaignId,
+        date,
+        visits: 0,
+        downloads: 1,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    } catch (createError) {
+      console.error('Error incrementing campaign download:', createError)
+    }
+  }
+}
+
+// Get campaign stats for a specific date range
+export const getCampaignStats = async (campaignId: string, days: number = 30): Promise<DailyStats[]> => {
+  try {
+    const statsRef = collection(db, 'CampaignStatsDaily')
+    const q = query(
+      statsRef,
+      where('campaignId', '==', campaignId),
+      orderBy('date', 'desc')
+    )
+    
+    const querySnapshot = await getDocs(q)
+    const stats: DailyStats[] = []
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data() as CampaignStatsDaily
+      stats.push({
+        date: data.date,
+        visits: data.visits || 0,
+        downloads: data.downloads || 0
+      })
+    })
+    
+    // Filter to last N days and sort ascending
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - days)
+    const cutoffStr = cutoffDate.toISOString().split('T')[0]
+    
+    return stats
+      .filter(stat => stat.date >= cutoffStr)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-days)
+  } catch (error) {
+    console.error('Error getting campaign stats:', error)
+    return []
+  }
+}
+
+// Get aggregate stats for a user (all their campaigns)
+export const getUserAggregateStats = async (userId: string): Promise<{ visits: number; downloads: number }> => {
+  try {
+    // First, get all campaigns for the user
+    const campaigns = await getUserCampaigns(userId)
+    const campaignIds = campaigns.map(c => c.id).filter(Boolean) as string[]
+    
+    if (campaignIds.length === 0) {
+      return { visits: 0, downloads: 0 }
+    }
+    
+    let totalVisits = 0
+    let totalDownloads = 0
+    
+    // Get stats for each campaign
+    for (const campaignId of campaignIds) {
+      const statsRef = collection(db, 'CampaignStatsDaily')
+      const q = query(statsRef, where('campaignId', '==', campaignId))
+      const querySnapshot = await getDocs(q)
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data() as CampaignStatsDaily
+        totalVisits += data.visits || 0
+        totalDownloads += data.downloads || 0
+      })
+    }
+    
+    return { visits: totalVisits, downloads: totalDownloads }
+  } catch (error) {
+    console.error('Error getting user aggregate stats:', error)
+    return { visits: 0, downloads: 0 }
+  }
+}
+
+// Get daily stats for all user campaigns (for dashboard chart)
+export const getUserDailyStats = async (userId: string, days: number = 30): Promise<DailyStats[]> => {
+  try {
+    // Get all campaigns for the user
+    const campaigns = await getUserCampaigns(userId)
+    const campaignIds = campaigns.map(c => c.id).filter(Boolean) as string[]
+    
+    if (campaignIds.length === 0) {
+      return []
+    }
+    
+    // Create a map to aggregate stats by date
+    const statsByDate = new Map<string, { visits: number; downloads: number }>()
+    
+    // Get stats for each campaign
+    for (const campaignId of campaignIds) {
+      const stats = await getCampaignStats(campaignId, days)
+      
+      stats.forEach(stat => {
+        const existing = statsByDate.get(stat.date) || { visits: 0, downloads: 0 }
+        statsByDate.set(stat.date, {
+          visits: existing.visits + stat.visits,
+          downloads: existing.downloads + stat.downloads
+        })
+      })
+    }
+    
+    // Convert map to array and sort by date
+    const result: DailyStats[] = Array.from(statsByDate.entries())
+      .map(([date, stats]) => ({
+        date,
+        visits: stats.visits,
+        downloads: stats.downloads
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+    
+    // Fill in missing dates with zeros
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - days)
+    const filledStats: DailyStats[] = []
+    
+    for (let i = 0; i < days; i++) {
+      const date = new Date(cutoffDate)
+      date.setDate(date.getDate() + i)
+      const dateStr = date.toISOString().split('T')[0]
+      
+      const existing = result.find(s => s.date === dateStr)
+      filledStats.push(existing || { date: dateStr, visits: 0, downloads: 0 })
+    }
+    
+    return filledStats
+  } catch (error) {
+    console.error('Error getting user daily stats:', error)
+    return []
   }
 }
