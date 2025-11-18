@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
 import CampaignCard from '@/components/CampaignCard'
+import PaymentModal from '@/components/PaymentModal'
 import { getUserCampaigns, deleteCampaign, Campaign } from '@/lib/firestore'
 
 // Prevent static generation for this auth-protected page
@@ -16,16 +17,31 @@ import { PlusIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 export default function DashboardPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [reactivatingCampaign, setReactivatingCampaign] = useState<Campaign | null>(null)
 
   useEffect(() => {
     if (user) {
       loadCampaigns()
     }
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    // Check for payment success
+    const paymentStatus = searchParams.get('payment')
+    if (paymentStatus === 'success') {
+      toast('Campaign activated successfully!', 'success')
+      // Reload campaigns to show updated status
+      if (user) {
+        loadCampaigns(true)
+      }
+    }
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadCampaigns = async (isRefresh = false) => {
     if (!user) {
@@ -94,6 +110,26 @@ export default function DashboardPage() {
     }
   }
 
+  const handleReactivate = (id: string) => {
+    const campaign = campaigns.find(c => c.id === id)
+    if (campaign) {
+      setReactivatingCampaign(campaign)
+      setShowPaymentModal(true)
+    }
+  }
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false)
+    setReactivatingCampaign(null)
+    toast('Campaign reactivated successfully!', 'success')
+    loadCampaigns(true)
+  }
+
+  const handlePaymentModalClose = () => {
+    setShowPaymentModal(false)
+    setReactivatingCampaign(null)
+  }
+
   if (loading) {
     return (
       <AuthGuard>
@@ -106,6 +142,17 @@ export default function DashboardPage() {
 
   return (
     <AuthGuard>
+      {/* Payment Modal for Reactivation */}
+      {reactivatingCampaign && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={handlePaymentModalClose}
+          campaignId={reactivatingCampaign.id!}
+          campaignName={reactivatingCampaign.campaignName}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
+
       <div className="min-h-screen bg-gradient-to-b from-white to-[#f2fff233]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
           {/* Header */}
@@ -176,6 +223,7 @@ export default function DashboardPage() {
                     onEdit={handleEdit}
                     onShare={handleShare}
                     onDelete={handleDelete}
+                    onReactivate={handleReactivate}
                   />
                 </div>
               ))}

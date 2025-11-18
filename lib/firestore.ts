@@ -27,6 +27,14 @@ export interface Campaign {
   createdBy: string
   createdByEmail?: string
   createdAt: any
+  
+  // Payment-related fields
+  isActive: boolean
+  planType?: 'week' | 'month' | '3month' | '6month' | 'year'
+  amountPaid?: number
+  paymentId?: string
+  expiresAt?: any // Timestamp
+  lastPaymentAt?: any // Timestamp
 }
 
 // Campaign CRUD operations
@@ -40,10 +48,11 @@ export const createCampaign = async (campaignData: Omit<Campaign, 'id' | 'create
       slug: campaignData.slug,
       visibility: campaignData.visibility,
       frameURL: campaignData.frameURL,
-      status: campaignData.status,
+      status: 'Inactive', // Always start as inactive
       createdBy: campaignData.createdBy,
       supportersCount: 0,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      isActive: false, // Requires payment to activate
     }
     
     // Only add description if it's not undefined or empty
@@ -209,6 +218,7 @@ export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
       collection(db, 'campaigns'),
       where('visibility', '==', 'Public'),
       where('status', '==', 'Active'),
+      where('isActive', '==', true),
       orderBy('createdAt', 'desc')
     )
     
@@ -222,7 +232,8 @@ export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
       const fallbackQuery = query(
         collection(db, 'campaigns'),
         where('visibility', '==', 'Public'),
-        where('status', '==', 'Active')
+        where('status', '==', 'Active'),
+        where('isActive', '==', true)
       )
       querySnapshot = await getDocs(fallbackQuery)
       console.log('getPublicActiveCampaigns: Fallback query successful, found:', querySnapshot.size, 'campaigns')
@@ -233,15 +244,20 @@ export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
       ...doc.data()
     })) as Campaign[]
     
+    // Additional client-side filter to ensure both status and isActive are true
+    const activeCampaigns = campaigns.filter(campaign => 
+      campaign.status === 'Active' && campaign.isActive === true
+    )
+    
     // Sort manually if we couldn't use orderBy
-    campaigns.sort((a, b) => {
+    activeCampaigns.sort((a, b) => {
       const aTime = a.createdAt?.toDate?.() || new Date(0)
       const bTime = b.createdAt?.toDate?.() || new Date(0)
       return bTime.getTime() - aTime.getTime()
     })
     
-    console.log('getPublicActiveCampaigns: Returning', campaigns.length, 'campaigns')
-    return campaigns
+    console.log('getPublicActiveCampaigns: Returning', activeCampaigns.length, 'campaigns')
+    return activeCampaigns
   } catch (error) {
     console.error('Error getting public active campaigns:', error)
     return []
@@ -478,6 +494,96 @@ export const getUserAggregateStats = async (userId: string): Promise<{ visits: n
   } catch (error) {
     console.error('Error getting user aggregate stats:', error)
     return { visits: 0, downloads: 0 }
+  }
+}
+
+// Payment Record Interface
+export interface PaymentRecord {
+  id?: string
+  orderId: string
+  campaignId: string
+  userId: string
+  planType: 'week' | 'month' | '3month' | '6month' | 'year'
+  amount: number
+  currency: string
+  status: 'pending' | 'success' | 'failed' | 'cancelled'
+  paymentMethod?: string
+  cashfreeOrderId: string
+  cashfreePaymentId?: string
+  createdAt: any
+  completedAt?: any
+  metadata?: {
+    campaignName: string
+    userEmail: string
+  }
+}
+
+// Expiry Log Interface
+export interface ExpiryLog {
+  id?: string
+  campaignId: string
+  campaignName: string
+  userId: string
+  expiredAt: any
+  planType: string
+  processedAt: any
+  batchId: string
+}
+
+// Create payment record
+export const createPaymentRecord = async (paymentData: Omit<PaymentRecord, 'id' | 'createdAt'>): Promise<{ id: string | null; error: string | null }> => {
+  try {
+    const docRef = await addDoc(collection(db, 'payments'), {
+      ...paymentData,
+      createdAt: serverTimestamp()
+    })
+    return { id: docRef.id, error: null }
+  } catch (error: any) {
+    console.error('Error creating payment record:', error)
+    return { id: null, error: error.message }
+  }
+}
+
+// Update payment record
+export const updatePaymentRecord = async (id: string, updates: Partial<PaymentRecord>): Promise<{ error: string | null }> => {
+  try {
+    const docRef = doc(db, 'payments', id)
+    await updateDoc(docRef, updates as any)
+    return { error: null }
+  } catch (error: any) {
+    console.error('Error updating payment record:', error)
+    return { error: error.message }
+  }
+}
+
+// Get payment record by order ID
+export const getPaymentByOrderId = async (orderId: string): Promise<PaymentRecord | null> => {
+  try {
+    const q = query(collection(db, 'payments'), where('orderId', '==', orderId))
+    const querySnapshot = await getDocs(q)
+    
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0]
+      return { id: doc.id, ...doc.data() } as PaymentRecord
+    }
+    return null
+  } catch (error) {
+    console.error('Error getting payment by order ID:', error)
+    return null
+  }
+}
+
+// Create expiry log
+export const createExpiryLog = async (logData: Omit<ExpiryLog, 'id' | 'processedAt'>): Promise<{ error: string | null }> => {
+  try {
+    await addDoc(collection(db, 'expiryLogs'), {
+      ...logData,
+      processedAt: serverTimestamp()
+    })
+    return { error: null }
+  } catch (error: any) {
+    console.error('Error creating expiry log:', error)
+    return { error: error.message }
   }
 }
 

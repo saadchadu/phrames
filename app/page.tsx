@@ -8,6 +8,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { getPublicActiveCampaigns, Campaign } from '@/lib/firestore'
 import SearchInput from '@/components/SearchInput'
 import SearchResults from '@/components/SearchResults'
+import PricingSection from '@/components/PricingSection'
 import { toast } from '@/components/ui/toaster'
 
 export default function Home() {
@@ -286,6 +287,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Pricing Section */}
+      <PricingSection />
 
       {/* CTA Section */}
       <section className="bg-primary overflow-hidden">

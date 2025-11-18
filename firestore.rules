@@ -60,23 +60,46 @@ service cloud.firestore {
     
     // Campaigns collection
     match /campaigns/{campaignId} {
-      // Anyone can read public or unlisted campaigns
-      allow read: if true;
+      // Anyone can read public active campaigns
+      allow read: if resource.data.visibility == 'Public' && 
+                     resource.data.isActive == true &&
+                     (!resource.data.keys().hasAny(['expiresAt']) || resource.data.expiresAt > request.time);
       
-      // Only authenticated users can create campaigns
+      // Owner can read their own campaigns regardless of status
+      allow read: if isAuthenticated() && isOwner(resource.data.createdBy);
+      
+      // Only authenticated users can create campaigns (must start as inactive)
       allow create: if isAuthenticated() && 
                       isOwner(request.resource.data.createdBy) &&
-                      isValidCampaign();
+                      isValidCampaign() &&
+                      request.resource.data.isActive == false &&
+                      request.resource.data.status == 'Inactive';
       
       // Only the campaign owner can update their campaign
+      // IMPORTANT: Cannot modify payment-related fields from client
       allow update: if isAuthenticated() && 
                       isOwner(resource.data.createdBy) &&
                       isValidCampaign() &&
                       // Prevent changing the owner
-                      request.resource.data.createdBy == resource.data.createdBy;
+                      request.resource.data.createdBy == resource.data.createdBy &&
+                      // Prevent modification of payment fields
+                      !request.resource.data.diff(resource.data).affectedKeys()
+                        .hasAny(['isActive', 'expiresAt', 'planType', 'amountPaid', 'paymentId', 'lastPaymentAt']);
       
       // Only the campaign owner can delete their campaign
       allow delete: if isAuthenticated() && isOwner(resource.data.createdBy);
+    }
+    
+    // Payment records - read-only for users
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow write: if false; // Only server can write
+    }
+    
+    // Expiry logs - read-only for users
+    match /expiryLogs/{logId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow write: if false; // Only server can write
     }
     
     // Campaign Stats Daily collection

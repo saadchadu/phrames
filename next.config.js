@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable instrumentation for environment validation on startup
+  experimental: {
+    instrumentationHook: true,
+  },
+  
   // Security headers
   async headers() {
     return [
@@ -98,7 +103,7 @@ const nextConfig = {
   },
   
   // Server external packages
-  serverExternalPackages: ['firebase-admin'],
+  serverExternalPackages: ['firebase-admin', 'cashfree-pg'],
   
   // Turbopack configuration (empty to silence warning)
   turbopack: {},

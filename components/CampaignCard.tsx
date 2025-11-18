@@ -11,9 +11,43 @@ interface CampaignCardProps {
   onEdit: (id: string) => void
   onShare: (slug: string) => void
   onDelete: (id: string) => void
+  onReactivate?: (id: string) => void
 }
 
-export default function CampaignCard({ campaign, onEdit, onShare, onDelete }: CampaignCardProps) {
+// Helper function to format expiry countdown
+function formatExpiryCountdown(expiresAt: any): string {
+  if (!expiresAt) return ''
+  
+  const expiryDate = expiresAt.toDate ? expiresAt.toDate() : new Date(expiresAt)
+  const now = new Date()
+  const diffMs = expiryDate.getTime() - now.getTime()
+  
+  if (diffMs <= 0) return 'Expired'
+  
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  
+  if (diffDays > 0) {
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} left`
+  } else if (diffHours > 0) {
+    return `${diffHours} hour${diffHours > 1 ? 's' : ''} left`
+  } else {
+    return 'Expires soon'
+  }
+}
+
+// Check if campaign is truly active
+function isCampaignActive(campaign: Campaign): boolean {
+  if (!campaign.isActive) return false
+  if (!campaign.expiresAt) return campaign.isActive // Grandfathered campaigns
+  
+  const expiryDate = campaign.expiresAt.toDate ? campaign.expiresAt.toDate() : new Date(campaign.expiresAt)
+  return expiryDate > new Date()
+}
+
+export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onReactivate }: CampaignCardProps) {
+  const isActive = isCampaignActive(campaign)
+  const expiryText = campaign.expiresAt ? formatExpiryCountdown(campaign.expiresAt) : ''
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/campaign/${campaign.slug}`
     
@@ -113,25 +147,52 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete }: Ca
           )}
         </div>
         
-        {/* Bottom - Stats */}
-        <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-[#00240010]">
+        {/* Bottom - Stats and Status */}
+        <div className="flex flex-col gap-3 pt-3 sm:pt-4 border-t border-[#00240010]">
+          {/* Status Badge and Expiry */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                isActive 
+                  ? 'bg-secondary/10 text-secondary' 
+                  : 'bg-gray-100 text-gray-600'
+              }`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  isActive ? 'bg-secondary' : 'bg-gray-400'
+                }`} />
+                {isActive ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+            
+            {isActive && expiryText && (
+              <span className="text-xs text-primary/60 font-medium">
+                {expiryText}
+              </span>
+            )}
+          </div>
+
+          {/* Supporters Count */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             <svg className="w-4 h-4 text-primary/60 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
             </svg>
             <span className="text-primary/60 text-xs sm:text-sm font-medium leading-tight">
-              {campaign.supportersCount}
+              {campaign.supportersCount} supporter{campaign.supportersCount !== 1 ? 's' : ''}
             </span>
           </div>
-          
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full flex-shrink-0 ${
-              campaign.status === 'Active' ? 'bg-secondary' : 'bg-gray-400'
-            }`} />
-            <span className="text-primary/60 text-xs sm:text-sm font-medium leading-tight">
-              {campaign.status}
-            </span>
-          </div>
+
+          {/* Reactivate Button for Inactive Campaigns */}
+          {!isActive && onReactivate && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onReactivate(campaign.id!)
+              }}
+              className="w-full mt-2 px-4 py-2 bg-secondary hover:bg-secondary/90 text-primary text-sm font-semibold rounded-lg transition-all"
+            >
+              Reactivate Campaign
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
+import PaymentModal from '@/components/PaymentModal'
 import { createCampaign, generateUniqueSlug } from '@/lib/firestore'
 import { uploadImage, validateFrameImage } from '@/lib/storage'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
@@ -27,6 +28,8 @@ export default function CreateCampaignPage() {
   const [preview, setPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [createdCampaignId, setCreatedCampaignId] = useState<string | null>(null)
 
   const handleNameChange = async (name: string) => {
     setFormData(prev => ({ ...prev, campaignName: name }))
@@ -99,7 +102,6 @@ export default function CreateCampaignPage() {
         slug: formData.slug,
         visibility: formData.visibility,
         frameURL: imageUrl,
-        status: 'Active',
         createdBy: user.uid
       }
       
@@ -117,17 +119,40 @@ export default function CreateCampaignPage() {
       }
 
       console.log('Campaign created successfully with ID:', id)
-      // Redirect to dashboard
-      router.push('/dashboard')
+      
+      // Store campaign ID and open payment modal
+      setCreatedCampaignId(id)
+      setShowPaymentModal(true)
     } catch (error: any) {
       setError(error.message || 'Failed to create campaign')
-    } finally {
       setLoading(false)
     }
   }
 
+  const handlePaymentSuccess = () => {
+    // Redirect to dashboard after successful payment
+    router.push('/dashboard?payment=success')
+  }
+
+  const handlePaymentModalClose = () => {
+    // If user closes modal without paying, redirect to dashboard
+    setShowPaymentModal(false)
+    router.push('/dashboard')
+  }
+
   return (
     <AuthGuard>
+      {/* Payment Modal */}
+      {createdCampaignId && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={handlePaymentModalClose}
+          campaignId={createdCampaignId}
+          campaignName={formData.campaignName}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
+
       <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-start bg-white py-6 sm:py-12 px-4">
         {/* Form Container */}
         <div className="w-full max-w-[900px] flex flex-col items-center">

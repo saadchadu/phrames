@@ -12,13 +12,16 @@ interface PublicCampaignCardProps {
 
 export default function PublicCampaignCard({ campaign, onClick }: PublicCampaignCardProps) {
   const [publisher, setPublisher] = useState<UserProfile | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchPublisher = async () => {
+      setLoading(true)
       if (campaign.createdBy) {
         const profile = await getUserProfile(campaign.createdBy)
         setPublisher(profile)
       }
+      setLoading(false)
     }
     fetchPublisher()
   }, [campaign.createdBy])
@@ -56,12 +59,14 @@ export default function PublicCampaignCard({ campaign, onClick }: PublicCampaign
           </h3>
           
           {/* Publisher Info */}
-          {publisher && (
+          {!loading && (publisher || campaign.createdByEmail) && (
             <div className="flex items-center gap-2 text-primary/60 text-xs sm:text-sm">
               <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
               </svg>
-              <span className="truncate">by {publisher.displayName || publisher.email}</span>
+              <span className="truncate">
+                by {publisher?.displayName || publisher?.email || campaign.createdByEmail || 'Unknown'}
+              </span>
             </div>
           )}
         </div>
