@@ -206,15 +206,16 @@ export async function POST(request: NextRequest) {
       
       console.log('Creating Cashfree order with request:', JSON.stringify(orderRequest, null, 2))
       const response = await cashfree.PGCreateOrder(orderRequest)
-      console.log('Cashfree response:', JSON.stringify(response, null, 2))
+      console.log('Cashfree response received successfully')
+      console.log('Order ID:', response.data?.order_id)
+      console.log('Payment Session ID:', response.data?.payment_session_id)
       cashfreeResponse = response.data
     } catch (error: any) {
-      console.error('Cashfree order creation error:', error)
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      })
+      console.error('Cashfree order creation error:', error.message)
+      if (error.response?.data) {
+        console.error('Cashfree error response:', error.response.data)
+      }
+      console.error('Error status:', error.response?.status || 'unknown')
       trackError()
       logApiError({
         endpoint: '/api/payments/initiate',
