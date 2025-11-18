@@ -14,6 +14,10 @@ import {
   sanitizeErrorForClient
 } from '@/lib/monitoring'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 // Initialize Firebase Admin
 if (getApps().length === 0) {
   initializeApp({
