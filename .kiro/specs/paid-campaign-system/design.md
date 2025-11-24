@@ -2,15 +2,16 @@
 
 ## Overview
 
-This document outlines the technical design for implementing a paid-only campaign activation system in the Phrames application. The system transforms the current free campaign model into a subscription-based model where creators must purchase time-limited plans to activate their campaigns. The design integrates Cashfree payment gateway, implements automatic expiry management through Firebase Cloud Functions, and provides a complete user experience from payment to reactivation.
+This document outlines the technical design for implementing a "first campaign free" activation system in the Phrames application. The system provides every user with one free lifetime campaign, while all additional campaigns require payment with time-limited plans. The design integrates Cashfree payment gateway, implements automatic expiry management for paid campaigns through Firebase Cloud Functions, and provides a complete user experience from free campaign activation to paid campaign purchase and reactivation.
 
 ### Key Design Principles
 
-1. **Security First**: All payment-related fields are protected from client-side manipulation
-2. **Automatic Management**: Campaign expiry is handled automatically without manual intervention
-3. **User Experience**: Clear pricing, simple payment flow, and transparent status indicators
-4. **Reliability**: Idempotent webhook handling and comprehensive error management
-5. **Scalability**: Efficient queries and batch processing for expiry checks
+1. **Free First Experience**: Every user gets one free lifetime campaign to try the platform
+2. **Security First**: All payment-related fields and free campaign flags are protected from client-side manipulation
+3. **Automatic Management**: Paid campaign expiry is handled automatically without affecting free campaigns
+4. **User Experience**: Clear distinction between free and paid campaigns, simple payment flow, and transparent status indicators
+5. **Reliability**: Idempotent webhook handling and comprehensive error management
+6. **Scalability**: Efficient queries and batch processing for expiry checks
 
 ## Architecture
 
@@ -63,15 +64,27 @@ This document outlines the technical design for implementing a paid-only campaig
 
 ### Data Flow
 
-#### Payment Initiation Flow
+#### Free Campaign Activation Flow
 1. User completes campaign creation and clicks "Publish"
-2. Payment Modal displays with 5 pricing plans
-3. User selects plan and clicks "Continue to Checkout"
-4. Client calls `/api/payments/initiate` with campaignId and planType
-5. Server validates user ownership and creates Cashfree order
-6. Server returns payment_link to client
-7. Client redirects to Cashfree Hosted Checkout
-8. User completes payment on Cashfree
+2. Client checks user's `freeCampaignUsed` status
+3. If `freeCampaignUsed === false`:
+   - Client activates campaign immediately
+   - Sets `isFreeCampaign: true`, `planType: "free"`, `isActive: true`, `expiresAt: null`
+   - Updates user document: `freeCampaignUsed: true`
+   - Redirects to dashboard with success message
+4. No payment modal shown, no Cashfree interaction
+
+#### Paid Campaign Initiation Flow
+1. User completes campaign creation and clicks "Publish"
+2. Client checks user's `freeCampaignUsed` status
+3. If `freeCampaignUsed === true`:
+   - Payment Modal displays with 5 pricing plans
+   - User selects plan and clicks "Continue to Checkout"
+   - Client calls `/api/payments/initiate` with campaignId and planType
+   - Server validates user ownership and creates Cashfree order
+   - Server returns payment_link to client
+   - Client redirects to Cashfree Hosted Checkout
+   - User completes payment on Cashfree
 
 #### Payment Completion Flow
 1. Cashfree sends webhook to `/api/payments/webhook`
@@ -85,12 +98,64 @@ This document outlines the technical design for implementing a paid-only campaig
 
 #### Expiry Check Flow
 1. Cloud Function triggers daily at 00:00 UTC
-2. Function queries campaigns where isActive = true AND expiresAt < now
-3. For each expired campaign:
+2. Function queries campaigns where isActive = true AND isFreeCampaign = false AND expiresAt < now
+3. For each expired paid campaign:
    - Set isActive = false
    - Set status = "Inactive"
    - Create log entry
-4. Function completes and logs summary
+4. Free campaigns (isFreeCampaign = true) are never included in expiry checks
+5. Function completes and logs summary
+
+## Free Campaign Logic
+
+### Free Campaign Eligibility Check
+
+**Implementation**: Client-side check before showing payment modal
+
+```typescript
+async function checkFreeCampaignEligibility(userId: string): Promise<boolean> {
+  const userDoc = await getDoc(doc(db, 'users', userId))
+  const userData = userDoc.data()
+  return userData?.freeCampaignUsed === false
+}
+```
+
+### Free Campaign Activation
+
+**Implementation**: Server-side or client-side with proper security rules
+
+```typescript
+async function activateFreeCampaign(campaignId: string, userId: string) {
+  const batch = writeBatch(db)
+  
+  // Update campaign
+  const campaignRef = doc(db, 'campaigns', campaignId)
+  batch.update(campaignRef, {
+    isFreeCampaign: true,
+    planType: 'free',
+    amountPaid: 0,
+    paymentId: null,
+    expiresAt: null,
+    isActive: true,
+    status: 'Active'
+  })
+  
+  // Update user
+  const userRef = doc(db, 'users', userId)
+  batch.update(userRef, {
+    freeCampaignUsed: true
+  })
+  
+  await batch.commit()
+}
+```
+
+### Free Campaign Protection
+
+1. **Expiry Function**: Always filter `isFreeCampaign === false`
+2. **Visibility Check**: Free campaigns ignore `expiresAt` validation
+3. **Reactivation UI**: Never show reactivate button for free campaigns
+4. **Payment API**: Reject payment initiation for free campaigns
 
 ## Components and Interfaces
 
@@ -136,11 +201,19 @@ const PRICING_PLANS: PricingPlan[] = [
 **File**: `app/create/page.tsx`
 
 **Changes**:
-- Remove direct campaign activation
-- Set `isActive: false` and `status: 'Inactive'` by default
-- After successful campaign creation, open Payment Modal
-- Only redirect to dashboard after payment success
-- Handle payment cancellation gracefully
+- Check user's `freeCampaignUsed` status after campaign creation
+- **If freeCampaignUsed === false** (First Campaign):
+  - Activate campaign immediately without payment
+  - Set `isFreeCampaign: true`, `planType: "free"`, `amountPaid: 0`
+  - Set `isActive: true`, `status: "Active"`, `expiresAt: null`
+  - Update user document: `freeCampaignUsed: true`
+  - Show success message: "🎉 Your first campaign is FREE! Activated instantly."
+  - Redirect to dashboard
+- **If freeCampaignUsed === true** (Additional Campaigns):
+  - Set `isActive: false`, `status: 'Inactive'`, `isFreeCampaign: false` by default
+  - Open Payment Modal with pricing plans
+  - Only redirect to dashboard after payment success
+  - Handle payment cancellation gracefully
 
 ### 3. Dashboard Updates
 
@@ -164,8 +237,10 @@ interface CampaignCardProps {
 }
 
 // Display logic
-- If isActive && expiresAt > now: Show "Active" badge + expiry countdown
-- If !isActive || expiresAt < now: Show "Inactive" badge + "Reactivate" button
+- If isFreeCampaign && isActive: Show "Free - Lifetime Active" badge (green)
+- If !isFreeCampaign && isActive && expiresAt > now: Show "Active" badge + expiry countdown
+- If !isFreeCampaign && (!isActive || expiresAt < now): Show "Inactive" badge + "Reactivate Campaign" button
+- Free campaigns never show reactivate button
 ```
 
 ### 4. Public Campaign Page Update
@@ -180,12 +255,15 @@ interface CampaignCardProps {
 ```typescript
 // Visibility check
 const isVisible = campaign.isActive && 
-                  campaign.expiresAt && 
-                  campaign.expiresAt.toDate() > new Date()
+                  (campaign.isFreeCampaign || 
+                   (campaign.expiresAt && campaign.expiresAt.toDate() > new Date()))
 
 if (!isVisible) {
   return <InactiveCampaignMessage />
 }
+
+// Free campaigns are always visible if isActive = true
+// Paid campaigns require isActive = true AND expiresAt > now
 ```
 
 ## Data Models
@@ -209,13 +287,31 @@ interface Campaign {
   createdAt: Timestamp
   
   // New payment-related fields
-  isActive: boolean              // Default: false
-  status: 'Active' | 'Inactive'  // Default: 'Inactive'
-  planType?: 'week' | 'month' | '3month' | '6month' | 'year'
-  amountPaid?: number            // In rupees
-  paymentId?: string             // Cashfree order ID
-  expiresAt?: Timestamp          // Calculated from planType
+  isFreeCampaign: boolean        // true for first free campaign, false for paid
+  isActive: boolean              // Default: false for paid, true for free
+  status: 'Active' | 'Inactive'  // Default: 'Inactive' for paid, 'Active' for free
+  planType?: 'free' | 'week' | 'month' | '3month' | '6month' | 'year'
+  amountPaid?: number            // 0 for free, price in rupees for paid
+  paymentId?: string             // null for free, Cashfree order ID for paid
+  expiresAt?: Timestamp | null   // null for free, calculated from planType for paid
   lastPaymentAt?: Timestamp      // For tracking payment history
+}
+```
+
+### User Model Extension
+
+**Collection**: `users`
+
+```typescript
+interface User {
+  // Existing fields
+  uid: string
+  email: string
+  displayName?: string
+  // ... other existing fields
+  
+  // New field for free campaign tracking
+  freeCampaignUsed: boolean      // Default: false, set to true after first campaign
 }
 ```
 
@@ -291,15 +387,17 @@ interface ExpiryLog {
 **Implementation Steps**:
 1. Verify user authentication
 2. Validate campaign ownership
-3. Validate planType
-4. Calculate amount based on planType
-5. Create Cashfree order using SDK
-6. Store payment record in Firestore
-7. Return payment link
+3. Verify campaign is not a free campaign (isFreeCampaign should be false)
+4. Validate planType
+5. Calculate amount based on planType
+6. Create Cashfree order using SDK
+7. Store payment record in Firestore
+8. Return payment link
 
 **Security**:
 - Verify JWT token
 - Check user owns the campaign
+- Prevent payment initiation for free campaigns
 - Validate all inputs
 - Use server-side environment variables
 
@@ -422,13 +520,14 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
     const batchId = `batch_${Date.now()}`
     
     try {
-      // Query expired campaigns
+      // Query expired PAID campaigns only (skip free campaigns)
       const expiredCampaigns = await db.collection('campaigns')
         .where('isActive', '==', true)
+        .where('isFreeCampaign', '==', false)
         .where('expiresAt', '<', now)
         .get()
       
-      console.log(`Found ${expiredCampaigns.size} expired campaigns`)
+      console.log(`Found ${expiredCampaigns.size} expired paid campaigns`)
       
       // Process in batches of 500 (Firestore limit)
       const batch = db.batch()
@@ -499,31 +598,48 @@ service cloud.firestore {
     // Campaign rules
     match /campaigns/{campaignId} {
       // Anyone can read public active campaigns
+      // Free campaigns: only check isActive
+      // Paid campaigns: check isActive AND expiresAt
       allow read: if resource.data.visibility == 'Public' && 
                      resource.data.isActive == true &&
-                     resource.data.expiresAt > request.time;
+                     (resource.data.isFreeCampaign == true || 
+                      resource.data.expiresAt > request.time);
       
       // Owner can read their own campaigns
       allow read: if request.auth != null && 
                      resource.data.createdBy == request.auth.uid;
       
-      // Authenticated users can create campaigns (inactive by default)
+      // Authenticated users can create campaigns
       allow create: if request.auth != null &&
-                       request.resource.data.createdBy == request.auth.uid &&
-                       request.resource.data.isActive == false &&
-                       request.resource.data.status == 'Inactive';
+                       request.resource.data.createdBy == request.auth.uid;
       
       // Owner can update non-payment fields
       allow update: if request.auth != null &&
                        resource.data.createdBy == request.auth.uid &&
-                       // Prevent modification of payment fields
+                       // Prevent modification of payment and free campaign fields
                        !request.resource.data.diff(resource.data).affectedKeys()
                          .hasAny(['isActive', 'expiresAt', 'planType', 
-                                 'amountPaid', 'paymentId', 'lastPaymentAt']);
+                                 'amountPaid', 'paymentId', 'lastPaymentAt', 
+                                 'isFreeCampaign']);
       
       // Owner can delete their campaigns
       allow delete: if request.auth != null &&
                        resource.data.createdBy == request.auth.uid;
+    }
+    
+    // User rules
+    match /users/{userId} {
+      // Users can read their own document
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can create their own document
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can update their own document but NOT freeCampaignUsed
+      allow update: if request.auth != null && 
+                       request.auth.uid == userId &&
+                       !request.resource.data.diff(resource.data).affectedKeys()
+                         .hasAny(['freeCampaignUsed']);
     }
     
     // Payment records - read-only for users
@@ -693,7 +809,7 @@ Add environment variables in Vercel dashboard:
 ### Database Queries
 
 1. **Expiry Check Optimization**:
-   - Create composite index: `isActive` (ASC) + `expiresAt` (ASC)
+   - Create composite index: `isActive` (ASC) + `isFreeCampaign` (ASC) + `expiresAt` (ASC)
    - Batch updates to reduce write operations
    - Limit query results if needed
 
@@ -718,10 +834,17 @@ Add environment variables in Vercel dashboard:
 ### Phase 1: Database Schema Update
 
 1. Add new fields to Campaign model
-2. Set default values for existing campaigns:
-   - `isActive: true` (grandfather existing campaigns)
+2. Add `freeCampaignUsed` field to User model
+3. Set default values for existing campaigns:
+   - `isFreeCampaign: true` (grandfather existing campaigns as free)
+   - `isActive: true`
    - `status: 'Active'`
+   - `planType: 'free'`
+   - `amountPaid: 0`
    - `expiresAt: null` (no expiry for existing)
+4. Set default values for existing users:
+   - If user has campaigns: `freeCampaignUsed: true`
+   - If user has no campaigns: `freeCampaignUsed: false`
 
 ### Phase 2: Code Deployment
 
@@ -732,29 +855,35 @@ Add environment variables in Vercel dashboard:
 
 ### Phase 3: Testing
 
-1. Test in sandbox environment
-2. Verify all flows work correctly
-3. Monitor error logs
+1. Test free campaign flow in development
+2. Test paid campaign flow in sandbox environment
+3. Verify all flows work correctly
+4. Monitor error logs
 
 ### Phase 4: Production Rollout
 
 1. Switch Cashfree to production mode
 2. Monitor payment processing
 3. Verify expiry function runs correctly
+4. Monitor free campaign activation
 
 ### Grandfather Clause
 
-Existing campaigns created before the paid system:
-- Set `isActive: true` and `expiresAt: null`
-- Modify expiry check to skip campaigns with null `expiresAt`
-- Allow these campaigns to remain active indefinitely
-- Future updates require payment
+Existing campaigns created before the "first campaign free" system:
+- Set `isFreeCampaign: true`, `planType: 'free'`, `expiresAt: null`
+- Mark as free campaigns so they never expire
+- Users who already have campaigns get `freeCampaignUsed: true`
+- These users will need to pay for any new campaigns
+- Users with no existing campaigns get their first campaign free
 
 ## Security Checklist
 
 - [ ] Webhook signature verification implemented
 - [ ] Payment fields protected in Firestore rules
+- [ ] Free campaign flag (isFreeCampaign) protected in Firestore rules
+- [ ] User freeCampaignUsed field protected in Firestore rules
 - [ ] User ownership validated before payment initiation
+- [ ] Payment initiation blocked for free campaigns
 - [ ] Environment variables secured in Vercel
 - [ ] API routes require authentication
 - [ ] Idempotency checks prevent duplicate processing
@@ -775,9 +904,11 @@ Existing campaigns created before the paid system:
 
 2. **Campaign Metrics**:
    - Active vs inactive campaigns
-   - Expiry rate
+   - Free vs paid campaigns ratio
+   - Expiry rate (paid campaigns only)
    - Reactivation rate
    - Average campaign lifetime
+   - Free campaign conversion rate (users creating paid campaigns after free)
 
 3. **System Metrics**:
    - Webhook processing time
@@ -832,4 +963,4 @@ Existing campaigns created before the paid system:
 
 ## Conclusion
 
-This design provides a comprehensive, secure, and scalable solution for implementing a paid-only campaign system in the Phrames application. The architecture leverages existing Firebase infrastructure while integrating Cashfree for payment processing and implementing automatic expiry management through Cloud Functions. The design prioritizes security, user experience, and maintainability while providing clear paths for future enhancements.
+This design provides a comprehensive, secure, and scalable solution for implementing a "first campaign free" system in the Phrames application. The architecture provides an excellent user onboarding experience by offering one free lifetime campaign, while monetizing additional campaigns through Cashfree payment integration. The system leverages existing Firebase infrastructure while implementing automatic expiry management for paid campaigns through Cloud Functions. The design prioritizes security, user experience, and maintainability while providing clear paths for future enhancements.

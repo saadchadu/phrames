@@ -142,10 +142,11 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
     await campaignRef.update({
       isActive: true,
       status: 'Active',
+      isFreeCampaign: false, // Paid campaigns are never free
       planType,
       amountPaid: amount,
       paymentId: orderId,
-      expiresAt: Timestamp.fromDate(expiryDate),
+      expiresAt: expiryDate ? Timestamp.fromDate(expiryDate) : null,
       lastPaymentAt: Timestamp.now()
     })
 
@@ -173,7 +174,7 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
       campaignId,
       userId,
       planType,
-      expiresAt: expiryDate.toISOString()
+      expiresAt: expiryDate ? expiryDate.toISOString() : 'never'
     })
 
     const duration = Date.now() - startTime

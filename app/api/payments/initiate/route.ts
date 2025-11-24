@@ -162,6 +162,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Prevent payment initiation for free campaigns
+    if (campaign.isFreeCampaign === true) {
+      trackError()
+      logApiError({
+        endpoint: '/api/payments/initiate',
+        error: 'Cannot initiate payment for free campaign',
+        userId,
+        campaignId,
+        statusCode: 400
+      })
+      tracker.end(false)
+      return NextResponse.json(
+        { error: 'This is a free campaign and does not require payment' },
+        { status: 400 }
+      )
+    }
+
     // Calculate amount
     const amount = getPlanPrice(planType)
     const orderId = `order_${Date.now()}_${campaignId.substring(0, 8)}`

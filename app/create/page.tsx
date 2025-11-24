@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
 import PaymentModal from '@/components/PaymentModal'
-import { createCampaign, generateUniqueSlug } from '@/lib/firestore'
+import { createCampaign, generateUniqueSlug, checkFreeCampaignEligibility, activateFreeCampaign } from '@/lib/firestore'
 import { uploadImage, validateFrameImage } from '@/lib/storage'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
@@ -102,7 +102,8 @@ export default function CreateCampaignPage() {
         slug: formData.slug,
         visibility: formData.visibility,
         frameURL: imageUrl,
-        createdBy: user.uid
+        createdBy: user.uid,
+        createdByEmail: user.email
       }
       
       // Only add description if it has content
@@ -120,9 +121,30 @@ export default function CreateCampaignPage() {
 
       console.log('Campaign created successfully with ID:', id)
       
-      // Store campaign ID and open payment modal
-      setCreatedCampaignId(id)
-      setShowPaymentModal(true)
+      // Check if user is eligible for free campaign
+      const isEligibleForFree = await checkFreeCampaignEligibility(user.uid)
+      
+      if (isEligibleForFree) {
+        // Activate as free campaign
+        console.log('User eligible for free campaign, activating...')
+        const { error: activationError } = await activateFreeCampaign(id!, user.uid)
+        
+        if (activationError) {
+          console.error('Free campaign activation error:', activationError)
+          throw new Error(activationError)
+        }
+        
+        console.log('Free campaign activated successfully')
+        setLoading(false)
+        
+        // Show success message and redirect
+        router.push('/dashboard?freeCampaign=true')
+      } else {
+        // User needs to pay - show payment modal
+        console.log('User needs to pay for campaign')
+        setCreatedCampaignId(id)
+        setShowPaymentModal(true)
+      }
     } catch (error: any) {
       setError(error.message || 'Failed to create campaign')
       setLoading(false)

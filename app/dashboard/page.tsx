@@ -34,9 +34,17 @@ function DashboardContent() {
   useEffect(() => {
     // Check for payment success
     const paymentStatus = searchParams.get('payment')
+    const freeCampaign = searchParams.get('freeCampaign')
+    
     if (paymentStatus === 'success') {
       toast('Campaign activated successfully!', 'success')
       // Reload campaigns to show updated status
+      if (user) {
+        loadCampaigns(true)
+      }
+    } else if (freeCampaign === 'true') {
+      toast('🎉 Your first campaign is FREE for 1 month!', 'success')
+      // Reload campaigns to show the new free campaign
       if (user) {
         loadCampaigns(true)
       }

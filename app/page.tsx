@@ -140,7 +140,7 @@ export default function Home() {
                 <span className="text-secondary block mt-1">Share to the Globe</span>
               </h1>
               <p className="text-base sm:text-lg text-primary/80 mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                Phrames is a free, easy-to-use platform for creating custom photo frame campaigns. Upload your PNG frames and let visitors create personalized images instantly.
+                Phrames is an easy-to-use platform for creating custom photo frame campaigns. Upload your PNG frames and let visitors create personalized images instantly. <span className="font-semibold text-secondary">Get your first campaign free for 1 month!</span>
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
                 {user ? (
@@ -340,17 +340,34 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-6 sm:py-8 px-4 sm:px-6 lg:px-8 border-t border-gray-100">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Image
-              src="/logos/Logo-black.svg"
-              alt="Phrames Logo"
-              width={103}
-              height={25}
-              className="h-6 w-auto"
-            />
-            <p className="text-primary/70 text-sm sm:text-base font-medium text-center sm:text-right">
-              copyright reserved to <a href="http://cleffon.com" className="text-secondary hover:underline">cleffon</a>
-            </p>
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-4 lg:gap-8">
+            {/* Left - Logo */}
+            <div className="flex-shrink-0">
+              <Image
+                src="/logos/Logo-black.svg"
+                alt="Phrames Logo"
+                width={103}
+                height={25}
+                className="h-6 w-auto"
+              />
+            </div>
+            
+            {/* Center - Terms & Policy */}
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-sm">
+              <Link href="/terms" className="text-primary/70 hover:text-secondary transition-colors">
+                Terms & Conditions
+              </Link>
+              <Link href="/refund-policy" className="text-primary/70 hover:text-secondary transition-colors">
+                Refund Policy
+              </Link>
+            </div>
+            
+            {/* Right - Copyright */}
+            <div className="flex-shrink-0">
+              <p className="text-primary/70 text-sm sm:text-base font-medium text-center lg:text-right">
+                copyright reserved to <a href="http://cleffon.com" className="text-secondary hover:underline">Cleffon</a>
+              </p>
+            </div>
           </div>
         </div>
       </footer>

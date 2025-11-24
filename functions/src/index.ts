@@ -40,7 +40,7 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
     try {
       console.log('ℹ️  INFO [expiry_check_started] Starting campaign expiry check', { batchId })
       
-      // Query expired campaigns
+      // Query expired campaigns (including free campaigns)
       const expiredCampaigns = await db.collection('campaigns')
         .where('isActive', '==', true)
         .where('expiresAt', '<', now)
@@ -185,7 +185,7 @@ export const manualCampaignExpiryCheck = functions.https.onRequest(async (req, r
   try {
     console.log('Starting manual campaign expiry check...')
     
-    // Query expired campaigns
+    // Query expired campaigns (including free campaigns)
     const expiredCampaigns = await db.collection('campaigns')
       .where('isActive', '==', true)
       .where('expiresAt', '<', now)

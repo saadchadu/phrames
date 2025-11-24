@@ -39,6 +39,8 @@ function formatExpiryCountdown(expiresAt: any): string {
 // Check if campaign is truly active
 function isCampaignActive(campaign: Campaign): boolean {
   if (!campaign.isActive) return false
+  
+  // Check expiry for all campaigns (including free)
   if (!campaign.expiresAt) return campaign.isActive // Grandfathered campaigns
   
   const expiryDate = campaign.expiresAt.toDate ? campaign.expiresAt.toDate() : new Date(campaign.expiresAt)
@@ -47,6 +49,7 @@ function isCampaignActive(campaign: Campaign): boolean {
 
 export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onReactivate }: CampaignCardProps) {
   const isActive = isCampaignActive(campaign)
+  const isFree = campaign.isFreeCampaign === true
   const expiryText = campaign.expiresAt ? formatExpiryCountdown(campaign.expiresAt) : ''
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/campaign/${campaign.slug}`
@@ -152,16 +155,23 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
           {/* Status Badge and Expiry */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                isActive 
-                  ? 'bg-secondary/10 text-secondary' 
-                  : 'bg-gray-100 text-gray-600'
-              }`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  isActive ? 'bg-secondary' : 'bg-gray-400'
-                }`} />
-                {isActive ? 'Active' : 'Inactive'}
-              </span>
+              {isFree && isActive ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  Free Campaign
+                </span>
+              ) : (
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                  isActive 
+                    ? 'bg-secondary/10 text-secondary' 
+                    : 'bg-gray-100 text-gray-600'
+                }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${
+                    isActive ? 'bg-secondary' : 'bg-gray-400'
+                  }`} />
+                  {isActive ? 'Active' : 'Inactive'}
+                </span>
+              )}
             </div>
             
             {isActive && expiryText && (
@@ -181,8 +191,8 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
             </span>
           </div>
 
-          {/* Reactivate Button for Inactive Campaigns */}
-          {!isActive && onReactivate && (
+          {/* Reactivate Button for Inactive Paid Campaigns Only */}
+          {!isActive && !isFree && onReactivate && (
             <button
               onClick={(e) => {
                 e.stopPropagation()

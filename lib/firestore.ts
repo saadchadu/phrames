@@ -29,12 +29,20 @@ export interface Campaign {
   createdAt: any
   
   // Payment-related fields
+  isFreeCampaign: boolean // true for first free campaign, false for paid
   isActive: boolean
-  planType?: 'week' | 'month' | '3month' | '6month' | 'year'
+  planType?: 'free' | 'week' | 'month' | '3month' | '6month' | 'year'
   amountPaid?: number
-  paymentId?: string
-  expiresAt?: any // Timestamp
+  paymentId?: string | null
+  expiresAt?: any | null // Timestamp - null for free campaigns
   lastPaymentAt?: any // Timestamp
+}
+
+export interface User {
+  uid: string
+  email: string
+  displayName?: string
+  freeCampaignUsed: boolean // Default: false, set to true after first campaign
 }
 
 // Campaign CRUD operations
@@ -53,6 +61,11 @@ export const createCampaign = async (campaignData: Omit<Campaign, 'id' | 'create
       supportersCount: 0,
       createdAt: serverTimestamp(),
       isActive: false, // Requires payment to activate
+    }
+    
+    // Add createdByEmail if provided
+    if (campaignData.createdByEmail) {
+      cleanData.createdByEmail = campaignData.createdByEmail
     }
     
     // Only add description if it's not undefined or empty
@@ -503,7 +516,7 @@ export interface PaymentRecord {
   orderId: string
   campaignId: string
   userId: string
-  planType: 'week' | 'month' | '3month' | '6month' | 'year'
+  planType: 'free' | 'week' | 'month' | '3month' | '6month' | 'year'
   amount: number
   currency: string
   status: 'pending' | 'success' | 'failed' | 'cancelled'
@@ -641,5 +654,102 @@ export const getUserDailyStats = async (userId: string, days: number = 30): Prom
   } catch (error) {
     console.error('Error getting user daily stats:', error)
     return []
+  }
+}
+
+// Free Campaign Helper Functions
+
+// Check if user is eligible for free campaign
+export const checkFreeCampaignEligibility = async (userId: string): Promise<boolean> => {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId))
+    if (!userDoc.exists()) {
+      // New user - eligible for free campaign
+      return true
+    }
+    const userData = userDoc.data()
+    return userData?.freeCampaignUsed === false || userData?.freeCampaignUsed === undefined
+  } catch (error) {
+    console.error('Error checking free campaign eligibility:', error)
+    return false
+  }
+}
+
+// Activate free campaign
+export const activateFreeCampaign = async (campaignId: string, userId: string): Promise<{ error: string | null }> => {
+  try {
+    // Calculate expiry date (30 days from now)
+    const expiryDate = new Date()
+    expiryDate.setDate(expiryDate.getDate() + 30)
+    
+    // Update campaign
+    const campaignRef = doc(db, 'campaigns', campaignId)
+    await updateDoc(campaignRef, {
+      isFreeCampaign: true,
+      planType: 'free',
+      amountPaid: 0,
+      paymentId: null,
+      expiresAt: expiryDate,
+      isActive: true,
+      status: 'Active'
+    })
+    
+    // Update user document
+    const userRef = doc(db, 'users', userId)
+    const userDoc = await getDoc(userRef)
+    
+    if (userDoc.exists()) {
+      await updateDoc(userRef, {
+        freeCampaignUsed: true
+      })
+    } else {
+      // Create user document if it doesn't exist
+      await setDoc(userRef, {
+        uid: userId,
+        freeCampaignUsed: true
+      })
+    }
+    
+    return { error: null }
+  } catch (error: any) {
+    console.error('Error activating free campaign:', error)
+    return { error: error.message }
+  }
+}
+
+// Get user document
+export const getUserDocument = async (userId: string): Promise<User | null> => {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId))
+    if (userDoc.exists()) {
+      return userDoc.data() as User
+    }
+    return null
+  } catch (error) {
+    console.error('Error getting user document:', error)
+    return null
+  }
+}
+
+// Create or update user document
+export const createOrUpdateUser = async (userId: string, userData: Partial<User>): Promise<{ error: string | null }> => {
+  try {
+    const userRef = doc(db, 'users', userId)
+    const userDoc = await getDoc(userRef)
+    
+    if (userDoc.exists()) {
+      await updateDoc(userRef, userData as any)
+    } else {
+      await setDoc(userRef, {
+        uid: userId,
+        freeCampaignUsed: false,
+        ...userData
+      })
+    }
+    
+    return { error: null }
+  } catch (error: any) {
+    console.error('Error creating/updating user:', error)
+    return { error: error.message }
   }
 }

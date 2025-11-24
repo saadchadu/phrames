@@ -54,11 +54,21 @@ export default function CampaignPage() {
       // Check if campaign is active and not expired
       if (campaignData) {
         const isActive = campaignData.isActive
+        
+        // Check if campaign is active
+        if (!isActive) {
+          console.log('Campaign is inactive')
+          setCampaign(null) // Will show inactive message
+          setLoading(false)
+          return
+        }
+        
+        // Check expiry for all campaigns (including free)
         const hasExpiry = campaignData.expiresAt
         const isExpired = hasExpiry && campaignData.expiresAt.toDate() < new Date()
         
-        if (!isActive || isExpired) {
-          console.log('Campaign is inactive or expired')
+        if (isExpired) {
+          console.log('Campaign is expired')
           setCampaign(null) // Will show inactive message
           setLoading(false)
           return

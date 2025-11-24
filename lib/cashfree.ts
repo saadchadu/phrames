@@ -29,6 +29,7 @@ export { Cashfree, CFEnvironment }
 
 // Pricing plans configuration
 export const PRICING_PLANS = {
+  free: { name: 'Free', price: 0, days: 30 }, // Free plan - 1 month validity
   week: { name: '1 Week', price: 49, days: 7 },
   month: { name: '1 Month', price: 199, days: 30 },
   '3month': { name: '3 Months', price: 499, days: 90 },
@@ -38,17 +39,17 @@ export const PRICING_PLANS = {
 
 export type PlanType = keyof typeof PRICING_PLANS
 
-// Get plan price
+// Get plan price (returns 0 for free plan)
 export function getPlanPrice(planType: PlanType): number {
   return PRICING_PLANS[planType].price
 }
 
-// Get plan days
+// Get plan days (returns 0 for free plan)
 export function getPlanDays(planType: PlanType): number {
   return PRICING_PLANS[planType].days
 }
 
-// Calculate expiry date
+// Calculate expiry date (includes free plan with 30 days)
 export function calculateExpiryDate(planType: PlanType): Date {
   const days = getPlanDays(planType)
   const expiryDate = new Date()
