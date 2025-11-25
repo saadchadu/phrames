@@ -163,38 +163,32 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
         // Initialize Cashfree with environment
         const mode = process.env.NEXT_PUBLIC_CASHFREE_ENV === 'PRODUCTION' ? 'production' : 'sandbox'
         console.log('Initializing Cashfree in mode:', mode)
+        console.log('NEXT_PUBLIC_CASHFREE_ENV value:', process.env.NEXT_PUBLIC_CASHFREE_ENV)
         
         const cashfree = Cashfree({
           mode: mode
         })
 
-        // Open checkout with proper options
+        // Open checkout - Cashfree v3 SDK handles redirect automatically
         const checkoutOptions = {
           paymentSessionId: data.paymentSessionId,
-          returnUrl: `${window.location.origin}/dashboard?payment=success&campaignId=${campaignId}`,
-          redirectTarget: '_self' as const
+          returnUrl: `${window.location.origin}/dashboard?payment=success&campaignId=${campaignId}`
         }
         
-        console.log('Opening Cashfree checkout with options:', checkoutOptions)
+        console.log('Opening Cashfree checkout with options:', JSON.stringify(checkoutOptions))
         
-        cashfree.checkout(checkoutOptions).then((result: any) => {
-          console.log('Checkout result:', result)
-          if (result.error) {
-            console.error('Checkout error:', result.error)
-            throw new Error(result.error.message || 'Checkout failed')
-          }
-          if (result.redirect) {
-            console.log('Redirecting to:', result.paymentDetails)
-          }
-        }).catch((error: any) => {
-          console.error('Checkout promise error:', error)
-          throw error
-        })
+        // Call checkout - it will redirect automatically
+        await cashfree.checkout(checkoutOptions)
       } else {
         throw new Error('No payment session received')
       }
     } catch (error: any) {
       console.error('Payment initiation error:', error)
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
+      })
       setError(error.message || 'Failed to initiate payment. Please try again.')
       setLoading(false)
     }
