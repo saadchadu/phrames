@@ -13,8 +13,6 @@ import { setAdminClaim } from '@/lib/admin-auth';
 
 const db = adminDb;
 
-const db = admin.firestore();
-
 // Helper to safely convert Firestore timestamp to Date
 function toDate(timestamp: any): Date | null {
   if (!timestamp) return null;
