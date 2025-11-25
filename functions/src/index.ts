@@ -40,6 +40,19 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
     try {
       console.log('ℹ️  INFO [expiry_check_started] Starting campaign expiry check', { batchId })
       
+      // Create admin log for cron execution start
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: 'Campaign expiry cron job started',
+        metadata: {
+          cronType: 'campaign_expiry',
+          batchId,
+          startTime: new Date(startTime).toISOString()
+        },
+        createdAt: now
+      })
+      
       // Query expired campaigns (including free campaigns)
       const expiredCampaigns = await db.collection('campaigns')
         .where('isActive', '==', true)
@@ -68,6 +81,21 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
           duration
         })
         
+        // Create admin log for successful completion
+        await db.collection('logs').add({
+          eventType: 'cron_execution',
+          actorId: 'system',
+          description: 'Campaign expiry cron job completed successfully',
+          metadata: {
+            cronType: 'campaign_expiry',
+            result: 'success',
+            batchId,
+            campaignsProcessed: 0,
+            duration
+          },
+          createdAt: admin.firestore.Timestamp.now()
+        })
+        
         return null
       }
       
@@ -76,10 +104,16 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
       let count = 0
       let batchCount = 0
       const campaignIds: string[] = []
+      const expiredCampaignDetails: any[] = []
       
       for (const doc of expiredCampaigns.docs) {
         const campaign = doc.data()
         campaignIds.push(doc.id)
+        expiredCampaignDetails.push({
+          id: doc.id,
+          name: campaign.campaignName,
+          userId: campaign.createdBy
+        })
         
         // Update campaign
         batch.update(doc.ref, {
@@ -99,11 +133,27 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
           batchId
         })
         
+        // Create admin log for each campaign expiry
+        const adminLogRef = db.collection('logs').doc()
+        batch.set(adminLogRef, {
+          eventType: 'campaign_expiry',
+          actorId: 'system',
+          description: `Campaign "${campaign.campaignName || 'Unknown'}" expired`,
+          metadata: {
+            campaignId: doc.id,
+            campaignName: campaign.campaignName || 'Unknown',
+            userId: campaign.createdBy,
+            planType: campaign.planType || 'unknown',
+            expiredAt: campaign.expiresAt?.toDate()?.toISOString()
+          },
+          createdAt: now
+        })
+        
         count++
         batchCount++
         
-        // Commit batch every 250 operations (500 / 2 since we do 2 operations per campaign)
-        if (batchCount >= 250) {
+        // Commit batch every 166 operations (500 / 3 since we do 3 operations per campaign)
+        if (batchCount >= 166) {
           await batch.commit()
           console.log(`ℹ️  INFO [expiry_check_started] Committed batch of ${batchCount} campaigns`, {
             batchCount,
@@ -142,6 +192,22 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
         campaignIds: campaignIds.slice(0, 100) // Store first 100 IDs
       })
       
+      // Create admin log for successful completion
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: `Campaign expiry cron job completed successfully - processed ${count} campaigns`,
+        metadata: {
+          cronType: 'campaign_expiry',
+          result: 'success',
+          batchId,
+          campaignsProcessed: count,
+          duration,
+          campaigns: expiredCampaignDetails.slice(0, 10) // Store first 10 for reference
+        },
+        createdAt: admin.firestore.Timestamp.now()
+      })
+      
       return null
     } catch (error) {
       const duration = Date.now() - startTime
@@ -159,6 +225,22 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
         batchId,
         processedAt: now,
         duration
+      })
+      
+      // Create admin log for failure
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: 'Campaign expiry cron job failed',
+        metadata: {
+          cronType: 'campaign_expiry',
+          result: 'failure',
+          batchId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          duration
+        },
+        createdAt: admin.firestore.Timestamp.now()
       })
       
       throw error

@@ -1,12 +1,69 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Check } from 'lucide-react'
 import { useAuth } from '@/components/AuthProvider'
 import { useRouter } from 'next/navigation'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
 export default function PricingSection() {
   const { user } = useAuth()
   const router = useRouter()
+  const [pricing, setPricing] = useState({
+    week: 49,
+    month: 99,
+    '3month': 249,
+    '6month': 499,
+    year: 899,
+  })
+  const [discounts, setDiscounts] = useState({
+    week: 0,
+    month: 0,
+    '3month': 0,
+    '6month': 0,
+    year: 0,
+  })
+  const [offersEnabled, setOffersEnabled] = useState(false)
+
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const [plansDoc, systemDoc] = await Promise.all([
+          getDoc(doc(db, 'settings', 'plans')),
+          getDoc(doc(db, 'settings', 'system'))
+        ])
+        
+        if (plansDoc.exists()) {
+          const data = plansDoc.data()
+          setPricing({
+            week: data.week ?? 49,
+            month: data.month ?? 99,
+            '3month': data['3month'] ?? 249,
+            '6month': data['6month'] ?? 499,
+            year: data.year ?? 899,
+          })
+          
+          setDiscounts({
+            week: data.discounts?.week ?? 0,
+            month: data.discounts?.month ?? 0,
+            '3month': data.discounts?.['3month'] ?? 0,
+            '6month': data.discounts?.['6month'] ?? 0,
+            year: data.discounts?.year ?? 0,
+          })
+        }
+        
+        if (systemDoc.exists()) {
+          const systemData = systemDoc.data()
+          setOffersEnabled(systemData.offersEnabled ?? false)
+        }
+      } catch (error) {
+        console.error('Failed to fetch pricing:', error)
+        // Keep default pricing if fetch fails
+      }
+    }
+    fetchPricing()
+  }, [])
 
   const handleGetStarted = () => {
     if (user) {
@@ -15,10 +72,28 @@ export default function PricingSection() {
       router.push('/signup')
     }
   }
+
+  const calculateDiscountedPrice = (key: string) => {
+    const price = pricing[key as keyof typeof pricing]
+    const discount = discounts[key as keyof typeof discounts]
+    if (offersEnabled && discount > 0) {
+      return Math.round(price - (price * discount / 100))
+    }
+    return price
+  }
+
+  const getDiscount = (key: string) => {
+    return discounts[key as keyof typeof discounts]
+  }
+
+  const hasDiscount = (key: string) => {
+    return offersEnabled && getDiscount(key) > 0
+  }
+  
   const plans = [
     {
       name: '1 Week',
-      price: 49,
+      price: pricing.week,
       days: 7,
       key: 'week',
       popular: false,
@@ -26,27 +101,27 @@ export default function PricingSection() {
     },
     {
       name: '1 Month',
-      price: 199,
+      price: pricing.month,
       days: 30,
       key: 'month',
       popular: true,
-      features: ['Campaign visibility', 'Unlimited supporters', 'Analytics tracking', 'QR code generation', 'Priority support']
+      features: ['Campaign visibility', 'Unlimited supporters', 'Analytics tracking', 'QR code generation']
     },
     {
       name: '3 Months',
-      price: 499,
+      price: pricing['3month'],
       days: 90,
       key: '3month',
       popular: false,
-      features: ['Campaign visibility', 'Unlimited supporters', 'Analytics tracking', 'QR code generation', 'Priority support', 'Extended reach']
+      features: ['Campaign visibility', 'Unlimited supporters', 'Analytics tracking', 'QR code generation']
     },
     {
       name: '1 Year',
-      price: 1599,
+      price: pricing.year,
       days: 365,
       key: 'year',
       popular: false,
-      features: ['Campaign visibility', 'Unlimited supporters', 'Analytics tracking', 'QR code generation', 'Priority support', 'Extended reach', 'Best value']
+      features: ['Campaign visibility', 'Unlimited supporters', 'Analytics tracking', 'QR code generation']
     }
   ]
 
@@ -88,10 +163,27 @@ export default function PricingSection() {
 
               <div className="flex-1">
                 <h3 className="text-2xl font-bold text-primary mb-2">{plan.name}</h3>
-                <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-4xl font-bold text-primary">₹{plan.price}</span>
-                  <span className="text-primary/60 text-sm">/ {plan.days} days</span>
-                </div>
+                
+                {hasDiscount(plan.key) ? (
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+                        {getDiscount(plan.key)}% OFF
+                      </span>
+                      <span className="text-red-500 text-sm font-semibold">Limited Offer!</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl text-gray-400 line-through">₹{plan.price}</span>
+                      <span className="text-4xl font-bold text-emerald-600">₹{calculateDiscountedPrice(plan.key)}</span>
+                    </div>
+                    <span className="text-primary/60 text-sm">/ {plan.days} days</span>
+                  </div>
+                ) : (
+                  <div className="flex items-baseline gap-1 mb-6">
+                    <span className="text-4xl font-bold text-primary">₹{plan.price}</span>
+                    <span className="text-primary/60 text-sm">/ {plan.days} days</span>
+                  </div>
+                )}
 
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, index) => (

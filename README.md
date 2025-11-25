@@ -6,6 +6,8 @@ A complete, production-ready web application for creating and sharing custom pho
 
 - **Authentication**: Firebase Auth with email/password and Google sign-in
 - **Campaign Management**: Create, edit, delete, and share frame campaigns
+- **Payment Integration**: Cashfree payment gateway for paid campaigns
+- **Admin Dashboard**: Comprehensive admin interface for platform management
 - **Image Processing**: Client-side image composition with HTML5 Canvas
 - **Real-time Database**: Firestore for campaign data and user management
 - **File Storage**: Firebase Storage for frame images
@@ -29,7 +31,9 @@ A complete, production-ready web application for creating and sharing custom pho
 ```
 phrames/
 ├── app/
-│   ├── c/[slug]/          # Public campaign pages
+│   ├── admin/             # Admin dashboard pages
+│   ├── api/admin/         # Admin API routes
+│   ├── campaign/[slug]/   # Public campaign pages
 │   ├── create/            # Campaign creation
 │   ├── dashboard/         # User dashboard
 │   ├── login/             # Login page
@@ -37,16 +41,21 @@ phrames/
 │   ├── layout.tsx         # Root layout
 │   └── page.tsx           # Landing page
 ├── components/
+│   ├── admin/             # Admin UI components
 │   ├── AuthProvider.tsx   # Authentication context
 │   ├── AuthGuard.tsx      # Route protection
 │   ├── CampaignCard.tsx   # Campaign display component
 │   ├── Navbar.tsx         # Navigation component
 │   └── ui/                # UI components
 ├── lib/
+│   ├── admin-auth.ts      # Admin authentication
+│   ├── admin-logging.ts   # Admin logging service
+│   ├── admin-settings.ts  # Settings management
 │   ├── auth.ts            # Authentication utilities
 │   ├── firebase.ts        # Firebase configuration
 │   ├── firestore.ts       # Database operations
 │   └── storage.ts         # File upload utilities
+├── docs/                  # Documentation
 └── public/                # Static assets
 ```
 
@@ -96,6 +105,56 @@ Visit [http://localhost:3000](http://localhost:3000)
 ## 🚀 Deployment
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions for Vercel and Firebase Hosting.
+
+## 👨‍💼 Admin Dashboard
+
+The platform includes a comprehensive admin dashboard for platform management.
+
+### Admin Features
+
+- **Overview Dashboard**: Real-time statistics, revenue metrics, and growth charts
+- **Campaign Management**: Search, filter, extend, activate/deactivate campaigns
+- **User Management**: Manage users, grant admin access, block/unblock users
+- **Payment Analytics**: Track revenue, view transactions, analyze payment trends
+- **System Logs**: Audit trail of all admin actions and system events
+- **Settings Control**: Configure feature toggles, plan pricing, and platform settings
+
+### Admin Setup
+
+1. **Set Admin UID**: Add your Firebase Auth UID to environment variables
+   ```bash
+   ADMIN_UID=your-firebase-auth-uid
+   ```
+
+2. **Grant Admin Access**: Run the setup script
+   ```bash
+   npx tsx scripts/grant-admin-by-email.ts your@email.com
+   ```
+
+3. **Initialize Settings**: Create default system settings
+   ```bash
+   npx tsx scripts/initialize-admin-settings.ts
+   ```
+
+4. **Deploy Security Rules**: Deploy Firestore rules
+   ```bash
+   firebase deploy --only firestore:rules
+   ```
+
+### Admin Documentation
+
+- **[Admin Dashboard Guide](./docs/ADMIN-DASHBOARD-GUIDE.md)** - Complete admin documentation
+- **[Quick Reference](./docs/ADMIN-QUICK-REFERENCE.md)** - Common tasks and shortcuts
+- **[Troubleshooting](./docs/ADMIN-TROUBLESHOOTING.md)** - Solutions to common issues
+
+### Admin Routes
+
+- `/admin` - Overview dashboard
+- `/admin/campaigns` - Campaign management
+- `/admin/users` - User management
+- `/admin/payments` - Payment analytics
+- `/admin/logs` - System logs
+- `/admin/settings` - Platform settings
 
 ## 📱 How It Works
 

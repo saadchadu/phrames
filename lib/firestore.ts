@@ -50,6 +50,16 @@ export const createCampaign = async (campaignData: Omit<Campaign, 'id' | 'create
   try {
     console.log('createCampaign: Input data:', campaignData)
     
+    // Check if user is blocked
+    const userDoc = await getDoc(doc(db, 'users', campaignData.createdBy))
+    if (userDoc.exists()) {
+      const userData = userDoc.data()
+      if (userData?.isBlocked === true) {
+        console.error('createCampaign: User is blocked')
+        return { id: null, error: 'Your account has been blocked. You cannot create campaigns at this time.' }
+      }
+    }
+    
     // Filter out undefined values to prevent Firestore errors
     const cleanData: any = {
       campaignName: campaignData.campaignName,
@@ -662,6 +672,16 @@ export const getUserDailyStats = async (userId: string, days: number = 30): Prom
 // Check if user is eligible for free campaign
 export const checkFreeCampaignEligibility = async (userId: string): Promise<boolean> => {
   try {
+    // First check if free campaigns are enabled in system settings
+    const settingsDoc = await getDoc(doc(db, 'settings', 'system'))
+    if (settingsDoc.exists()) {
+      const settings = settingsDoc.data()
+      if (settings.freeCampaignEnabled === false) {
+        return false
+      }
+    }
+    
+    // Then check user eligibility
     const userDoc = await getDoc(doc(db, 'users', userId))
     if (!userDoc.exists()) {
       // New user - eligible for free campaign
@@ -675,44 +695,47 @@ export const checkFreeCampaignEligibility = async (userId: string): Promise<bool
   }
 }
 
-// Activate free campaign
+// Activate free campaign (via API route to bypass Firestore rules)
 export const activateFreeCampaign = async (campaignId: string, userId: string): Promise<{ error: string | null }> => {
   try {
-    // Calculate expiry date (30 days from now)
-    const expiryDate = new Date()
-    expiryDate.setDate(expiryDate.getDate() + 30)
+    console.log('activateFreeCampaign: Starting activation for campaign:', campaignId)
     
-    // Update campaign
-    const campaignRef = doc(db, 'campaigns', campaignId)
-    await updateDoc(campaignRef, {
-      isFreeCampaign: true,
-      planType: 'free',
-      amountPaid: 0,
-      paymentId: null,
-      expiresAt: expiryDate,
-      isActive: true,
-      status: 'Active'
-    })
+    // Get the current user's ID token
+    const { auth } = await import('./firebase')
+    const user = auth.currentUser
     
-    // Update user document
-    const userRef = doc(db, 'users', userId)
-    const userDoc = await getDoc(userRef)
-    
-    if (userDoc.exists()) {
-      await updateDoc(userRef, {
-        freeCampaignUsed: true
-      })
-    } else {
-      // Create user document if it doesn't exist
-      await setDoc(userRef, {
-        uid: userId,
-        freeCampaignUsed: true
-      })
+    if (!user) {
+      console.error('activateFreeCampaign: User not authenticated')
+      return { error: 'User not authenticated' }
     }
     
+    console.log('activateFreeCampaign: Getting ID token...')
+    const idToken = await user.getIdToken()
+    console.log('activateFreeCampaign: ID token obtained, calling API...')
+    
+    // Call the API route to activate the free campaign
+    const response = await fetch('/api/campaigns/activate-free', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`
+      },
+      body: JSON.stringify({ campaignId })
+    })
+    
+    console.log('activateFreeCampaign: API response status:', response.status)
+    const data = await response.json()
+    console.log('activateFreeCampaign: API response data:', data)
+    
+    if (!response.ok) {
+      console.error('activateFreeCampaign: API returned error:', data.error)
+      return { error: data.error || 'Failed to activate free campaign' }
+    }
+    
+    console.log('activateFreeCampaign: Campaign activated successfully')
     return { error: null }
   } catch (error: any) {
-    console.error('Error activating free campaign:', error)
+    console.error('activateFreeCampaign: Exception occurred:', error)
     return { error: error.message }
   }
 }

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCampaign, createPaymentRecord } from '@/lib/firestore'
-import { getPlanPrice, isValidPlanType, verifyCashfreeConfig } from '@/lib/cashfree'
+import { isValidPlanType, verifyCashfreeConfig, PRICING_PLANS } from '@/lib/cashfree'
 import { getAuth } from 'firebase-admin/auth'
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
+import { getFirestore } from 'firebase-admin/firestore'
 import type { CreateOrderRequest } from 'cashfree-pg'
 import {
   PerformanceTracker,
@@ -179,8 +180,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate amount
-    const amount = getPlanPrice(planType)
+    // Get price from Firestore settings
+    let amount: number
+    try {
+      const db = getFirestore()
+      const [plansDoc, systemDoc] = await Promise.all([
+        db.collection('settings').doc('plans').get(),
+        db.collection('settings').doc('system').get()
+      ])
+      
+      if (!plansDoc.exists) {
+        // Fallback to hardcoded prices if Firestore is not configured
+        amount = PRICING_PLANS[planType].price
+      } else {
+        const plansData = plansDoc.data()
+        const systemData = systemDoc.exists ? systemDoc.data() : {}
+        const offersEnabled = systemData?.offersEnabled ?? false
+        
+        // Get base price
+        const basePrice = plansData?.[planType] ?? PRICING_PLANS[planType].price
+        
+        // Apply discount if offers are enabled
+        if (offersEnabled && plansData?.discounts?.[planType]) {
+          const discount = plansData.discounts[planType]
+          amount = Math.round(basePrice - (basePrice * discount / 100))
+        } else {
+          amount = basePrice
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching price from Firestore, using fallback:', error)
+      amount = PRICING_PLANS[planType].price
+    }
+    
     const orderId = `order_${Date.now()}_${campaignId.substring(0, 8)}`
 
     // Create Cashfree order
@@ -224,6 +256,7 @@ export async function POST(request: NextRequest) {
       console.log('Creating Cashfree order with request:', JSON.stringify(orderRequest, null, 2))
       const response = await cashfree.PGCreateOrder(orderRequest)
       console.log('Cashfree response received successfully')
+      console.log('Full Cashfree response:', JSON.stringify(response.data, null, 2))
       console.log('Order ID:', response.data?.order_id)
       console.log('Payment Session ID:', response.data?.payment_session_id)
       cashfreeResponse = response.data
@@ -295,16 +328,29 @@ export async function POST(request: NextRequest) {
       orderId
     })
 
-    // Construct payment link using payment_session_id
-    const environment = process.env.CASHFREE_ENV === 'PRODUCTION' ? 'payments' : 'sandbox'
-    const paymentLink = `https://${environment}.cashfree.com/pay/${cashfreeResponse.payment_session_id}`
+    // Check if we have payment_session_id
+    if (!cashfreeResponse.payment_session_id) {
+      trackError()
+      logApiError({
+        endpoint: '/api/payments/initiate',
+        error: 'No payment session ID in Cashfree response',
+        userId,
+        campaignId,
+        statusCode: 500,
+        metadata: { cashfreeResponse }
+      })
+      tracker.end(false)
+      return NextResponse.json(
+        { error: 'Failed to get payment session from payment gateway' },
+        { status: 500 }
+      )
+    }
 
     tracker.end(true)
 
-    // Return payment link
+    // Return payment session ID for frontend Cashfree SDK
     return NextResponse.json({
       success: true,
-      paymentLink,
       orderId: cashfreeResponse.order_id,
       paymentSessionId: cashfreeResponse.payment_session_id
     })

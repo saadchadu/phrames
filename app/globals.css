@@ -58,6 +58,7 @@
   body {
     @apply bg-background text-foreground font-sans;
     -webkit-user-select: none;
+    -ms-user-select: none;
     user-select: none;
     overscroll-behavior-y: contain;
   }
@@ -65,12 +66,14 @@
   /* Allow text selection in inputs and content */
   input, textarea, [contenteditable], p, h1, h2, h3, h4, h5, h6 {
     -webkit-user-select: text;
+    -ms-user-select: text;
     user-select: text;
   }
   
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   
   /* Mobile-first touch targets */
@@ -147,6 +150,7 @@
 /* Custom Range Slider */
 input[type="range"].slider {
   -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
   height: 8px;
   border-radius: 4px;

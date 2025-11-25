@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signUpWithEmail, signInWithGoogle } from '@/lib/auth'
 import AuthGuard from '@/components/AuthGuard'
+import { isSignupEnabled } from '@/lib/feature-toggles'
 
 export default function SignupPage() {
   const [name, setName] = useState('')
@@ -14,10 +15,27 @@ export default function SignupPage() {
   const [photoURL, setPhotoURL] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [signupDisabled, setSignupDisabled] = useState(false)
+  const [checkingSettings, setCheckingSettings] = useState(true)
   const router = useRouter()
+
+  useEffect(() => {
+    async function checkSignupStatus() {
+      const enabled = await isSignupEnabled()
+      setSignupDisabled(!enabled)
+      setCheckingSettings(false)
+    }
+    checkSignupStatus()
+  }, [])
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (signupDisabled) {
+      setError('New signups are currently disabled. Please try again later.')
+      return
+    }
+    
     setLoading(true)
     setError('')
 
@@ -51,6 +69,11 @@ export default function SignupPage() {
   }
 
   const handleGoogleSignup = async () => {
+    if (signupDisabled) {
+      setError('New signups are currently disabled. Please try again later.')
+      return
+    }
+    
     setLoading(true)
     setError('')
 
@@ -63,6 +86,14 @@ export default function SignupPage() {
     }
     
     setLoading(false)
+  }
+  
+  if (checkingSettings) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   return (
@@ -79,6 +110,14 @@ export default function SignupPage() {
               Join Phrames and start creating beautiful photo frames.
             </p>
           </div>
+          
+          {signupDisabled && (
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-xl w-full">
+              <p className="text-yellow-800 text-sm font-medium">
+                New signups are currently disabled. Please check back later.
+              </p>
+            </div>
+          )}
           
           {error && (
             <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl w-full">
@@ -171,7 +210,7 @@ export default function SignupPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || signupDisabled}
               className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 active:scale-95 text-primary px-6 py-3.5 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 shadow-sm"
             >
               {loading ? (
@@ -196,7 +235,7 @@ export default function SignupPage() {
             {/* Google Button */}
             <button
               onClick={handleGoogleSignup}
-              disabled={loading}
+              disabled={loading || signupDisabled}
               type="button"
               className="w-full inline-flex items-center justify-center gap-3 bg-white border border-[#00240020] hover:bg-gray-50 hover:border-[#00240033] active:scale-95 text-primary px-6 py-3.5 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >

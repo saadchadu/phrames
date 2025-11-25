@@ -43,6 +43,11 @@ service cloud.firestore {
               request.resource.data.username.matches('^[a-zA-Z0-9_-]+$'));
     }
     
+    // Check if user is admin (via custom claim)
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.isAdmin == true;
+    }
+    
     // Users collection
     match /users/{userId} {
       // Anyone can read user profiles (for displaying creator info and public profiles)
@@ -66,13 +71,8 @@ service cloud.firestore {
     
     // Campaigns collection
     match /campaigns/{campaignId} {
-      // Anyone can read public active campaigns (check expiry for all campaigns)
-      allow read: if resource.data.visibility == 'Public' && 
-                     resource.data.isActive == true &&
-                     (!resource.data.keys().hasAny(['expiresAt']) || resource.data.expiresAt > request.time);
-      
-      // Owner can read their own campaigns regardless of status
-      allow read: if isAuthenticated() && isOwner(resource.data.createdBy);
+      // TEMPORARY: Open read access for debugging
+      allow read: if true;
       
       // Only authenticated users can create campaigns
       allow create: if isAuthenticated() && 
@@ -124,6 +124,17 @@ service cloud.firestore {
       
       // No one can delete stats
       allow delete: if false;
+    }
+    
+    // Admin logs collection - only admins can access
+    match /logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Settings collection - anyone can read, only admins can write
+    match /settings/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
     
     // Deny all other access

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useAuth } from './AuthProvider'
 import { logout } from '@/lib/auth'
 import { useRouter, usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 
 export default function Navbar() {
@@ -13,6 +13,27 @@ export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // Check if user is admin by checking custom claims
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user) {
+        try {
+          // Get the ID token result which includes custom claims
+          const idTokenResult = await user.getIdTokenResult()
+          setIsAdmin(idTokenResult.claims.isAdmin === true)
+        } catch (error) {
+          console.error('Error checking admin status:', error)
+          setIsAdmin(false)
+        }
+      } else {
+        setIsAdmin(false)
+      }
+    }
+    
+    checkAdminStatus()
+  }, [user])
 
   const handleSignOut = async () => {
     await logout()
@@ -49,6 +70,14 @@ export default function Navbar() {
                 >
                   Dashboard
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="text-gray-700 hover:text-secondary px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Admin
+                  </Link>
+                )}
                 <button
                   onClick={handleSignOut}
                   className="bg-secondary hover:bg-secondary/90 text-primary px-4 py-2 rounded-md text-sm font-medium transition-colors"
@@ -122,6 +151,19 @@ export default function Navbar() {
                 >
                   Create Campaign
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-3 py-3 rounded-lg text-base font-medium transition-colors ${
+                      pathname.startsWith('/admin')
+                        ? 'bg-secondary/10 text-secondary'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Admin
+                  </Link>
+                )}
                 <button
                   onClick={handleSignOut}
                   className="w-full text-left px-3 py-3 rounded-lg text-base font-medium text-red-600 hover:bg-red-50 transition-colors"

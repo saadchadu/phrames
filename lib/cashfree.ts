@@ -28,13 +28,14 @@ export function getCashfreeInstance(): Cashfree {
 export { Cashfree, CFEnvironment }
 
 // Pricing plans configuration
+// NOTE: These are fallback values. Actual prices are fetched from Firestore settings/plans
 export const PRICING_PLANS = {
   free: { name: 'Free', price: 0, days: 30 }, // Free plan - 1 month validity
   week: { name: '1 Week', price: 49, days: 7 },
-  month: { name: '1 Month', price: 199, days: 30 },
-  '3month': { name: '3 Months', price: 499, days: 90 },
-  '6month': { name: '6 Months', price: 999, days: 180 },
-  year: { name: '1 Year', price: 1599, days: 365 }
+  month: { name: '1 Month', price: 99, days: 30 },
+  '3month': { name: '3 Months', price: 249, days: 90 },
+  '6month': { name: '6 Months', price: 499, days: 180 },
+  year: { name: '1 Year', price: 899, days: 365 }
 } as const
 
 export type PlanType = keyof typeof PRICING_PLANS

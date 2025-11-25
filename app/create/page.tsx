@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
@@ -9,6 +9,7 @@ import { createCampaign, generateUniqueSlug, checkFreeCampaignEligibility, activ
 import { uploadImage, validateFrameImage } from '@/lib/storage'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import { isCampaignCreationEnabled } from '@/lib/feature-toggles'
 
 // Prevent static generation for this auth-protected page
 export const dynamic = 'force-dynamic'
@@ -30,25 +31,33 @@ export default function CreateCampaignPage() {
   const [error, setError] = useState('')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [createdCampaignId, setCreatedCampaignId] = useState<string | null>(null)
+  const [campaignCreationDisabled, setCampaignCreationDisabled] = useState(false)
+  const [checkingSettings, setCheckingSettings] = useState(true)
+  const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false)
 
-  const handleNameChange = async (name: string) => {
+  useEffect(() => {
+    async function checkCampaignCreationStatus() {
+      const enabled = await isCampaignCreationEnabled()
+      setCampaignCreationDisabled(!enabled)
+      setCheckingSettings(false)
+    }
+    checkCampaignCreationStatus()
+  }, [])
+
+  const handleNameChange = (name: string) => {
     setFormData(prev => ({ ...prev, campaignName: name }))
     
-    if (name && !formData.slug) {
-      // Auto-generate slug from name
+    // Auto-generate slug from name only if user hasn't manually edited it
+    if (!isSlugManuallyEdited) {
       const baseSlug = name
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '')
+        .trim()
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/[^a-z0-9-]/g, '') // Remove invalid characters
+        .replace(/--+/g, '-') // Replace multiple hyphens with single hyphen
+        .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
       
-      if (baseSlug) {
-        try {
-          const uniqueSlug = await generateUniqueSlug(baseSlug)
-          setFormData(prev => ({ ...prev, slug: uniqueSlug }))
-        } catch (error) {
-          console.error('Error generating slug:', error)
-        }
-      }
+      setFormData(prev => ({ ...prev, slug: baseSlug }))
     }
   }
 
@@ -83,6 +92,11 @@ export default function CreateCampaignPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user || !file) return
+    
+    if (campaignCreationDisabled) {
+      setError('Campaign creation is currently disabled. Please try again later.')
+      return
+    }
 
     setLoading(true)
     setError('')
@@ -146,8 +160,14 @@ export default function CreateCampaignPage() {
         setShowPaymentModal(true)
       }
     } catch (error: any) {
-      setError(error.message || 'Failed to create campaign')
+      const errorMessage = error.message || 'Failed to create campaign'
+      setError(errorMessage)
       setLoading(false)
+      
+      // If user is blocked, show a more prominent error
+      if (errorMessage.includes('blocked')) {
+        alert('Your account has been blocked. Please contact support for assistance.')
+      }
     }
   }
 
@@ -160,6 +180,16 @@ export default function CreateCampaignPage() {
     // If user closes modal without paying, redirect to dashboard
     setShowPaymentModal(false)
     router.push('/dashboard')
+  }
+
+  if (checkingSettings) {
+    return (
+      <AuthGuard>
+        <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </AuthGuard>
+    )
   }
 
   return (
@@ -194,6 +224,15 @@ export default function CreateCampaignPage() {
               Upload a PNG frame and set up your campaign
             </p>
           </div>
+          
+          {campaignCreationDisabled && (
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-xl w-full">
+              <p className="text-yellow-800 text-sm font-medium">
+                Campaign creation is currently disabled. Please check back later.
+              </p>
+            </div>
+          )}
+          
           {error && (
             <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl w-full">
               <p className="text-red-600 text-sm">{error}</p>
@@ -231,6 +270,9 @@ export default function CreateCampaignPage() {
                     type="text"
                     value={formData.slug}
                     onChange={(e) => {
+                      // Mark as manually edited when user types
+                      setIsSlugManuallyEdited(true)
+                      
                       // Allow only lowercase letters, numbers, and hyphens
                       let sanitizedSlug = e.target.value.toLowerCase()
                       // Convert spaces to hyphens
@@ -339,6 +381,7 @@ export default function CreateCampaignPage() {
                               setPreview(null)
                             }}
                             className="inline-flex items-center justify-center gap-2.5 border border-red-400 text-red-400 hover:bg-red-50 active:scale-95 px-5 sm:px-6 py-3 rounded-xl text-sm sm:text-base font-semibold transition-all"
+                            aria-label="Remove uploaded image"
                           >
                             Remove
                           </button>
@@ -377,7 +420,7 @@ export default function CreateCampaignPage() {
             {/* Submit Button - Full Width Below Both Columns */}
             <button
               type="submit"
-              disabled={loading || !file}
+              disabled={loading || !file || campaignCreationDisabled}
               className="w-full inline-flex items-center justify-center gap-2.5 bg-secondary hover:bg-secondary/90 active:scale-95 text-primary px-6 py-3.5 sm:py-4 rounded-xl text-base sm:text-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {loading ? (

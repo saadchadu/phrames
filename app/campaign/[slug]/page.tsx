@@ -768,7 +768,7 @@ export default function CampaignPage() {
                           <p className="text-primary font-semibold">{creatorProfile.displayName || 'Anonymous'}</p>
                           {campaign.createdAt && (
                             <p className="text-primary/60 text-xs sm:text-sm">
-                              Created {new Date(campaign.createdAt).toLocaleDateString('en-US', { 
+                              Created {(campaign.createdAt.toDate ? campaign.createdAt.toDate() : new Date(campaign.createdAt)).toLocaleDateString('en-US', { 
                                 month: 'short', 
                                 day: 'numeric', 
                                 year: 'numeric' 

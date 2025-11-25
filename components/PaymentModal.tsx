@@ -1,9 +1,22 @@
 'use client'
 
-import { useState, Fragment } from 'react'
+import { useState, Fragment, useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline'
 import { PRICING_PLANS, PlanType } from '@/lib/cashfree'
+import { getEnabledPlans } from '@/lib/feature-toggles'
+
+// Cashfree SDK types
+interface CashfreeCheckoutOptions {
+  paymentSessionId: string
+  returnUrl?: string
+  notifyUrl?: string
+  redirectTarget?: '_self' | '_blank' | '_parent' | '_top'
+}
+
+interface CashfreeSDK {
+  checkout(options: CashfreeCheckoutOptions): void
+}
 
 interface PaymentModalProps {
   isOpen: boolean
@@ -17,22 +30,65 @@ interface PricingPlan {
   id: PlanType
   name: string
   price: number
+  originalPrice?: number
+  discount?: number
   days: number
   popular?: boolean
+  enabled: boolean
 }
 
-const PLANS: PricingPlan[] = [
-  { id: 'week', name: '1 Week', price: 49, days: 7 },
-  { id: 'month', name: '1 Month', price: 199, days: 30, popular: true },
-  { id: '3month', name: '3 Months', price: 499, days: 90 },
-  { id: '6month', name: '6 Months', price: 999, days: 180 },
-  { id: 'year', name: '1 Year', price: 1599, days: 365 }
-]
+const PLAN_DETAILS: { [key: string]: { name: string; days: number; popular?: boolean } } = {
+  week: { name: '1 Week', days: 7 },
+  month: { name: '1 Month', days: 30, popular: true },
+  '3month': { name: '3 Months', days: 90 },
+  '6month': { name: '6 Months', days: 180 },
+  year: { name: '1 Year', days: 365 }
+}
 
 export default function PaymentModal({ isOpen, onClose, campaignId, campaignName, onSuccess }: PaymentModalProps) {
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [plans, setPlans] = useState<PricingPlan[]>([])
+  const [loadingPlans, setLoadingPlans] = useState(true)
+
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        const { plans: enabledPlans, allDisabled } = await getEnabledPlans()
+        
+        if (allDisabled) {
+          setError('No payment plans are currently available. Please contact support.')
+          setLoadingPlans(false)
+          return
+        }
+        
+        const planList: PricingPlan[] = Object.entries(enabledPlans)
+          .filter(([_, plan]) => plan.enabled)
+          .map(([id, plan]) => ({
+            id: id as PlanType,
+            name: PLAN_DETAILS[id].name,
+            price: plan.price,
+            originalPrice: plan.originalPrice,
+            discount: plan.discount,
+            days: PLAN_DETAILS[id].days,
+            popular: PLAN_DETAILS[id].popular,
+            enabled: plan.enabled
+          }))
+        
+        setPlans(planList)
+        setLoadingPlans(false)
+      } catch (error) {
+        console.error('Error fetching plans:', error)
+        setError('Failed to load payment plans. Please try again.')
+        setLoadingPlans(false)
+      }
+    }
+    
+    if (isOpen) {
+      fetchPlans()
+    }
+  }, [isOpen])
 
   const handleContinue = async () => {
     if (!selectedPlan) return
@@ -68,11 +124,44 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
         throw new Error(data.error || 'Failed to initiate payment')
       }
 
-      if (data.paymentLink) {
-        // Redirect to Cashfree payment page
-        window.location.href = data.paymentLink
+      if (data.paymentSessionId) {
+        // Wait for Cashfree SDK to load
+        const waitForCashfree = (): Promise<any> => {
+          return new Promise((resolve, reject) => {
+            let attempts = 0
+            const maxAttempts = 50 // 5 seconds max wait
+            
+            const checkCashfree = () => {
+              if ((window as any).Cashfree) {
+                resolve((window as any).Cashfree)
+              } else if (attempts < maxAttempts) {
+                attempts++
+                setTimeout(checkCashfree, 100)
+              } else {
+                reject(new Error('Cashfree SDK failed to load'))
+              }
+            }
+            
+            checkCashfree()
+          })
+        }
+
+        const Cashfree = await waitForCashfree()
+        
+        // Initialize Cashfree with environment
+        const cashfree = Cashfree({
+          mode: process.env.NEXT_PUBLIC_CASHFREE_ENV === 'PRODUCTION' ? 'production' : 'sandbox'
+        })
+
+        // Open checkout
+        const checkoutOptions = {
+          paymentSessionId: data.paymentSessionId,
+          returnUrl: `${window.location.origin}/dashboard?payment=success&campaignId=${campaignId}`
+        }
+
+        cashfree.checkout(checkoutOptions)
       } else {
-        throw new Error('No payment link received')
+        throw new Error('No payment session received')
       }
     } catch (error: any) {
       console.error('Payment initiation error:', error)
@@ -125,6 +214,7 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
                     onClick={onClose}
                     className="text-primary/60 hover:text-primary transition-colors p-1"
                     disabled={loading}
+                    aria-label="Close payment modal"
                   >
                     <XMarkIcon className="h-6 w-6" />
                   </button>
@@ -137,9 +227,17 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
                   </div>
                 )}
 
+                {/* Loading State */}
+                {loadingPlans && (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                  </div>
+                )}
+
                 {/* Pricing Plans Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                  {PLANS.map((plan) => (
+                {!loadingPlans && plans.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    {plans.map((plan) => (
                     <button
                       key={plan.id}
                       onClick={() => setSelectedPlan(plan.id)}
@@ -170,10 +268,24 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
 
                       {/* Plan Details */}
                       <div className="flex flex-col gap-2">
-                        <h4 className="text-lg font-bold text-primary">{plan.name}</h4>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-bold text-primary">₹{plan.price}</span>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-lg font-bold text-primary">{plan.name}</h4>
+                          {plan.discount && plan.discount > 0 && (
+                            <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                              {plan.discount}% OFF
+                            </span>
+                          )}
                         </div>
+                        {plan.originalPrice && plan.discount && plan.discount > 0 ? (
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-lg text-gray-400 line-through">₹{plan.originalPrice}</span>
+                            <span className="text-3xl font-bold text-emerald-600">₹{plan.price}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-3xl font-bold text-primary">₹{plan.price}</span>
+                          </div>
+                        )}
                         <p className="text-sm text-primary/60">{plan.days} days of access</p>
                       </div>
 
@@ -195,11 +307,20 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
                         </ul>
                       </div>
                     </button>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* No Plans Available */}
+                {!loadingPlans && plans.length === 0 && !error && (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600">No payment plans are currently available.</p>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                {!loadingPlans && plans.length > 0 && (
+                  <div className="flex flex-col sm:flex-row gap-3 justify-end">
                   <button
                     onClick={onClose}
                     disabled={loading}
@@ -221,12 +342,15 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
                       'Continue to Checkout'
                     )}
                   </button>
-                </div>
+                  </div>
+                )}
 
                 {/* Security Note */}
-                <p className="mt-4 text-xs text-center text-primary/50">
-                  Secure payment powered by Cashfree • Your payment information is encrypted
-                </p>
+                {!loadingPlans && plans.length > 0 && (
+                  <p className="mt-4 text-xs text-center text-primary/50">
+                    Secure payment powered by Cashfree • Your payment information is encrypted
+                  </p>
+                )}
               </Dialog.Panel>
             </Transition.Child>
           </div>

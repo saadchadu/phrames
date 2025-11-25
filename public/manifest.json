@@ -10,25 +10,13 @@
   "icons": [
     {
       "src": "/icons/favicon.png",
-      "sizes": "192x192",
+      "sizes": "50x50",
       "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/favicon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "categories": ["photo", "social", "utilities"],
-  "screenshots": [
-    {
-      "src": "/images/Hero.png",
-      "sizes": "450x490",
-      "type": "image/png"
-    }
-  ],
+
   "shortcuts": [
     {
       "name": "Create Campaign",
@@ -38,7 +26,7 @@
       "icons": [
         {
           "src": "/icons/favicon.png",
-          "sizes": "192x192"
+          "sizes": "50x50"
         }
       ]
     },
@@ -50,7 +38,7 @@
       "icons": [
         {
           "src": "/icons/favicon.png",
-          "sizes": "192x192"
+          "sizes": "50x50"
         }
       ]
     }
