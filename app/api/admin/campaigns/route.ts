@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import type { Query } from 'firebase-admin/firestore';
 import { logCampaignDeactivated, logCampaignReactivated, logCampaignExtended, logCampaignDeleted } from '@/lib/admin-logging';
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
-
-const db = admin.firestore();
+const db = adminDb;
 
 // Helper to safely convert Firestore timestamp to Date
 function toDate(timestamp: any): Date | null {
@@ -38,7 +30,7 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
 
-    let query: admin.firestore.Query = db.collection('campaigns');
+    let query: Query = db.collection('campaigns');
 
     // Apply filters
     if (userId) {
@@ -160,7 +152,7 @@ export async function PATCH(request: NextRequest) {
         await campaignRef.update({
           isActive: true,
           status: 'Active',
-          expiresAt: admin.firestore.Timestamp.fromDate(newExpiryDate),
+          expiresAt: Timestamp.fromDate(newExpiryDate),
         });
         await logCampaignReactivated(
           adminId,
@@ -176,7 +168,7 @@ export async function PATCH(request: NextRequest) {
         const extendedExpiry = new Date(currentExpiry.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
         
         await campaignRef.update({
-          expiresAt: admin.firestore.Timestamp.fromDate(extendedExpiry),
+          expiresAt: Timestamp.fromDate(extendedExpiry),
         });
         await logCampaignExtended(
           adminId,
@@ -199,7 +191,7 @@ export async function PATCH(request: NextRequest) {
         const oldExpiry = toDate(campaignData?.expiresAt) || new Date();
         
         await campaignRef.update({
-          expiresAt: admin.firestore.Timestamp.fromDate(customExpiry),
+          expiresAt: Timestamp.fromDate(customExpiry),
         });
         await logCampaignExtended(
           adminId,

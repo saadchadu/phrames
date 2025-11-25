@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import type { Query } from 'firebase-admin/firestore';
 import { 
   logUserBlocked, 
   logUserUnblocked, 
@@ -9,15 +11,7 @@ import {
 } from '@/lib/admin-logging';
 import { setAdminClaim } from '@/lib/admin-auth';
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
+const db = adminDb;
 
 const db = admin.firestore();
 
@@ -43,7 +37,7 @@ export async function GET(request: NextRequest) {
     const blockedFilter = searchParams.get('blocked');
     const minCampaigns = searchParams.get('minCampaigns');
 
-    let query: admin.firestore.Query = db.collection('users');
+    let query: Query = db.collection('users');
 
     // Apply filters
     if (freeCampaignFilter === 'true') {
@@ -165,7 +159,7 @@ export async function PATCH(request: NextRequest) {
       case 'block':
         await userRef.update({
           isBlocked: true,
-          blockedAt: admin.firestore.FieldValue.serverTimestamp(),
+          blockedAt: FieldValue.serverTimestamp(),
           blockedBy: adminId,
           blockedReason: data.reason || 'No reason provided',
         });
@@ -180,9 +174,9 @@ export async function PATCH(request: NextRequest) {
       case 'unblock':
         await userRef.update({
           isBlocked: false,
-          blockedAt: admin.firestore.FieldValue.delete(),
-          blockedBy: admin.firestore.FieldValue.delete(),
-          blockedReason: admin.firestore.FieldValue.delete(),
+          blockedAt: FieldValue.delete(),
+          blockedBy: FieldValue.delete(),
+          blockedReason: FieldValue.delete(),
         });
         await logUserUnblocked(
           adminId,
@@ -238,7 +232,7 @@ export async function DELETE(request: NextRequest) {
     
     // Delete user from Firebase Auth
     try {
-      await admin.auth().deleteUser(userId);
+      await adminAuth.deleteUser(userId);
     } catch (authError) {
       console.error('Error deleting user from Auth:', authError);
     }

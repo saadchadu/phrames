@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
+import type { Query } from 'firebase-admin/firestore';
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
-
-const db = admin.firestore();
+const db = adminDb;
 
 // Helper to safely convert Firestore timestamp to Date
 function toDate(timestamp: any): Date | null {
@@ -34,7 +26,7 @@ export async function GET(request: NextRequest) {
     const planType = searchParams.get('planType');
     const timeRange = searchParams.get('timeRange');
 
-    let query: admin.firestore.Query = db.collection('payments');
+    let query: Query = db.collection('payments');
 
     // Apply status filter
     if (status) {
@@ -65,7 +57,7 @@ export async function GET(request: NextRequest) {
           startDate = new Date(0);
       }
 
-      query = query.where('createdAt', '>=', admin.firestore.Timestamp.fromDate(startDate));
+      query = query.where('createdAt', '>=', Timestamp.fromDate(startDate));
     }
 
     // Order by creation date (most recent first)

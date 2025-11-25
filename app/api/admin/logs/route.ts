@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
+import type { Query } from 'firebase-admin/firestore';
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
-
-const db = admin.firestore();
+const db = adminDb;
 
 // Helper to safely convert Firestore timestamp to Date
 function toDate(timestamp: any): Date | null {
@@ -34,7 +26,7 @@ export async function GET(request: NextRequest) {
     const dateRange = searchParams.get('dateRange');
     const limit = parseInt(searchParams.get('limit') || '100');
 
-    let query: admin.firestore.Query = db.collection('logs');
+    let query: Query = db.collection('logs');
 
     if (eventType) {
       query = query.where('eventType', '==', eventType);
@@ -47,25 +39,25 @@ export async function GET(request: NextRequest) {
       switch (dateRange) {
         case 'today':
           const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          query = query.where('createdAt', '>=', admin.firestore.Timestamp.fromDate(todayStart));
+          query = query.where('createdAt', '>=', Timestamp.fromDate(todayStart));
           break;
         case 'yesterday':
           const yesterdayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
           const yesterdayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          query = query.where('createdAt', '>=', admin.firestore.Timestamp.fromDate(yesterdayStart));
-          query = query.where('createdAt', '<', admin.firestore.Timestamp.fromDate(yesterdayEnd));
+          query = query.where('createdAt', '>=', Timestamp.fromDate(yesterdayStart));
+          query = query.where('createdAt', '<', Timestamp.fromDate(yesterdayEnd));
           break;
         case 'last7days':
           const last7Start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          query = query.where('createdAt', '>=', admin.firestore.Timestamp.fromDate(last7Start));
+          query = query.where('createdAt', '>=', Timestamp.fromDate(last7Start));
           break;
         case 'last30days':
           const last30Start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          query = query.where('createdAt', '>=', admin.firestore.Timestamp.fromDate(last30Start));
+          query = query.where('createdAt', '>=', Timestamp.fromDate(last30Start));
           break;
         case 'last90days':
           const last90Start = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          query = query.where('createdAt', '>=', admin.firestore.Timestamp.fromDate(last90Start));
+          query = query.where('createdAt', '>=', Timestamp.fromDate(last90Start));
           break;
         default:
           // No date filter

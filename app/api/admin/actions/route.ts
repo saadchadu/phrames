@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as admin from 'firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { logManualCronTrigger, logDataExport } from '@/lib/admin-logging';
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
-
-const db = admin.firestore();
+const db = adminDb;
 
 // Helper to safely convert Firestore timestamp to Date
 function toDate(timestamp: any): Date | null {
