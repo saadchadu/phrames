@@ -16,6 +16,16 @@ function initializeFirebaseAdmin() {
     }
 
     // Handle different private key formats
+    // Check if it's base64 encoded (no BEGIN/END markers)
+    if (!privateKey.includes('BEGIN PRIVATE KEY')) {
+      try {
+        // Try to decode from base64
+        privateKey = Buffer.from(privateKey, 'base64').toString('utf-8')
+      } catch (e) {
+        // Not base64, continue with other formats
+      }
+    }
+    
     // Remove quotes if present
     privateKey = privateKey.replace(/^["']|["']$/g, '')
     // Replace literal \n with actual newlines
