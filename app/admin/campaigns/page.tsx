@@ -19,6 +19,7 @@ interface Campaign {
   createdAt: string;
   expiresAt?: string;
   isExpired?: boolean;
+  imageUrl?: string;
 }
 
 export default function AdminCampaignsPage() {
