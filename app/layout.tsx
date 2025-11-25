@@ -79,8 +79,8 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <meta name="HandheldFriendly" content="true" />
         <link rel="apple-touch-icon" href="/icons/favicon.png" />
-        {/* Cashfree Payment Gateway SDK */}
-        <script src="https://sdk.cashfree.com/js/v3/cashfree.js" async></script>
+        {/* Cashfree Payment Gateway SDK v3 */}
+        <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
       </head>
       <body className="font-sans antialiased">
         <ErrorBoundary>

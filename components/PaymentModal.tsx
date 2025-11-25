@@ -106,6 +106,8 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
 
       const token = await user.getIdToken()
 
+      console.log('Initiating payment for campaign:', campaignId, 'plan:', selectedPlan)
+      
       const response = await fetch('/api/payments/initiate', {
         method: 'POST',
         headers: {
@@ -119,12 +121,21 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
       })
 
       const data = await response.json()
+      console.log('Payment initiation response:', data)
 
       if (!response.ok) {
+        console.error('Payment initiation failed:', data)
         throw new Error(data.error || 'Failed to initiate payment')
+      }
+      
+      if (!data.paymentSessionId) {
+        console.error('No payment session ID in response:', data)
+        throw new Error('Payment session ID not received from server')
       }
 
       if (data.paymentSessionId) {
+        console.log('Payment session ID received:', data.paymentSessionId)
+        
         // Wait for Cashfree SDK to load
         const waitForCashfree = (): Promise<any> => {
           return new Promise((resolve, reject) => {
@@ -133,6 +144,7 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
             
             const checkCashfree = () => {
               if ((window as any).Cashfree) {
+                console.log('Cashfree SDK loaded successfully')
                 resolve((window as any).Cashfree)
               } else if (attempts < maxAttempts) {
                 attempts++
@@ -149,17 +161,35 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
         const Cashfree = await waitForCashfree()
         
         // Initialize Cashfree with environment
+        const mode = process.env.NEXT_PUBLIC_CASHFREE_ENV === 'PRODUCTION' ? 'production' : 'sandbox'
+        console.log('Initializing Cashfree in mode:', mode)
+        
         const cashfree = Cashfree({
-          mode: process.env.NEXT_PUBLIC_CASHFREE_ENV === 'PRODUCTION' ? 'production' : 'sandbox'
+          mode: mode
         })
 
-        // Open checkout
+        // Open checkout with proper options
         const checkoutOptions = {
           paymentSessionId: data.paymentSessionId,
-          returnUrl: `${window.location.origin}/dashboard?payment=success&campaignId=${campaignId}`
+          returnUrl: `${window.location.origin}/dashboard?payment=success&campaignId=${campaignId}`,
+          redirectTarget: '_self' as const
         }
-
-        cashfree.checkout(checkoutOptions)
+        
+        console.log('Opening Cashfree checkout with options:', checkoutOptions)
+        
+        cashfree.checkout(checkoutOptions).then((result: any) => {
+          console.log('Checkout result:', result)
+          if (result.error) {
+            console.error('Checkout error:', result.error)
+            throw new Error(result.error.message || 'Checkout failed')
+          }
+          if (result.redirect) {
+            console.log('Redirecting to:', result.paymentDetails)
+          }
+        }).catch((error: any) => {
+          console.error('Checkout promise error:', error)
+          throw error
+        })
       } else {
         throw new Error('No payment session received')
       }
