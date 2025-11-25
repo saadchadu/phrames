@@ -40,6 +40,8 @@
     "node_modules",
     "functions-setup",
     "functions",
-    "tests"
+    "tests",
+    "scripts/check-payment-status.ts",
+    "scripts/manually-activate-campaign.ts"
   ]
 }

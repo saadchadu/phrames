@@ -36,3 +36,11 @@ coverage
 # Temporary files
 *.tmp
 *.temp
+
+# Scripts (not needed for deployment)
+scripts/check-payment-status.ts
+scripts/manually-activate-campaign.ts
+
+# Documentation
+PAYMENT_TROUBLESHOOTING.md
+QUICK_FIX_GUIDE.md

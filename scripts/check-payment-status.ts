@@ -59,7 +59,7 @@ async function checkPaymentStatus(campaignId: string) {
     if (paymentsSnapshot.empty) {
       console.log('  No payments found for this campaign')
     } else {
-      paymentsSnapshot.forEach((doc, index) => {
+      paymentsSnapshot.docs.forEach((doc, index) => {
         const payment = doc.data()
         console.log(`\n  Payment ${index + 1}:`)
         console.log('    ID:', doc.id)
@@ -88,7 +88,7 @@ async function checkPaymentStatus(campaignId: string) {
     if (logsSnapshot.empty) {
       console.log('  No logs found for this campaign')
     } else {
-      logsSnapshot.forEach((doc, index) => {
+      logsSnapshot.docs.forEach((doc, index) => {
         const log = doc.data()
         console.log(`\n  Log ${index + 1}:`)
         console.log('    Event Type:', log.eventType)
@@ -110,7 +110,7 @@ async function checkPaymentStatus(campaignId: string) {
       console.log('  No webhook logs found')
       console.log('  ⚠️  This might indicate webhooks are not being received!')
     } else {
-      webhookLogsSnapshot.forEach((doc, index) => {
+      webhookLogsSnapshot.docs.forEach((doc, index) => {
         const log = doc.data()
         console.log(`\n  Webhook Log ${index + 1}:`)
         console.log('    Event Type:', log.eventType)
