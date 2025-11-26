@@ -221,12 +221,17 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
         .limit(10)
         .get()
       
-      const recentPayments = recentPaymentsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        orderId: doc.data().orderId,
-        cashfreeOrderId: doc.data().cashfreeOrderId,
-        status: doc.data().status
-      }))
+      const recentPayments = recentPaymentsSnapshot.docs.map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          orderId: data.orderId,
+          cashfreeOrderId: data.cashfreeOrderId,
+          campaignId: data.campaignId,
+          status: data.status,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || 'unknown'
+        }
+      })
       
       console.error('Recent payments in database:', JSON.stringify(recentPayments, null, 2))
       

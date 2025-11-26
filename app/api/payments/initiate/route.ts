@@ -311,6 +311,24 @@ export async function POST(request: NextRequest) {
       const db = getFirestore()
       const paymentRef = await db.collection('payments').add(paymentRecord)
       console.log('Payment record created successfully:', paymentRef.id)
+      console.log('Stored orderId:', orderId)
+      console.log('Stored cashfreeOrderId:', cashfreeResponse.cf_order_id || orderId)
+      
+      // Also log to admin logs for debugging
+      await db.collection('logs').add({
+        eventType: 'payment_initiated',
+        actorId: userId,
+        description: `Payment initiated for campaign ${campaignId}`,
+        metadata: {
+          paymentRecordId: paymentRef.id,
+          orderId: orderId,
+          cashfreeOrderId: cashfreeResponse.cf_order_id || orderId,
+          campaignId,
+          amount,
+          planType
+        },
+        createdAt: Timestamp.now()
+      })
     } catch (recordError: any) {
       console.error('Failed to create payment record:', recordError)
       logApiError({
