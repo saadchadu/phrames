@@ -79,7 +79,6 @@ export async function getSystemSettings(): Promise<SystemSettings> {
     // Return default settings if not found
     return DEFAULT_SYSTEM_SETTINGS;
   } catch (error) {
-    console.error('Error getting system settings:', error);
     throw new Error('Failed to retrieve system settings');
   }
 }
@@ -105,9 +104,7 @@ export async function updateSystemSettings(
     };
 
     await setDoc(settingsRef, updateData, { merge: true });
-    console.log('System settings updated by admin:', adminId);
   } catch (error) {
-    console.error('Error updating system settings:', error);
     throw new Error('Failed to update system settings');
   }
 }
@@ -130,7 +127,6 @@ export async function getPlanPricing(): Promise<PlanPricing> {
     // Return default pricing if not found
     return DEFAULT_PLAN_PRICING;
   } catch (error) {
-    console.error('Error getting plan pricing:', error);
     throw new Error('Failed to retrieve plan pricing');
   }
 }
@@ -166,9 +162,7 @@ export async function updatePlanPricing(
     };
 
     await setDoc(pricingRef, updateData, { merge: true });
-    console.log('Plan pricing updated by admin:', adminId);
   } catch (error) {
-    console.error('Error updating plan pricing:', error);
     throw new Error(error instanceof Error ? error.message : 'Failed to update plan pricing');
   }
 }
@@ -191,7 +185,6 @@ export async function initializeDefaultSettings(): Promise<void> {
         updatedAt: Timestamp.now(),
         updatedBy: 'system',
       });
-      console.log('Default system settings initialized');
     }
 
     // Initialize plan pricing
@@ -204,10 +197,8 @@ export async function initializeDefaultSettings(): Promise<void> {
         updatedAt: Timestamp.now(),
         updatedBy: 'system',
       });
-      console.log('Default plan pricing initialized');
     }
   } catch (error) {
-    console.error('Error initializing default settings:', error);
     throw new Error('Failed to initialize default settings');
   }
 }
@@ -225,7 +216,6 @@ export async function isFeatureEnabled(
     const settings = await getSystemSettings();
     return settings[feature] === true;
   } catch (error) {
-    console.error('Error checking feature status:', error);
     // Default to enabled if there's an error
     return true;
   }
@@ -244,7 +234,6 @@ export async function isPlanEnabled(
     const settings = await getSystemSettings();
     return settings.enabledPlans[plan] === true;
   } catch (error) {
-    console.error('Error checking plan status:', error);
     // Default to enabled if there's an error
     return true;
   }
@@ -263,7 +252,6 @@ export async function getPlanPrice(
     const pricing = await getPlanPricing();
     return pricing[plan];
   } catch (error) {
-    console.error('Error getting plan price:', error);
     // Return default price if there's an error
     return DEFAULT_PLAN_PRICING[plan];
   }
@@ -295,7 +283,6 @@ export async function getEnabledPlansWithPrices(): Promise<{
 
     return plans;
   } catch (error) {
-    console.error('Error getting enabled plans with prices:', error);
     throw new Error('Failed to retrieve enabled plans with prices');
   }
 }

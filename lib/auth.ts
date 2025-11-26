@@ -65,7 +65,6 @@ export const isUsernameUnique = async (username: string, excludeUid?: string): P
     
     return false
   } catch (error) {
-    console.error('Error checking username uniqueness:', error)
     return false
   }
 }
@@ -83,7 +82,6 @@ export const getUserByUsername = async (username: string): Promise<UserProfile |
     }
     return null
   } catch (error) {
-    console.error('Error getting user by username:', error)
     return null
   }
 }
@@ -190,11 +188,11 @@ export const createUserProfile = async (user: User, customDisplayName?: string, 
             body: JSON.stringify({ userId: uid })
           })
         } catch (error) {
-          console.error('Error setting admin claim:', error)
+          // Silently fail admin claim setting
         }
       }
     } catch (error) {
-      console.error('Error creating user profile:', error)
+      // Silently fail profile creation
     }
   } else {
     // User exists, check if they should be admin but aren't
@@ -217,7 +215,7 @@ export const createUserProfile = async (user: User, customDisplayName?: string, 
           body: JSON.stringify({ userId: user.uid })
         })
       } catch (error) {
-        console.error('Error updating admin status:', error)
+        // Silently fail admin status update
       }
     }
   }
@@ -230,7 +228,6 @@ export const updateUserProfile = async (uid: string, updates: Partial<UserProfil
     await setDoc(userRef, updates, { merge: true })
     return { error: null }
   } catch (error: any) {
-    console.error('Error updating user profile:', error)
     return { error: error.message }
   }
 }
@@ -245,7 +242,6 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     }
     return null
   } catch (error) {
-    console.error('Error getting user profile:', error)
     return null
   }
 }

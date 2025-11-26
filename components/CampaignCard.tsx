@@ -58,7 +58,6 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
       await navigator.clipboard.writeText(url)
       toast('Link copied to clipboard!', 'success')
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error)
       toast('Failed to copy link', 'error')
     }
   }
@@ -87,7 +86,6 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
       
       toast('QR code downloaded!', 'success')
     } catch (error) {
-      console.error('Error downloading QR code:', error)
       toast('Failed to download QR code', 'error')
     }
   }

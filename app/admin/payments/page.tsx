@@ -52,7 +52,6 @@ function PaymentsContent() {
       const json = await res.json();
       setData(json);
     } catch (error) {
-      console.error('Error:', error);
       setError(error instanceof Error ? error.message : 'Failed to load payments');
     } finally {
       setLoading(false);
@@ -107,7 +106,6 @@ function PaymentsContent() {
       closeRefundModal();
       fetchPayments(); // Refresh the list
     } catch (error: any) {
-      console.error('Refund error:', error);
       toast(error.message || 'Failed to process refund', 'error');
     } finally {
       setRefundingPayment(false);

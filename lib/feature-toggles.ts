@@ -20,7 +20,6 @@ export async function isSignupEnabled(): Promise<boolean> {
     
     return true; // Default to enabled
   } catch (error) {
-    console.error('Error checking signup status:', error);
     return true; // Default to enabled on error
   }
 }
@@ -40,7 +39,6 @@ export async function isCampaignCreationEnabled(): Promise<boolean> {
     
     return true; // Default to enabled
   } catch (error) {
-    console.error('Error checking campaign creation status:', error);
     return true; // Default to enabled on error
   }
 }
@@ -60,7 +58,6 @@ export async function isFreeCampaignEnabled(): Promise<boolean> {
     
     return true; // Default to enabled
   } catch (error) {
-    console.error('Error checking free campaign status:', error);
     return true; // Default to enabled on error
   }
 }
@@ -119,7 +116,6 @@ export async function getEnabledPlans(): Promise<{
     
     return { plans, allDisabled, offersEnabled };
   } catch (error) {
-    console.error('Error getting enabled plans:', error);
     // Return defaults on error
     return {
       plans: {

@@ -15,7 +15,8 @@
     "preview-test-users": "ts-node --project tsconfig.scripts.json scripts/preview-test-users.ts",
     "cleanup-test-users": "ts-node --project tsconfig.scripts.json scripts/cleanup-test-users.ts",
     "list-all-users": "ts-node --project tsconfig.scripts.json scripts/list-all-users.ts",
-    "delete-all-except": "ts-node --project tsconfig.scripts.json scripts/delete-all-except.ts"
+    "delete-all-except": "ts-node --project tsconfig.scripts.json scripts/delete-all-except.ts",
+    "check-user": "ts-node --project tsconfig.scripts.json scripts/check-current-user.ts"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",

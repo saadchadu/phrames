@@ -79,7 +79,6 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
         setPlans(planList)
         setLoadingPlans(false)
       } catch (error) {
-        console.error('Error fetching plans:', error)
         setError('Failed to load payment plans. Please try again.')
         setLoadingPlans(false)
       }
@@ -105,8 +104,6 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
       }
 
       const token = await user.getIdToken()
-
-      console.log('Initiating payment for campaign:', campaignId, 'plan:', selectedPlan)
       
       const response = await fetch('/api/payments/initiate', {
         method: 'POST',
@@ -121,20 +118,16 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
       })
 
       const data = await response.json()
-      console.log('Payment initiation response:', data)
 
       if (!response.ok) {
-        console.error('Payment initiation failed:', data)
         throw new Error(data.error || 'Failed to initiate payment')
       }
       
       if (!data.paymentSessionId) {
-        console.error('No payment session ID in response:', data)
         throw new Error('Payment session ID not received from server')
       }
 
       if (data.paymentSessionId) {
-        console.log('Payment session ID received:', data.paymentSessionId)
         
         // Wait for Cashfree SDK to load
         const waitForCashfree = (): Promise<any> => {
@@ -144,7 +137,6 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
             
             const checkCashfree = () => {
               if ((window as any).Cashfree) {
-                console.log('Cashfree SDK loaded successfully')
                 resolve((window as any).Cashfree)
               } else if (attempts < maxAttempts) {
                 attempts++
@@ -162,8 +154,6 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
         
         // Initialize Cashfree with environment
         const mode = process.env.NEXT_PUBLIC_CASHFREE_ENV === 'PRODUCTION' ? 'production' : 'sandbox'
-        console.log('Initializing Cashfree in mode:', mode)
-        console.log('NEXT_PUBLIC_CASHFREE_ENV value:', process.env.NEXT_PUBLIC_CASHFREE_ENV)
         
         const cashfree = Cashfree({
           mode: mode
@@ -175,20 +165,12 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
           returnUrl: `${window.location.origin}/dashboard?payment=success&campaignId=${campaignId}`
         }
         
-        console.log('Opening Cashfree checkout with options:', JSON.stringify(checkoutOptions))
-        
         // Call checkout - it will redirect automatically
         await cashfree.checkout(checkoutOptions)
       } else {
         throw new Error('No payment session received')
       }
     } catch (error: any) {
-      console.error('Payment initiation error:', error)
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response
-      })
       setError(error.message || 'Failed to initiate payment. Please try again.')
       setLoading(false)
     }

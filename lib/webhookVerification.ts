@@ -15,7 +15,6 @@ export function verifyCashfreeSignature(
   try {
     const secret = process.env.CASHFREE_CLIENT_SECRET
     if (!secret) {
-      console.error('CASHFREE_CLIENT_SECRET not configured')
       return false
     }
 
@@ -29,7 +28,6 @@ export function verifyCashfreeSignature(
     
     return expectedSignature === signature
   } catch (error) {
-    console.error('Signature verification error:', error)
     return false
   }
 }

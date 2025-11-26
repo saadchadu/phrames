@@ -8,7 +8,6 @@ export const uploadImage = async (file: File, path: string): Promise<string | nu
     const downloadURL = await getDownloadURL(snapshot.ref)
     return downloadURL
   } catch (error) {
-    console.error('Error uploading image:', error)
     return null
   }
 }
@@ -19,7 +18,6 @@ export const deleteImage = async (path: string): Promise<boolean> => {
     await deleteObject(storageRef)
     return true
   } catch (error) {
-    console.error('Error deleting image:', error)
     return false
   }
 }
@@ -136,7 +134,6 @@ export const validateFrameImage = async (file: File): Promise<{ valid: boolean; 
     
     return { valid: true }
   } catch (error) {
-    console.error('Error validating frame image:', error)
     return { valid: false, error: 'Error validating image. Please try again.' }
   }
 }

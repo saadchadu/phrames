@@ -44,15 +44,15 @@ export function Toaster() {
   }, [])
 
   return (
-    <div className="fixed top-4 right-4 left-4 sm:left-auto z-50 space-y-3 sm:w-96 max-w-full">
+    <div className="fixed top-4 right-4 left-4 sm:left-auto z-[9999] space-y-3 sm:w-96 max-w-full pointer-events-none">
       {currentToasts.map((toast) => (
         <div
           key={toast.id}
           className={cn(
-            "flex items-start gap-3 p-4 rounded-xl border untitled-ui-shadow-lg bg-white animate-slide-in-right",
-            toast.type === 'success' && 'border-green-200',
-            toast.type === 'error' && 'border-red-200',
-            toast.type === 'info' && 'border-blue-200'
+            "flex items-start gap-3 p-4 rounded-xl border shadow-2xl bg-white animate-slide-in-right pointer-events-auto",
+            toast.type === 'success' && 'border-green-200 bg-green-50',
+            toast.type === 'error' && 'border-red-200 bg-red-50',
+            toast.type === 'info' && 'border-blue-200 bg-blue-50'
           )}
         >
           <div className="flex-shrink-0">

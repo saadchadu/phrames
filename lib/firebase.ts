@@ -17,7 +17,6 @@ const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'mes
 const missingKeys = requiredKeys.filter(key => !firebaseConfig[key as keyof typeof firebaseConfig])
 
 if (missingKeys.length > 0 && typeof window !== 'undefined') {
-  console.error('Missing Firebase configuration keys:', missingKeys)
   throw new Error(`Missing Firebase configuration: ${missingKeys.join(', ')}`)
 }
 
@@ -26,7 +25,6 @@ let app
 try {
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 } catch (error) {
-  console.error('Firebase initialization error:', error)
   throw new Error('Failed to initialize Firebase')
 }
 

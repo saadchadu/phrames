@@ -32,8 +32,6 @@ function initializeFirebaseAdmin() {
     privateKey = privateKey.replace(/\\n/g, '\n')
     // Trim any extra whitespace
     privateKey = privateKey.trim()
-
-    console.log('[firebase-admin] Initializing with project:', projectId)
     
     const app = admin.initializeApp({
       credential: admin.credential.cert({
@@ -43,10 +41,8 @@ function initializeFirebaseAdmin() {
       })
     })
     
-    console.log('[firebase-admin] Initialized successfully')
     return app
   } catch (error) {
-    console.error('[firebase-admin] Initialization error:', error)
     throw error
   }
 }
@@ -71,7 +67,6 @@ export async function verifyIdToken(token: string) {
   try {
     return await adminAuth.verifyIdToken(token)
   } catch (error) {
-    console.error('Error verifying ID token:', error)
     throw new Error('Invalid authentication token')
   }
 }

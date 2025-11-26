@@ -48,8 +48,6 @@ export interface User {
 // Campaign CRUD operations
 export const createCampaign = async (campaignData: Omit<Campaign, 'id' | 'createdAt' | 'supportersCount'>) => {
   try {
-    console.log('createCampaign: Input data:', campaignData)
-    
     // Check if user is blocked
     const userDoc = await getDoc(doc(db, 'users', campaignData.createdBy))
     if (userDoc.exists()) {
@@ -83,10 +81,7 @@ export const createCampaign = async (campaignData: Omit<Campaign, 'id' | 'create
       cleanData.description = campaignData.description.trim()
     }
     
-    console.log('createCampaign: Clean data to save:', cleanData)
-    
     const docRef = await addDoc(collection(db, 'campaigns'), cleanData)
-    console.log('createCampaign: Campaign created with ID:', docRef.id)
     
     return { id: docRef.id, error: null }
   } catch (error: any) {
@@ -112,20 +107,15 @@ export const getCampaign = async (id: string): Promise<Campaign | null> => {
 
 export const getCampaignBySlug = async (slug: string): Promise<Campaign | null> => {
   try {
-    console.log('getCampaignBySlug: Searching for slug:', slug)
     const q = query(collection(db, 'campaigns'), where('slug', '==', slug))
     const querySnapshot = await getDocs(q)
-    
-    console.log('getCampaignBySlug: Query result size:', querySnapshot.size)
     
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0]
       const campaignData = { id: doc.id, ...doc.data() } as Campaign
-      console.log('getCampaignBySlug: Found campaign:', campaignData)
       return campaignData
     }
     
-    console.log('getCampaignBySlug: No campaign found with slug:', slug)
     return null
   } catch (error) {
     console.error('Error getting campaign by slug:', error)
@@ -135,8 +125,6 @@ export const getCampaignBySlug = async (slug: string): Promise<Campaign | null> 
 
 export const getUserCampaigns = async (userId: string): Promise<Campaign[]> => {
   try {
-    console.log('Fetching campaigns for user:', userId)
-    
     // First try with ordering
     let q = query(
       collection(db, 'campaigns'), 
@@ -147,21 +135,17 @@ export const getUserCampaigns = async (userId: string): Promise<Campaign[]> => {
     let querySnapshot
     try {
       querySnapshot = await getDocs(q)
-      console.log('Query with orderBy successful, found:', querySnapshot.size, 'campaigns')
     } catch (orderError) {
-      console.warn('OrderBy query failed, trying without ordering:', orderError)
       // Fallback: query without ordering if index doesn't exist
       q = query(
         collection(db, 'campaigns'), 
         where('createdBy', '==', userId)
       )
       querySnapshot = await getDocs(q)
-      console.log('Query without orderBy successful, found:', querySnapshot.size, 'campaigns')
     }
     
     const campaigns = querySnapshot.docs.map(doc => {
       const data = doc.data()
-      console.log('Campaign data:', { id: doc.id, ...data })
       return {
         id: doc.id,
         ...data
@@ -175,7 +159,6 @@ export const getUserCampaigns = async (userId: string): Promise<Campaign[]> => {
       return bTime.getTime() - aTime.getTime()
     })
     
-    console.log('Returning campaigns:', campaigns.length)
     return campaigns
   } catch (error) {
     console.error('Error getting user campaigns:', error)
@@ -235,8 +218,6 @@ export const incrementSupportersCount = async (campaignId: string) => {
 // Get public active campaigns for landing page search
 export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
   try {
-    console.log('getPublicActiveCampaigns: Fetching public active campaigns')
-    
     const q = query(
       collection(db, 'campaigns'),
       where('visibility', '==', 'Public'),
@@ -259,7 +240,6 @@ export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
         where('isActive', '==', true)
       )
       querySnapshot = await getDocs(fallbackQuery)
-      console.log('getPublicActiveCampaigns: Fallback query successful, found:', querySnapshot.size, 'campaigns')
     }
     
     const campaigns = querySnapshot.docs.map(doc => ({
@@ -279,7 +259,6 @@ export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
       return bTime.getTime() - aTime.getTime()
     })
     
-    console.log('getPublicActiveCampaigns: Returning', activeCampaigns.length, 'campaigns')
     return activeCampaigns
   } catch (error) {
     console.error('Error getting public active campaigns:', error)
@@ -290,16 +269,13 @@ export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
 // Debug function to list all campaigns
 export const getAllCampaigns = async (): Promise<Campaign[]> => {
   try {
-    console.log('getAllCampaigns: Fetching all campaigns')
     const querySnapshot = await getDocs(collection(db, 'campaigns'))
     
     const campaigns = querySnapshot.docs.map(doc => {
       const data = { id: doc.id, ...doc.data() } as Campaign
-      console.log('getAllCampaigns: Campaign found:', { id: doc.id, slug: data.slug, name: data.campaignName })
       return data
     })
     
-    console.log('getAllCampaigns: Total campaigns:', campaigns.length)
     return campaigns
   } catch (error) {
     console.error('Error getting all campaigns:', error)
@@ -709,8 +685,6 @@ export const checkFreeCampaignEligibility = async (userId: string): Promise<bool
 // Activate free campaign (via API route to bypass Firestore rules)
 export const activateFreeCampaign = async (campaignId: string, userId: string): Promise<{ error: string | null }> => {
   try {
-    console.log('activateFreeCampaign: Starting activation for campaign:', campaignId)
-    
     // Get the current user's ID token
     const { auth } = await import('./firebase')
     const user = auth.currentUser
@@ -734,19 +708,14 @@ export const activateFreeCampaign = async (campaignId: string, userId: string): 
       body: JSON.stringify({ campaignId })
     })
     
-    console.log('activateFreeCampaign: API response status:', response.status)
     const data = await response.json()
-    console.log('activateFreeCampaign: API response data:', data)
     
     if (!response.ok) {
-      console.error('activateFreeCampaign: API returned error:', data.error)
       return { error: data.error || 'Failed to activate free campaign' }
     }
     
-    console.log('activateFreeCampaign: Campaign activated successfully')
     return { error: null }
   } catch (error: any) {
-    console.error('activateFreeCampaign: Exception occurred:', error)
     return { error: error.message }
   }
 }

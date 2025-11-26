@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ExternalLink, Trash2, Shield, RefreshCw, Ban, CheckCircle } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
+import { toast } from '@/components/ui/toaster';
 
 interface User {
   id: string;
@@ -44,6 +45,7 @@ export default function UserActions({ user, onActionComplete }: UserActionsProps
       });
 
       if (res.ok) {
+        toast('User updated successfully', 'success');
         onActionComplete();
         // Close modals
         setShowSetAdminModal(false);
@@ -52,11 +54,11 @@ export default function UserActions({ user, onActionComplete }: UserActionsProps
         setShowUnblockModal(false);
       } else {
         const error = await res.json();
-        alert(`Error: ${error.error || 'Failed to perform action'}`);
+        toast(error.error || 'Failed to perform action', 'error');
       }
     } catch (error) {
       console.error('Error performing action:', error);
-      alert('Failed to perform action');
+      toast('Failed to perform action', 'error');
     } finally {
       setLoading(false);
     }
@@ -70,15 +72,16 @@ export default function UserActions({ user, onActionComplete }: UserActionsProps
       });
 
       if (res.ok) {
+        toast('User deleted successfully', 'success');
         onActionComplete();
         setShowDeleteModal(false);
       } else {
         const error = await res.json();
-        alert(`Error: ${error.error || 'Failed to delete user'}`);
+        toast(error.error || 'Failed to delete user', 'error');
       }
     } catch (error) {
       console.error('Error deleting user:', error);
-      alert('Failed to delete user');
+      toast('Failed to delete user', 'error');
     } finally {
       setLoading(false);
     }

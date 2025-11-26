@@ -12,7 +12,7 @@ if (!admin.apps.length) {
       }),
     });
   } catch (error) {
-    console.error('Firebase Admin initialization error:', error);
+    // Silently fail initialization
   }
 }
 
@@ -51,7 +51,6 @@ export async function verifyAdminAccess(request?: Request): Promise<AdminAuthRes
     // Verify the session cookie
     return await verifyTokenAdmin(sessionCookie.value);
   } catch (error) {
-    console.error('Admin verification error:', error);
     return { 
       isAdmin: false, 
       userId: null, 
@@ -122,7 +121,6 @@ export async function verifyTokenAdmin(tokenOrUserId: string): Promise<AdminAuth
 
     return { isAdmin: false, userId };
   } catch (error) {
-    console.error('Token verification error:', error);
     return { 
       isAdmin: false, 
       userId: null, 
@@ -159,9 +157,7 @@ export async function requireAdmin(request?: Request): Promise<string> {
 export async function setAdminClaim(userId: string, isAdmin: boolean): Promise<void> {
   try {
     await admin.auth().setCustomUserClaims(userId, { isAdmin });
-    console.log(`Admin claim set for user ${userId}: ${isAdmin}`);
   } catch (error) {
-    console.error('Error setting admin claim:', error);
     throw new Error('Failed to set admin claim');
   }
 }
@@ -183,7 +179,6 @@ export async function syncAdminClaim(userId: string): Promise<void> {
       await setAdminClaim(userId, isAdmin);
     }
   } catch (error) {
-    console.error('Error syncing admin claim:', error);
     throw new Error('Failed to sync admin claim');
   }
 }

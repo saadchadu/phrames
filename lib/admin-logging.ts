@@ -76,10 +76,8 @@ export async function createLog(
     const logsRef = collection(db, 'logs');
     const docRef = await addDoc(logsRef, logData);
 
-    console.log(`Log created: ${entry.eventType} by ${entry.actorId}`);
     return docRef.id;
   } catch (error) {
-    console.error('Error creating log:', error);
     throw new Error('Failed to create log entry');
   }
 }
@@ -135,7 +133,6 @@ export async function getLogs(filters?: LogFilters): Promise<LogEntry[]> {
 
     return logs;
   } catch (error) {
-    console.error('Error getting logs:', error);
     throw new Error('Failed to retrieve logs');
   }
 }

@@ -34,8 +34,6 @@ export async function POST(request: NextRequest) {
   const tracker = new PerformanceTracker('webhook_processing')
   trackRequest()
   
-  console.log('Webhook endpoint called')
-  
   try {
     // Get webhook headers
     const signature = request.headers.get('x-webhook-signature')
@@ -121,19 +119,12 @@ export async function POST(request: NextRequest) {
 
     // Handle different webhook types
     if (payload.type === 'PAYMENT_SUCCESS_WEBHOOK') {
-      console.log('Processing PAYMENT_SUCCESS_WEBHOOK for order:', payload.data?.order?.order_id)
       await handlePaymentSuccess(payload.data, tracker)
-      console.log('Successfully processed PAYMENT_SUCCESS_WEBHOOK')
     } else if (payload.type === 'PAYMENT_FAILED_WEBHOOK') {
-      console.log('Processing PAYMENT_FAILED_WEBHOOK for order:', payload.data?.order?.order_id)
       await handlePaymentFailed(payload.data)
-      console.log('Successfully processed PAYMENT_FAILED_WEBHOOK')
     } else if (payload.type === 'PAYMENT_REFUND_WEBHOOK') {
-      console.log('Processing PAYMENT_REFUND_WEBHOOK for order:', payload.data?.refund?.order_id)
       await handlePaymentRefund(payload.data)
-      console.log('Successfully processed PAYMENT_REFUND_WEBHOOK')
     } else {
-      console.log('Unknown webhook type:', payload.type)
       await db.collection('logs').add({
         eventType: 'webhook_unknown_type',
         actorId: 'system',
@@ -189,11 +180,8 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
     const paymentId = data.payment?.cf_payment_id
     const paymentStatus = data.payment?.payment_status
 
-    console.log('handlePaymentSuccess called with orderId:', orderId)
-
     if (!orderId) {
       const errorMsg = 'No order ID in webhook payload'
-      console.error(errorMsg, data)
       logWebhookError({
         error: errorMsg,
         metadata: { data }
@@ -209,57 +197,25 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
     }
 
     // Get payment record
-    console.log('Fetching payment record for orderId:', orderId)
-    console.log('Full webhook data:', JSON.stringify(data, null, 2))
     const paymentRecord = await getPaymentByOrderId(orderId)
     
     if (!paymentRecord) {
       const errorMsg = `Payment record not found for order ${orderId}`
-      console.error(errorMsg)
-      console.error('Searched for orderId:', orderId)
-      console.error('Also searched for cashfreeOrderId:', orderId)
-      
-      // List all recent payments to help debug
-      const recentPaymentsSnapshot = await db.collection('payments')
-        .orderBy('createdAt', 'desc')
-        .limit(10)
-        .get()
-      
-      const recentPayments = recentPaymentsSnapshot.docs.map(doc => {
-        const data = doc.data()
-        return {
-          id: doc.id,
-          orderId: data.orderId,
-          cashfreeOrderId: data.cashfreeOrderId,
-          campaignId: data.campaignId,
-          status: data.status,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || 'unknown'
-        }
-      })
-      
-      console.error('Recent payments in database:', JSON.stringify(recentPayments, null, 2))
       
       logWebhookError({
         orderId,
         error: errorMsg,
-        metadata: { orderId, data, recentPayments }
+        metadata: { orderId, data }
       })
       await db.collection('logs').add({
         eventType: 'webhook_error',
         actorId: 'system',
         description: errorMsg,
-        metadata: { orderId, webhookData: data, recentPayments },
+        metadata: { orderId, webhookData: data },
         createdAt: Timestamp.now()
       })
       return
     }
-
-    console.log('Payment record found:', {
-      id: paymentRecord.id,
-      status: paymentRecord.status,
-      campaignId: paymentRecord.campaignId,
-      userId: paymentRecord.userId
-    })
 
     // Check if already processed (idempotency)
     if (paymentRecord.status === 'success') {
@@ -297,10 +253,8 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
 
     // Calculate expiry date
     const expiryDate = calculateExpiryDate(planType)
-    console.log('Calculated expiry date:', expiryDate)
 
     // Update campaign with payment details
-    console.log('Updating campaign:', campaignId)
     const campaignRef = db.collection('campaigns').doc(campaignId)
     await campaignRef.update({
       isActive: true,
@@ -312,7 +266,6 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
       expiresAt: expiryDate ? Timestamp.fromDate(expiryDate) : null,
       lastPaymentAt: Timestamp.now()
     })
-    console.log('Campaign updated successfully:', campaignId)
 
     // Update payment record with complete webhook data
     if (paymentRecord.id) {
@@ -498,11 +451,8 @@ async function handlePaymentRefund(data: any) {
     const refundAmount = data.refund?.refund_amount
     const refundStatus = data.refund?.refund_status
 
-    console.log('handlePaymentRefund called with orderId:', orderId)
-
     if (!orderId) {
       const errorMsg = 'No order ID in refund webhook payload'
-      console.error(errorMsg, data)
       logWebhookError({
         error: errorMsg,
         metadata: { data }
@@ -518,12 +468,10 @@ async function handlePaymentRefund(data: any) {
     }
 
     // Get payment record
-    console.log('Fetching payment record for orderId:', orderId)
     const paymentRecord = await getPaymentByOrderId(orderId)
     
     if (!paymentRecord) {
       const errorMsg = `Payment record not found for refund order ${orderId}`
-      console.error(errorMsg)
       logWebhookError({
         orderId,
         error: errorMsg,
@@ -538,12 +486,6 @@ async function handlePaymentRefund(data: any) {
       })
       return
     }
-
-    console.log('Payment record found for refund:', {
-      id: paymentRecord.id,
-      status: paymentRecord.status,
-      campaignId: paymentRecord.campaignId
-    })
 
     const { campaignId, userId } = paymentRecord
 
@@ -563,14 +505,12 @@ async function handlePaymentRefund(data: any) {
 
     // Deactivate campaign
     if (campaignId) {
-      console.log('Deactivating campaign:', campaignId)
       const campaignRef = db.collection('campaigns').doc(campaignId)
       await campaignRef.update({
         isActive: false,
         status: 'Refunded',
         refundedAt: Timestamp.now()
       })
-      console.log('Campaign deactivated successfully:', campaignId)
     }
 
     // Create admin log for refund
@@ -588,8 +528,6 @@ async function handlePaymentRefund(data: any) {
       },
       createdAt: Timestamp.now()
     })
-
-    console.log('Refund webhook processed successfully for order:', orderId)
 
   } catch (error) {
     trackError()

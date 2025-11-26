@@ -32,11 +32,26 @@ export async function POST(request: NextRequest) {
       const decodedToken = await getAuth().verifyIdToken(token)
       adminUid = decodedToken.uid
       
+      console.log('Refund API - User UID:', adminUid)
+      console.log('Refund API - Expected Admin UID:', process.env.ADMIN_UID)
+      
       // Check if user is admin
       if (adminUid !== process.env.ADMIN_UID) {
-        return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
+        console.error('Admin check failed:', {
+          userUid: adminUid,
+          expectedUid: process.env.ADMIN_UID,
+          match: adminUid === process.env.ADMIN_UID
+        })
+        return NextResponse.json({ 
+          error: 'Forbidden - Admin access required',
+          debug: process.env.NODE_ENV === 'development' ? {
+            yourUid: adminUid,
+            expectedUid: process.env.ADMIN_UID
+          } : undefined
+        }, { status: 403 })
       }
     } catch (error) {
+      console.error('Token verification error:', error)
       return NextResponse.json({ error: 'Invalid authentication token' }, { status: 401 })
     }
 
@@ -94,7 +109,6 @@ export async function POST(request: NextRequest) {
     const refundData = await cashfreeResponse.json()
 
     if (!cashfreeResponse.ok) {
-      console.error('Cashfree refund failed:', refundData)
       return NextResponse.json({ 
         error: refundData.message || 'Failed to process refund with Cashfree',
         details: refundData
@@ -147,7 +161,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('Refund processing error:', error)
     return NextResponse.json({ 
       error: 'Failed to process refund',
       details: error.message 

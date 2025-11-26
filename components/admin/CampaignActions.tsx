@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ExternalLink, Calendar, Trash2, Play, Pause, User } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
+import { toast } from '@/components/ui/toaster';
 
 interface Campaign {
   id: string;
@@ -48,6 +49,7 @@ export default function CampaignActions({ campaign, onActionComplete }: Campaign
       });
 
       if (res.ok) {
+        toast('Campaign updated successfully', 'success');
         onActionComplete();
         // Close modals
         setShowExtendModal(false);
@@ -55,11 +57,11 @@ export default function CampaignActions({ campaign, onActionComplete }: Campaign
         setShowReactivateModal(false);
       } else {
         const error = await res.json();
-        alert(`Error: ${error.error || 'Failed to perform action'}`);
+        toast(error.error || 'Failed to perform action', 'error');
       }
     } catch (error) {
       console.error('Error performing action:', error);
-      alert('Failed to perform action');
+      toast('Failed to perform action', 'error');
     } finally {
       setLoading(false);
     }
@@ -73,15 +75,16 @@ export default function CampaignActions({ campaign, onActionComplete }: Campaign
       });
 
       if (res.ok) {
+        toast('Campaign deleted successfully', 'success');
         onActionComplete();
         setShowDeleteModal(false);
       } else {
         const error = await res.json();
-        alert(`Error: ${error.error || 'Failed to delete campaign'}`);
+        toast(error.error || 'Failed to delete campaign', 'error');
       }
     } catch (error) {
       console.error('Error deleting campaign:', error);
-      alert('Failed to delete campaign');
+      toast('Failed to delete campaign', 'error');
     } finally {
       setLoading(false);
     }
