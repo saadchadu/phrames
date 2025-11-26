@@ -57,12 +57,12 @@ export default function AdminDebugPage() {
               <div>
                 <label className="text-sm font-medium text-gray-700">Your UID:</label>
                 <div className="flex items-center gap-2 mt-1">
-                  <code className="text-sm bg-gray-100 px-3 py-2 rounded font-mono flex-1">
+                  <code className="text-sm bg-gray-100 px-3 py-2 rounded font-mono flex-1 text-gray-900 break-all">
                     {userInfo.uid}
                   </code>
                   <button
                     onClick={() => copyToClipboard(userInfo.uid)}
-                    className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                    className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex-shrink-0"
                   >
                     {copied ? 'Copied!' : 'Copy'}
                   </button>
@@ -86,7 +86,7 @@ export default function AdminDebugPage() {
           {envAdminUid ? (
             <div>
               <label className="text-sm font-medium text-gray-700">ADMIN_UID from .env.local:</label>
-              <code className="block text-sm bg-gray-100 px-3 py-2 rounded font-mono mt-1">
+              <code className="block text-sm bg-gray-100 px-3 py-2 rounded font-mono mt-1 text-gray-900 break-all">
                 {envAdminUid}
               </code>
             </div>
@@ -120,8 +120,8 @@ export default function AdminDebugPage() {
                   <p className="text-sm font-medium text-gray-900 mb-2">To fix this:</p>
                   <ol className="list-decimal list-inside text-sm text-gray-700 space-y-1">
                     <li>Copy your UID using the button above</li>
-                    <li>Open <code className="bg-gray-100 px-1 rounded">.env.local</code> file</li>
-                    <li>Update the line: <code className="bg-gray-100 px-1 rounded">ADMIN_UID=your-uid-here</code></li>
+                    <li>Open <code className="bg-gray-100 px-1 rounded text-gray-900">.env.local</code> file</li>
+                    <li>Update the line: <code className="bg-gray-100 px-1 rounded text-gray-900">ADMIN_UID=your-uid-here</code></li>
                     <li>Restart your development server</li>
                     <li>Refresh this page</li>
                   </ol>
@@ -135,10 +135,10 @@ export default function AdminDebugPage() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h3 className="text-sm font-semibold text-blue-900 mb-2">💡 Quick Fix</h3>
           <p className="text-sm text-blue-800">
-            If you're not the admin, copy your UID above and update it in <code className="bg-blue-100 px-1 rounded">.env.local</code>:
+            If you're not the admin, copy your UID above and update it in <code className="bg-blue-100 px-1 rounded text-blue-900">.env.local</code>:
           </p>
-          <pre className="mt-2 text-xs bg-blue-100 p-2 rounded overflow-x-auto">
-            ADMIN_UID={userInfo?.uid || 'your-uid-here'}
+          <pre className="mt-2 text-xs bg-blue-100 p-3 rounded overflow-x-auto text-blue-900 break-all whitespace-pre-wrap">
+ADMIN_UID={userInfo?.uid || 'your-uid-here'}
           </pre>
         </div>
       </div>
