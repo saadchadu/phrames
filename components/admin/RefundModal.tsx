@@ -82,7 +82,7 @@ export default function RefundModal({
                 disabled={isLoading}
                 placeholder="e.g., Customer requested refund, Technical issue, etc."
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               />
             </div>
 
