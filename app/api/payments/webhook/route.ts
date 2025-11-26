@@ -97,18 +97,22 @@ export async function POST(request: NextRequest) {
     const payload = JSON.parse(rawBody)
     
     // Log webhook received for debugging with full details
+    const logMetadata: any = {
+      hasSignature: !!signature,
+      hasTimestamp: !!timestamp,
+      fullPayload: payload
+    }
+    
+    // Only add fields if they exist (Firestore doesn't allow undefined)
+    if (payload.type) logMetadata.webhookType = payload.type
+    if (payload.data?.order?.order_id) logMetadata.orderId = payload.data.order.order_id
+    if (payload.data?.payment?.payment_status) logMetadata.paymentStatus = payload.data.payment.payment_status
+    
     await db.collection('logs').add({
       eventType: 'webhook_received',
       actorId: 'system',
       description: `Webhook received: ${payload.type || 'UNKNOWN'} for order ${payload.data?.order?.order_id || 'UNKNOWN'}`,
-      metadata: {
-        hasSignature: !!signature,
-        hasTimestamp: !!timestamp,
-        webhookType: payload.type,
-        orderId: payload.data?.order?.order_id,
-        paymentStatus: payload.data?.payment?.payment_status,
-        fullPayload: payload
-      },
+      metadata: logMetadata,
       createdAt: Timestamp.now()
     })
     
@@ -151,15 +155,17 @@ export async function POST(request: NextRequest) {
     
     // Create admin log for webhook failure
     try {
+      const logMetadata: any = {
+        webhookType: 'payment',
+        error: errorMessage
+      }
+      if (error?.stack) logMetadata.stack = error.stack
+      
       await db.collection('logs').add({
         eventType: 'webhook_failure',
         actorId: 'system',
         description: `Webhook processing error: ${errorMessage}`,
-        metadata: {
-          webhookType: 'payment',
-          error: errorMessage,
-          stack: error?.stack
-        },
+        metadata: logMetadata,
         createdAt: Timestamp.now()
       })
     } catch (logError) {
