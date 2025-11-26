@@ -238,11 +238,55 @@ function PaymentsContent() {
                   {expandedRows.has(payment.id) && (
                     <tr key={`${payment.id}-details`}>
                       <td colSpan={8} className="px-6 py-4 bg-gray-50">
-                        <div className="space-y-2">
-                          <h4 className="font-semibold text-sm text-gray-700">Webhook Data:</h4>
-                          <pre className="bg-white p-4 rounded border border-gray-200 overflow-x-auto text-xs">
-                            {JSON.stringify(payment.webhookData || payment, null, 2)}
-                          </pre>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-semibold text-sm text-gray-700 mb-2">Payment Details:</h4>
+                            <div className="bg-white p-4 rounded border border-gray-200 text-sm text-gray-900">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <span className="font-medium">Payment ID:</span>
+                                  <p className="font-mono text-xs mt-1">{payment.id}</p>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Order ID:</span>
+                                  <p className="font-mono text-xs mt-1">{payment.orderId || 'N/A'}</p>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Cashfree Order ID:</span>
+                                  <p className="font-mono text-xs mt-1">{payment.cashfreeOrderId || 'N/A'}</p>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Status:</span>
+                                  <p className="mt-1">{payment.status}</p>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Amount:</span>
+                                  <p className="mt-1">₹{payment.amount}</p>
+                                </div>
+                                <div>
+                                  <span className="font-medium">Plan Type:</span>
+                                  <p className="mt-1">{payment.planType}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {payment.webhookData && (
+                            <div>
+                              <h4 className="font-semibold text-sm text-gray-700 mb-2">Webhook Data:</h4>
+                              <pre className="bg-white p-4 rounded border border-gray-200 overflow-x-auto text-xs text-gray-900 font-mono">
+                                {JSON.stringify(payment.webhookData, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                          
+                          {!payment.webhookData && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                              <p className="text-sm text-yellow-800">
+                                ⚠️ No webhook data received yet. The payment may still be processing.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </td>
                     </tr>

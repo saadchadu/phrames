@@ -154,8 +154,10 @@ function LogsContent() {
                         <td colSpan={5} className="px-6 py-4 bg-gray-50">
                           <div className="text-sm">
                             <div className="font-medium text-gray-700 mb-2">Metadata:</div>
-                            <pre className="bg-white p-4 rounded border border-gray-200 overflow-x-auto text-xs">
-                              {JSON.stringify(log.metadata, null, 2)}
+                            <pre className="bg-white p-4 rounded border border-gray-200 overflow-x-auto text-xs text-gray-900 font-mono">
+                              {log.metadata && Object.keys(log.metadata).length > 0 
+                                ? JSON.stringify(log.metadata, null, 2)
+                                : 'No metadata available'}
                             </pre>
                           </div>
                         </td>
