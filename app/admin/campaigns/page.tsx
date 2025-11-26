@@ -16,6 +16,7 @@ interface Campaign {
   isFreeCampaign: boolean;
   planType?: string;
   amountPaid?: number;
+  paymentId?: string;
   createdAt: string;
   expiresAt?: string;
   isExpired?: boolean;
@@ -121,6 +122,9 @@ export default function AdminCampaignsPage() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Order ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Expires
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -166,6 +170,13 @@ export default function AdminCampaignsPage() {
                       }`}>
                         {campaign.isActive && !campaign.isExpired ? 'Active' : 'Inactive'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {campaign.paymentId ? (
+                        <span className="font-mono text-xs">{campaign.paymentId}</span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {campaign.expiresAt ? new Date(campaign.expiresAt).toLocaleDateString() : 'Never'}

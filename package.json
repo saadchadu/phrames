@@ -11,7 +11,9 @@
     "setup-admin-claims": "ts-node --project tsconfig.scripts.json scripts/setup-admin-claims.ts",
     "init-admin-settings": "ts-node --project tsconfig.scripts.json scripts/initialize-admin-settings.ts",
     "grant-admin": "ts-node --project tsconfig.scripts.json scripts/grant-admin-by-email.ts",
-    "cleanup-production": "ts-node --project tsconfig.scripts.json scripts/production-cleanup.ts"
+    "cleanup-production": "ts-node --project tsconfig.scripts.json scripts/production-cleanup.ts",
+    "preview-test-users": "ts-node --project tsconfig.scripts.json scripts/preview-test-users.ts",
+    "cleanup-test-users": "ts-node --project tsconfig.scripts.json scripts/cleanup-test-users.ts"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",

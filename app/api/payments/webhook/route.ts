@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
   const tracker = new PerformanceTracker('webhook_processing')
   trackRequest()
   
+  console.log('Webhook endpoint called')
+  
   try {
     // Get webhook headers
     const signature = request.headers.get('x-webhook-signature')
