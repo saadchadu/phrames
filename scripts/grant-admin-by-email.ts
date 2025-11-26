@@ -12,7 +12,10 @@
  */
 
 import * as admin from 'firebase-admin';
-import { getFirestore } from 'firebase-admin/firestore';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' });
 
 // Initialize Firebase Admin
 if (!admin.apps.length) {
@@ -25,7 +28,7 @@ if (!admin.apps.length) {
   });
 }
 
-const db = getFirestore();
+const db = admin.firestore();
 
 async function grantAdminByEmail(email: string): Promise<void> {
   try {

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCampaign, createPaymentRecord } from '@/lib/firestore'
+import { getCampaign } from '@/lib/firestore'
 import { isValidPlanType, verifyCashfreeConfig, PRICING_PLANS } from '@/lib/cashfree'
 import { getAuth } from 'firebase-admin/auth'
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
+import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 import type { CreateOrderRequest } from 'cashfree-pg'
 import {
   PerformanceTracker,
@@ -290,7 +290,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Store payment record
+    // Store payment record using Firebase Admin
     const paymentRecord = {
       orderId,
       campaignId,
@@ -298,19 +298,24 @@ export async function POST(request: NextRequest) {
       planType,
       amount,
       currency: 'INR',
-      status: 'pending' as const,
+      status: 'pending',
       cashfreeOrderId: cashfreeResponse.cf_order_id || orderId,
       metadata: {
         campaignName: campaign.campaignName,
         userEmail: campaign.createdByEmail || ''
-      }
+      },
+      createdAt: Timestamp.now()
     }
 
-    const { error: recordError } = await createPaymentRecord(paymentRecord)
-    if (recordError) {
+    try {
+      const db = getFirestore()
+      const paymentRef = await db.collection('payments').add(paymentRecord)
+      console.log('Payment record created successfully:', paymentRef.id)
+    } catch (recordError: any) {
+      console.error('Failed to create payment record:', recordError)
       logApiError({
         endpoint: '/api/payments/initiate',
-        error: `Failed to create payment record: ${recordError}`,
+        error: `Failed to create payment record: ${recordError.message}`,
         userId,
         campaignId,
         statusCode: 500,

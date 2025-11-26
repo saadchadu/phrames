@@ -133,6 +133,9 @@ export const logout = async () => {
   }
 }
 
+// Admin emails that should automatically get admin access
+const ADMIN_EMAILS = ['saadchadu@gmail.com']
+
 // User profile management
 export const createUserProfile = async (user: User, customDisplayName?: string, customPhotoURL?: string) => {
   if (!user) return
@@ -155,6 +158,9 @@ export const createUserProfile = async (user: User, customDisplayName?: string, 
       counter++
     }
 
+    // Check if user should be admin
+    const isAdmin = email ? ADMIN_EMAILS.includes(email.toLowerCase()) : false
+
     try {
       await setDoc(userRef, {
         uid,
@@ -167,10 +173,52 @@ export const createUserProfile = async (user: User, customDisplayName?: string, 
         totalDownloads: 0,
         totalVisits: 0,
         createdAt,
-        joinedAt: createdAt
+        joinedAt: createdAt,
+        ...(isAdmin && { isAdmin: true })
       })
+
+      // If admin, also set custom claim via API
+      if (isAdmin) {
+        try {
+          const idToken = await user.getIdToken()
+          await fetch('/api/admin/grant-admin', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ userId: uid })
+          })
+        } catch (error) {
+          console.error('Error setting admin claim:', error)
+        }
+      }
     } catch (error) {
       console.error('Error creating user profile:', error)
+    }
+  } else {
+    // User exists, check if they should be admin but aren't
+    const userData = userSnap.data()
+    const email = user.email
+    const isAdmin = email ? ADMIN_EMAILS.includes(email.toLowerCase()) : false
+    
+    if (isAdmin && !userData.isAdmin) {
+      try {
+        await setDoc(userRef, { isAdmin: true }, { merge: true })
+        
+        // Set custom claim via API
+        const idToken = await user.getIdToken()
+        await fetch('/api/admin/grant-admin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+          },
+          body: JSON.stringify({ userId: user.uid })
+        })
+      } catch (error) {
+        console.error('Error updating admin status:', error)
+      }
     }
   }
 }
