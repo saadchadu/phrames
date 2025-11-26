@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
 import PaymentModal from '@/components/PaymentModal'
-import { createCampaign, generateUniqueSlug, checkFreeCampaignEligibility, activateFreeCampaign } from '@/lib/firestore'
+import { createCampaign, getCampaignBySlug, checkFreeCampaignEligibility, activateFreeCampaign } from '@/lib/firestore'
 import { uploadImage, validateFrameImage } from '@/lib/storage'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
@@ -34,6 +34,8 @@ export default function CreateCampaignPage() {
   const [campaignCreationDisabled, setCampaignCreationDisabled] = useState(false)
   const [checkingSettings, setCheckingSettings] = useState(true)
   const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false)
+  const [slugError, setSlugError] = useState('')
+  const [checkingSlug, setCheckingSlug] = useState(false)
 
   useEffect(() => {
     async function checkCampaignCreationStatus() {
@@ -272,6 +274,7 @@ export default function CreateCampaignPage() {
                     onChange={(e) => {
                       // Mark as manually edited when user types
                       setIsSlugManuallyEdited(true)
+                      setSlugError('')
                       
                       // Allow only lowercase letters, numbers, and hyphens
                       let sanitizedSlug = e.target.value.toLowerCase()
@@ -283,18 +286,43 @@ export default function CreateCampaignPage() {
                       sanitizedSlug = sanitizedSlug.replace(/--+/g, '-')
                       setFormData(prev => ({ ...prev, slug: sanitizedSlug }))
                     }}
-                    onBlur={(e) => {
+                    onBlur={async (e) => {
                       // Clean up leading/trailing hyphens only on blur
                       const cleanedSlug = e.target.value.replace(/^-+|-+$/g, '')
                       if (cleanedSlug !== e.target.value) {
                         setFormData(prev => ({ ...prev, slug: cleanedSlug }))
                       }
+                      
+                      // Check if slug is available
+                      if (cleanedSlug) {
+                        setCheckingSlug(true)
+                        const existing = await getCampaignBySlug(cleanedSlug)
+                        setCheckingSlug(false)
+                        
+                        if (existing) {
+                          setSlugError('This URL slug is already taken. Please choose a different one.')
+                        } else {
+                          setSlugError('')
+                        }
+                      }
                     }}
                     required
-                    className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                    className={`w-full px-4 py-3 sm:py-3.5 border rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 transition-all bg-white ${
+                      slugError 
+                        ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-[#00240033] focus:ring-secondary focus:border-secondary'
+                    }`}
                     placeholder="campaign-url-slug"
                   />
-                  <p className="text-xs sm:text-sm text-primary/60">Only lowercase letters, numbers, and hyphens allowed</p>
+                  {checkingSlug && (
+                    <p className="text-xs sm:text-sm text-primary/60">Checking availability...</p>
+                  )}
+                  {slugError && (
+                    <p className="text-xs sm:text-sm text-red-600">{slugError}</p>
+                  )}
+                  {!slugError && !checkingSlug && (
+                    <p className="text-xs sm:text-sm text-primary/60">Only lowercase letters, numbers, and hyphens allowed</p>
+                  )}
                 </div>
 
                 {/* Description */}

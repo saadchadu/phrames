@@ -58,6 +58,13 @@ export const createCampaign = async (campaignData: Omit<Campaign, 'id' | 'create
       }
     }
     
+    // Check if slug already exists
+    const existingCampaign = await getCampaignBySlug(campaignData.slug)
+    if (existingCampaign) {
+      console.error('createCampaign: Slug already exists')
+      return { id: null, error: 'This URL slug is already taken. Please choose a different one.' }
+    }
+    
     // Filter out undefined values to prevent Firestore errors
     const cleanData: any = {
       campaignName: campaignData.campaignName,
