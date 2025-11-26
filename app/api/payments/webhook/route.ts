@@ -128,6 +128,10 @@ export async function POST(request: NextRequest) {
       console.log('Processing PAYMENT_FAILED_WEBHOOK for order:', payload.data?.order?.order_id)
       await handlePaymentFailed(payload.data)
       console.log('Successfully processed PAYMENT_FAILED_WEBHOOK')
+    } else if (payload.type === 'PAYMENT_REFUND_WEBHOOK') {
+      console.log('Processing PAYMENT_REFUND_WEBHOOK for order:', payload.data?.refund?.order_id)
+      await handlePaymentRefund(payload.data)
+      console.log('Successfully processed PAYMENT_REFUND_WEBHOOK')
     } else {
       console.log('Unknown webhook type:', payload.type)
       await db.collection('logs').add({
@@ -475,6 +479,135 @@ async function handlePaymentFailed(data: any) {
         metadata: {
           webhookType: 'payment_failed',
           orderId: data.order?.order_id,
+          error: errorMessage
+        },
+        createdAt: Timestamp.now()
+      })
+    } catch (logError) {
+      console.error('Failed to create admin log:', logError)
+    }
+    
+    throw error
+  }
+}
+
+async function handlePaymentRefund(data: any) {
+  try {
+    const orderId = data.refund?.order_id
+    const refundId = data.refund?.cf_refund_id
+    const refundAmount = data.refund?.refund_amount
+    const refundStatus = data.refund?.refund_status
+
+    console.log('handlePaymentRefund called with orderId:', orderId)
+
+    if (!orderId) {
+      const errorMsg = 'No order ID in refund webhook payload'
+      console.error(errorMsg, data)
+      logWebhookError({
+        error: errorMsg,
+        metadata: { data }
+      })
+      await db.collection('logs').add({
+        eventType: 'webhook_error',
+        actorId: 'system',
+        description: errorMsg,
+        metadata: { data },
+        createdAt: Timestamp.now()
+      })
+      return
+    }
+
+    // Get payment record
+    console.log('Fetching payment record for orderId:', orderId)
+    const paymentRecord = await getPaymentByOrderId(orderId)
+    
+    if (!paymentRecord) {
+      const errorMsg = `Payment record not found for refund order ${orderId}`
+      console.error(errorMsg)
+      logWebhookError({
+        orderId,
+        error: errorMsg,
+        metadata: { orderId, data }
+      })
+      await db.collection('logs').add({
+        eventType: 'webhook_error',
+        actorId: 'system',
+        description: errorMsg,
+        metadata: { orderId, webhookData: data },
+        createdAt: Timestamp.now()
+      })
+      return
+    }
+
+    console.log('Payment record found for refund:', {
+      id: paymentRecord.id,
+      status: paymentRecord.status,
+      campaignId: paymentRecord.campaignId
+    })
+
+    const { campaignId, userId } = paymentRecord
+
+    // Update payment record
+    if (paymentRecord.id) {
+      const paymentRef = db.collection('payments').doc(paymentRecord.id)
+      await paymentRef.update({
+        status: 'refunded',
+        refundedAt: Timestamp.now(),
+        refundAmount: refundAmount,
+        refundId: refundId,
+        refundStatus: refundStatus,
+        refundWebhookData: data,
+        refundWebhookReceivedAt: Timestamp.now()
+      })
+    }
+
+    // Deactivate campaign
+    if (campaignId) {
+      console.log('Deactivating campaign:', campaignId)
+      const campaignRef = db.collection('campaigns').doc(campaignId)
+      await campaignRef.update({
+        isActive: false,
+        status: 'Refunded',
+        refundedAt: Timestamp.now()
+      })
+      console.log('Campaign deactivated successfully:', campaignId)
+    }
+
+    // Create admin log for refund
+    await db.collection('logs').add({
+      eventType: 'payment_refunded',
+      actorId: 'system',
+      description: `Payment refunded for order ${orderId} - Campaign deactivated`,
+      metadata: {
+        orderId,
+        userId,
+        campaignId,
+        refundAmount,
+        refundId,
+        refundStatus
+      },
+      createdAt: Timestamp.now()
+    })
+
+    console.log('Refund webhook processed successfully for order:', orderId)
+
+  } catch (error) {
+    trackError()
+    const errorMessage = formatError(error)
+    logWebhookError({
+      orderId: data.refund?.order_id,
+      error: `Error handling payment refund: ${errorMessage}`,
+      metadata: { data }
+    })
+    
+    try {
+      await db.collection('logs').add({
+        eventType: 'webhook_failure',
+        actorId: 'system',
+        description: `Error processing refund webhook: ${errorMessage}`,
+        metadata: {
+          webhookType: 'payment_refund',
+          orderId: data.refund?.order_id,
           error: errorMessage
         },
         createdAt: Timestamp.now()

@@ -15,6 +15,7 @@ function PaymentsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [refundingPayment, setRefundingPayment] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   const toggleRow = (id: string) => {
@@ -50,6 +51,54 @@ function PaymentsContent() {
       setError(error instanceof Error ? error.message : 'Failed to load payments');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleRefund(paymentId: string, amount: number) {
+    const refundNote = prompt('Enter refund reason (optional):');
+    
+    if (refundNote === null) return; // User cancelled
+    
+    const confirmRefund = confirm(`Are you sure you want to refund ₹${amount}? This will deactivate the campaign.`);
+    
+    if (!confirmRefund) return;
+
+    try {
+      setRefundingPayment(paymentId);
+      
+      const { auth } = await import('@/lib/firebase');
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('You must be logged in');
+      }
+
+      const token = await user.getIdToken();
+
+      const res = await fetch('/api/admin/refund', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          paymentId,
+          refundNote: refundNote || undefined
+        })
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Failed to process refund');
+      }
+
+      alert(`Refund processed successfully! Refund ID: ${result.refundId}`);
+      fetchPayments(); // Refresh the list
+    } catch (error: any) {
+      console.error('Refund error:', error);
+      alert(`Failed to process refund: ${error.message}`);
+    } finally {
+      setRefundingPayment(null);
     }
   }
 
@@ -201,6 +250,7 @@ function PaymentsContent() {
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         payment.status === 'SUCCESS' || payment.status === 'success' ? 'bg-green-100 text-green-800' : 
+                        payment.status === 'refunded' ? 'bg-purple-100 text-purple-800' :
                         payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-red-100 text-red-800'
                       }`}>
@@ -217,22 +267,33 @@ function PaymentsContent() {
                       })}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <button
-                        onClick={() => toggleRow(payment.id)}
-                        className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                      >
-                        {expandedRows.has(payment.id) ? (
-                          <>
-                            <ChevronUp className="h-4 w-4" />
-                            Hide
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="h-4 w-4" />
-                            Details
-                          </>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => toggleRow(payment.id)}
+                          className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        >
+                          {expandedRows.has(payment.id) ? (
+                            <>
+                              <ChevronUp className="h-4 w-4" />
+                              Hide
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-4 w-4" />
+                              Details
+                            </>
+                          )}
+                        </button>
+                        {(payment.status === 'SUCCESS' || payment.status === 'success') && (
+                          <button
+                            onClick={() => handleRefund(payment.id, payment.amount)}
+                            disabled={refundingPayment === payment.id}
+                            className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                          >
+                            {refundingPayment === payment.id ? 'Processing...' : 'Refund'}
+                          </button>
                         )}
-                      </button>
+                      </div>
                     </td>
                   </tr>
                   {expandedRows.has(payment.id) && (
