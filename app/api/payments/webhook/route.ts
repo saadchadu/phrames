@@ -206,21 +206,40 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
 
     // Get payment record
     console.log('Fetching payment record for orderId:', orderId)
+    console.log('Full webhook data:', JSON.stringify(data, null, 2))
     const paymentRecord = await getPaymentByOrderId(orderId)
     
     if (!paymentRecord) {
       const errorMsg = `Payment record not found for order ${orderId}`
       console.error(errorMsg)
+      console.error('Searched for orderId:', orderId)
+      console.error('Also searched for cashfreeOrderId:', orderId)
+      
+      // List all recent payments to help debug
+      const recentPaymentsSnapshot = await db.collection('payments')
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .get()
+      
+      const recentPayments = recentPaymentsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        orderId: doc.data().orderId,
+        cashfreeOrderId: doc.data().cashfreeOrderId,
+        status: doc.data().status
+      }))
+      
+      console.error('Recent payments in database:', JSON.stringify(recentPayments, null, 2))
+      
       logWebhookError({
         orderId,
         error: errorMsg,
-        metadata: { orderId }
+        metadata: { orderId, data, recentPayments }
       })
       await db.collection('logs').add({
         eventType: 'webhook_error',
         actorId: 'system',
         description: errorMsg,
-        metadata: { orderId, data },
+        metadata: { orderId, webhookData: data, recentPayments },
         createdAt: Timestamp.now()
       })
       return

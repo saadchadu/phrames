@@ -1,25 +1,22 @@
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
 import * as dotenv from 'dotenv';
-import * as path from 'path';
+import * as admin from 'firebase-admin';
 
-// Load environment variables
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+// Load environment variables from .env.local
+dotenv.config({ path: '.env.local' });
 
 // Initialize Firebase Admin
-if (getApps().length === 0) {
-  const serviceAccount = JSON.parse(
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY || '{}'
-  );
-
-  initializeApp({
-    credential: cert(serviceAccount),
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
   });
 }
 
-const auth = getAuth();
-const db = getFirestore();
+const auth = admin.auth();
+const db = admin.firestore();
 
 // Patterns to identify test users
 const TEST_PATTERNS = [

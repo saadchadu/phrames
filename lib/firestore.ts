@@ -582,13 +582,24 @@ export const updatePaymentRecord = async (id: string, updates: Partial<PaymentRe
 // Get payment record by order ID
 export const getPaymentByOrderId = async (orderId: string): Promise<PaymentRecord | null> => {
   try {
-    const q = query(collection(db, 'payments'), where('orderId', '==', orderId))
-    const querySnapshot = await getDocs(q)
+    // First try to find by orderId
+    let q = query(collection(db, 'payments'), where('orderId', '==', orderId))
+    let querySnapshot = await getDocs(q)
     
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0]
       return { id: doc.id, ...doc.data() } as PaymentRecord
     }
+    
+    // If not found, try to find by cashfreeOrderId
+    q = query(collection(db, 'payments'), where('cashfreeOrderId', '==', orderId))
+    querySnapshot = await getDocs(q)
+    
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0]
+      return { id: doc.id, ...doc.data() } as PaymentRecord
+    }
+    
     return null
   } catch (error) {
     console.error('Error getting payment by order ID:', error)
