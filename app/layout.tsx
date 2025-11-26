@@ -6,9 +6,9 @@ import Navbar from '@/components/Navbar'
 import { Toaster } from '@/components/ui/toaster'
 
 export const metadata: Metadata = {
-  title: 'Phrames — Create Custom Photo Frames & Campaigns Online',
-  description: 'Create and share beautiful photo frame campaigns instantly. Phrames lets you upload PNG frames, share campaign links, and let users personalize their photos online for free.',
-  keywords: ['photo frame', 'campaign creator', 'frame generator', 'twibbon alternative', 'online frame app', 'Phrames'],
+  title: 'Phrames - Create Viral Photo Frame Campaigns | Free Trial',
+  description: 'Create custom photo frames for your campaign in minutes. Perfect for events, brands, and causes. Start free for 1 month - no credit card required.',
+  keywords: ['photo frame', 'campaign creator', 'frame generator', 'twibbon alternative', 'online frame app', 'Phrames', 'viral campaign', 'social media frames', 'custom profile frames', 'event frames'],
   authors: [{ name: 'Cleffon' }],
   creator: 'Cleffon',
   publisher: 'Cleffon',
@@ -17,8 +17,8 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   openGraph: {
-    title: 'Phrames — Create and Share Photo Frame Campaigns',
-    description: 'Make your own photo frame campaigns. Free, fast, and watermark-free.',
+    title: 'Phrames - Create Viral Photo Frame Campaigns | Free Trial',
+    description: 'Create custom photo frames for your campaign in minutes. Perfect for events, brands, and causes. Start free for 1 month.',
     url: 'https://phrames.cleffon.com',
     siteName: 'Phrames',
     images: [
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Phrames - Create Beautiful Photo Frames',
+        alt: 'Phrames - Create Viral Photo Frame Campaigns',
       },
     ],
     locale: 'en_US',
@@ -34,8 +34,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Phrames — Create and Share Photo Frame Campaigns',
-    description: 'Create and share free online photo frames instantly.',
+    title: 'Phrames - Create Viral Photo Frame Campaigns | Free Trial',
+    description: 'Create custom photo frames for your campaign in minutes. Perfect for events, brands, and causes.',
     images: ['/og-image.png'],
   },
   robots: {

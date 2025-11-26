@@ -210,15 +210,30 @@ export default function PricingSection() {
         </div>
 
         {/* Additional Info */}
-        <div className="mt-12 text-center space-y-3">
-          <p className="text-primary/70 text-sm sm:text-base">
-            All plans include unlimited supporters, full analytics, and no hidden fees. 
-            <br className="hidden sm:block" />
-            Campaigns remain visible for the duration of your plan.
-          </p>
-          <p className="text-secondary font-semibold text-base sm:text-lg">
-            🎉 New users get their first campaign FREE for 1 month!
-          </p>
+        <div className="mt-12 space-y-6">
+          <div className="bg-gradient-to-r from-secondary/20 to-secondary/10 border-2 border-secondary rounded-2xl p-6 sm:p-8 text-center">
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <svg className="w-8 h-8 text-secondary" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <h3 className="text-2xl sm:text-3xl font-bold text-primary">
+                First Campaign FREE for 1 Month!
+              </h3>
+            </div>
+            <p className="text-primary/80 text-base sm:text-lg">
+              New users get their first campaign completely free for 30 days. No credit card required to start.
+            </p>
+          </div>
+          
+          <div className="text-center space-y-3">
+            <p className="text-primary/70 text-sm sm:text-base">
+              All plans include unlimited supporters, full analytics, QR codes, and no hidden fees.
+            </p>
+            <p className="text-primary/60 text-sm">
+              <strong>What happens after expiry?</strong> Campaigns are archived but can be renewed anytime. 
+              <br className="hidden sm:inline" /> Download your analytics before expiry to keep your data.
+            </p>
+          </div>
         </div>
       </div>
     </section>
