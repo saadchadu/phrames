@@ -91,7 +91,7 @@ function PaymentsContent() {
       title="Payments & Revenue"
       description="View payment transactions and revenue analytics"
     >
-
+      <div className="text-gray-900">
       <PaymentFilters />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
@@ -127,18 +127,19 @@ function PaymentsContent() {
       {/* Analytics Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
-          <h2 className="text-base sm:text-lg font-semibold mb-4">Revenue by Plan Type</h2>
+          <h2 className="text-base sm:text-lg font-semibold mb-4 text-gray-900">Revenue by Plan Type</h2>
           <RevenueByPlanChart data={data?.analytics?.revenueByPlan || {}} />
         </div>
         <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
-          <h2 className="text-base sm:text-lg font-semibold mb-4">Revenue Trend (Last 30 Days)</h2>
+          <h2 className="text-base sm:text-lg font-semibold mb-4 text-gray-900">Revenue Trend (Last 30 Days)</h2>
           <RevenueTrendChart data={data?.analytics?.dailyRevenue || []} />
         </div>
+      </div>
       </div>
 
       <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-          <h2 className="text-base sm:text-lg font-semibold">Payment Transactions</h2>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Payment Transactions</h2>
         </div>
         <div className="overflow-x-auto -mx-4 sm:mx-0">
           <div className="inline-block min-w-full align-middle">
