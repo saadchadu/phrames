@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid webhook' }, { status: 400 })
       }
 
-      const isValid = verifyCashfreeSignature(rawBody, signature, timestamp)
+      const isValid = verifyCashfreeSignature(rawBody, signature!, timestamp!)
       if (!isValid) {
         trackError()
         logWebhookError({
