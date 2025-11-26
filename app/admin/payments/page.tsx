@@ -159,14 +159,49 @@ function PaymentsContent() {
               {data?.payments?.map((payment: any) => (
                 <>
                   <tr key={payment.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-500 font-mono">{payment.id.slice(0, 8)}...</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 font-mono">{payment.userId?.slice(0, 8)}...</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 font-mono">{payment.campaignId?.slice(0, 8)}...</td>
+                    <td className="px-6 py-4 text-sm text-gray-500 font-mono">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(payment.id)
+                          alert('Payment ID copied!')
+                        }}
+                        className="hover:text-blue-600 cursor-pointer"
+                        title="Click to copy full ID"
+                      >
+                        {payment.id.slice(0, 8)}...
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 font-mono">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(payment.userId)
+                          alert('User ID copied!')
+                        }}
+                        className="hover:text-blue-600 cursor-pointer"
+                        title="Click to copy full User ID"
+                      >
+                        {payment.userId?.slice(0, 8)}...
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 font-mono">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(payment.campaignId)
+                          alert('Campaign ID copied!')
+                        }}
+                        className="hover:text-blue-600 cursor-pointer"
+                        title="Click to copy full Campaign ID"
+                      >
+                        {payment.campaignId?.slice(0, 8)}...
+                      </button>
+                    </td>
                     <td className="px-6 py-4 text-sm font-medium">₹{payment.amount?.toLocaleString('en-IN')}</td>
                     <td className="px-6 py-4 text-sm">{payment.planType}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 text-xs rounded-full ${
-                        payment.status === 'SUCCESS' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        payment.status === 'SUCCESS' || payment.status === 'success' ? 'bg-green-100 text-green-800' : 
+                        payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
                       }`}>
                         {payment.status}
                       </span>
