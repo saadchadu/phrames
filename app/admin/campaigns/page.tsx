@@ -147,10 +147,7 @@ export default function AdminCampaignsPage() {
                             }}
                           />
                         )}
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{campaign.campaignName}</div>
-                          <div className="text-sm text-gray-500">{campaign.slug}</div>
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{campaign.campaignName}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

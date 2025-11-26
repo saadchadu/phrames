@@ -13,6 +13,7 @@ import {
   Settings,
   Menu,
   X,
+  MessageSquare,
 } from 'lucide-react';
 
 export default function AdminLayoutClient({
@@ -82,6 +83,7 @@ export default function AdminLayoutClient({
     { name: 'Campaigns', href: '/admin/campaigns', icon: Megaphone },
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Payments', href: '/admin/payments', icon: CreditCard },
+    { name: 'Tickets', href: '/admin/support', icon: MessageSquare },
     { name: 'Logs', href: '/admin/logs', icon: FileText },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];

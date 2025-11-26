@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DollarSign, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
 import PaymentFilters from '@/components/admin/PaymentFilters';
-import PaymentSearch from '@/components/admin/PaymentSearch';
 import RevenueByPlanChart from '@/components/admin/RevenueByPlanChart';
 import RevenueTrendChart from '@/components/admin/RevenueTrendChart';
 import AdminErrorBoundary, { ErrorDisplay } from '@/components/admin/AdminErrorBoundary';
@@ -12,6 +11,7 @@ import { TableSkeleton, StatsCardSkeleton, ChartSkeleton } from '@/components/ad
 import PageHeader from '@/components/admin/PageHeader';
 import RefundModal from '@/components/admin/RefundModal';
 import { toast } from '@/components/ui/toaster';
+import React from 'react';
 
 function PaymentsContent() {
   const [data, setData] = useState<any>(null);
@@ -23,22 +23,19 @@ function PaymentsContent() {
   const [refundingPayment, setRefundingPayment] = useState(false);
   const searchParams = useSearchParams();
 
-  const toggleRow = (id: string) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(id)) {
-      newExpanded.delete(id);
-    } else {
-      newExpanded.add(id);
-    }
-    setExpandedRows(newExpanded);
-  };
+  const toggleRow = useCallback((id: string) => {
+    setExpandedRows(prev => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(id)) {
+        newExpanded.delete(id);
+      } else {
+        newExpanded.add(id);
+      }
+      return newExpanded;
+    });
+  }, []);
 
-  useEffect(() => {
-    fetchPayments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams.toString()]);
-
-  async function fetchPayments() {
+  const fetchPayments = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -56,21 +53,25 @@ function PaymentsContent() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [searchParams]);
 
-  const openRefundModal = (paymentId: string, amount: number) => {
+  useEffect(() => {
+    fetchPayments();
+  }, [fetchPayments]);
+
+  const openRefundModal = useCallback((paymentId: string, amount: number) => {
     setSelectedPayment({ id: paymentId, amount });
     setRefundModalOpen(true);
-  };
+  }, []);
 
-  const closeRefundModal = () => {
+  const closeRefundModal = useCallback(() => {
     if (!refundingPayment) {
       setRefundModalOpen(false);
       setSelectedPayment(null);
     }
-  };
+  }, [refundingPayment]);
 
-  async function handleRefundConfirm(reason: string) {
+  const handleRefundConfirm = useCallback(async (reason: string) => {
     if (!selectedPayment) return;
 
     try {
@@ -110,7 +111,7 @@ function PaymentsContent() {
     } finally {
       setRefundingPayment(false);
     }
-  }
+  }, [selectedPayment, closeRefundModal, fetchPayments]);
 
   if (loading) {
     return (
@@ -205,9 +206,6 @@ function PaymentsContent() {
       </div>
       </div>
 
-      {/* Search Bar - Above Table */}
-      <PaymentSearch />
-
       <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
           <h2 className="text-base sm:text-lg font-semibold text-gray-900">Payment Transactions</h2>
@@ -229,8 +227,8 @@ function PaymentsContent() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {data?.payments?.map((payment: any) => (
-                <>
-                  <tr key={payment.id} className="hover:bg-gray-50">
+                <React.Fragment key={payment.id}>
+                  <tr className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm text-gray-500 font-mono">
                       <button
                         onClick={() => {
@@ -319,7 +317,7 @@ function PaymentsContent() {
                     </td>
                   </tr>
                   {expandedRows.has(payment.id) && (
-                    <tr key={`${payment.id}-details`}>
+                    <tr>
                       <td colSpan={8} className="px-6 py-4 bg-gray-50">
                         <div className="space-y-4">
                           <div>
@@ -374,7 +372,7 @@ function PaymentsContent() {
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </tbody>
           </table>

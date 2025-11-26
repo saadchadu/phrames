@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search } from 'lucide-react';
 
 export default function PaymentSearch() {
@@ -9,7 +9,7 @@ export default function PaymentSearch() {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
 
-  useEffect(() => {
+  const updateURL = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
     
     if (searchQuery) {
@@ -19,8 +19,16 @@ export default function PaymentSearch() {
     }
     
     const queryString = params.toString();
-    router.push(`/admin/payments${queryString ? `?${queryString}` : ''}`);
+    router.replace(`/admin/payments${queryString ? `?${queryString}` : ''}`, { scroll: false });
   }, [searchQuery, router, searchParams]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateURL();
+    }, 500); // Debounce search by 500ms
+    
+    return () => clearTimeout(timer);
+  }, [updateURL]);
 
   return (
     <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">

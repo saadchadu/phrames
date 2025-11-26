@@ -12,7 +12,12 @@ import { getUserCampaigns, deleteCampaign, Campaign } from '@/lib/firestore'
 // Prevent static generation for this auth-protected page
 export const dynamic = 'force-dynamic'
 import { toast } from '@/components/ui/toaster'
-import { PlusIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
+import {
+  PlusIcon,
+  ArrowPathIcon,
+  ChatBubbleLeftRightIcon,
+} from '@heroicons/react/24/outline'
+import SupportHub from '@/components/SupportHub'
 
 function DashboardContent() {
   const { user } = useAuth()
@@ -24,6 +29,7 @@ function DashboardContent() {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [reactivatingCampaign, setReactivatingCampaign] = useState<Campaign | null>(null)
+  const [showSupportModal, setShowSupportModal] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -150,6 +156,14 @@ function DashboardContent() {
 
   return (
     <AuthGuard>
+      {/* Support Hub */}
+      <SupportHub
+        isOpen={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+        userEmail={user?.email || ''}
+        userName={user?.displayName || ''}
+      />
+
       {/* Payment Modal for Reactivation */}
       {reactivatingCampaign && (
         <PaymentModal
@@ -174,6 +188,14 @@ function DashboardContent() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <button
+                onClick={() => setShowSupportModal(true)}
+                className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:scale-95 text-primary border border-[#00240020] px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition-all shadow-sm"
+                aria-label="Support"
+              >
+                <ChatBubbleLeftRightIcon className="h-5 w-5" />
+                <span>Support</span>
+              </button>
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
