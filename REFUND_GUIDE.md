@@ -21,14 +21,19 @@ Admins can process refunds directly from the admin payments page:
 1. Go to Admin → Payments
 2. Find the successful payment you want to refund
 3. Click the "Refund" button
-4. Enter a refund reason (optional)
-5. Confirm the refund
+4. A modal will open showing:
+   - Refund amount
+   - Warning that campaign will be deactivated
+   - Optional text area for refund reason
+5. Enter refund reason (optional)
+6. Click "Process Refund" to confirm
 
 **What happens:**
 - Calls Cashfree Refunds API to process the refund
 - Updates payment record with refund details
 - Deactivates the associated campaign
 - Creates an admin log entry
+- Shows success toast notification with refund ID
 
 ## API Endpoint
 
@@ -95,9 +100,16 @@ A log entry is created with:
 ## Admin UI Changes
 
 The admin payments page now shows:
-- **Refund button** for successful payments
+- **Refund button** for successful payments (opens modal)
 - **Purple badge** for refunded payments
 - **Refund details** in expanded payment view
+- **Toast notifications** for success/error messages
+- **Copy to clipboard** with toast feedback (no more alerts)
+- **RefundModal component** with:
+  - Amount display
+  - Warning message
+  - Reason text area
+  - Loading state during processing
 
 ## Cashfree Integration
 

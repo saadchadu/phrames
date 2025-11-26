@@ -4,18 +4,23 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DollarSign, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
 import PaymentFilters from '@/components/admin/PaymentFilters';
+import PaymentSearch from '@/components/admin/PaymentSearch';
 import RevenueByPlanChart from '@/components/admin/RevenueByPlanChart';
 import RevenueTrendChart from '@/components/admin/RevenueTrendChart';
 import AdminErrorBoundary, { ErrorDisplay } from '@/components/admin/AdminErrorBoundary';
 import { TableSkeleton, StatsCardSkeleton, ChartSkeleton } from '@/components/admin/LoadingState';
 import PageHeader from '@/components/admin/PageHeader';
+import RefundModal from '@/components/admin/RefundModal';
+import { toast } from '@/components/ui/toaster';
 
 function PaymentsContent() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [refundingPayment, setRefundingPayment] = useState<string | null>(null);
+  const [refundModalOpen, setRefundModalOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<{ id: string; amount: number } | null>(null);
+  const [refundingPayment, setRefundingPayment] = useState(false);
   const searchParams = useSearchParams();
 
   const toggleRow = (id: string) => {
@@ -54,17 +59,23 @@ function PaymentsContent() {
     }
   }
 
-  async function handleRefund(paymentId: string, amount: number) {
-    const refundNote = prompt('Enter refund reason (optional):');
-    
-    if (refundNote === null) return; // User cancelled
-    
-    const confirmRefund = confirm(`Are you sure you want to refund ₹${amount}? This will deactivate the campaign.`);
-    
-    if (!confirmRefund) return;
+  const openRefundModal = (paymentId: string, amount: number) => {
+    setSelectedPayment({ id: paymentId, amount });
+    setRefundModalOpen(true);
+  };
+
+  const closeRefundModal = () => {
+    if (!refundingPayment) {
+      setRefundModalOpen(false);
+      setSelectedPayment(null);
+    }
+  };
+
+  async function handleRefundConfirm(reason: string) {
+    if (!selectedPayment) return;
 
     try {
-      setRefundingPayment(paymentId);
+      setRefundingPayment(true);
       
       const { auth } = await import('@/lib/firebase');
       const user = auth.currentUser;
@@ -81,8 +92,8 @@ function PaymentsContent() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          paymentId,
-          refundNote: refundNote || undefined
+          paymentId: selectedPayment.id,
+          refundNote: reason || undefined
         })
       });
 
@@ -92,13 +103,14 @@ function PaymentsContent() {
         throw new Error(result.error || 'Failed to process refund');
       }
 
-      alert(`Refund processed successfully! Refund ID: ${result.refundId}`);
+      toast(`Refund processed successfully! Refund ID: ${result.refundId}`, 'success');
+      closeRefundModal();
       fetchPayments(); // Refresh the list
     } catch (error: any) {
       console.error('Refund error:', error);
-      alert(`Failed to process refund: ${error.message}`);
+      toast(error.message || 'Failed to process refund', 'error');
     } finally {
-      setRefundingPayment(null);
+      setRefundingPayment(false);
     }
   }
 
@@ -136,11 +148,20 @@ function PaymentsContent() {
   }
 
   return (
-    <PageHeader 
-      title="Payments & Revenue"
-      description="View payment transactions and revenue analytics"
-    >
-      <div className="text-gray-900">
+    <>
+      <RefundModal
+        isOpen={refundModalOpen}
+        onClose={closeRefundModal}
+        onConfirm={handleRefundConfirm}
+        amount={selectedPayment?.amount || 0}
+        isLoading={refundingPayment}
+      />
+      
+      <PageHeader 
+        title="Payments & Revenue"
+        description="View payment transactions and revenue analytics"
+      >
+        <div className="text-gray-900">
       <PaymentFilters />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
@@ -186,6 +207,9 @@ function PaymentsContent() {
       </div>
       </div>
 
+      {/* Search Bar - Above Table */}
+      <PaymentSearch />
+
       <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
           <h2 className="text-base sm:text-lg font-semibold text-gray-900">Payment Transactions</h2>
@@ -213,7 +237,7 @@ function PaymentsContent() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(payment.id)
-                          alert('Payment ID copied!')
+                          toast('Payment ID copied!', 'success')
                         }}
                         className="hover:text-blue-600 cursor-pointer"
                         title="Click to copy full ID"
@@ -225,7 +249,7 @@ function PaymentsContent() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(payment.userId)
-                          alert('User ID copied!')
+                          toast('User ID copied!', 'success')
                         }}
                         className="hover:text-blue-600 cursor-pointer"
                         title="Click to copy full User ID"
@@ -237,7 +261,7 @@ function PaymentsContent() {
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(payment.campaignId)
-                          alert('Campaign ID copied!')
+                          toast('Campaign ID copied!', 'success')
                         }}
                         className="hover:text-blue-600 cursor-pointer"
                         title="Click to copy full Campaign ID"
@@ -286,11 +310,11 @@ function PaymentsContent() {
                         </button>
                         {(payment.status === 'SUCCESS' || payment.status === 'success') && (
                           <button
-                            onClick={() => handleRefund(payment.id, payment.amount)}
-                            disabled={refundingPayment === payment.id}
+                            onClick={() => openRefundModal(payment.id, payment.amount)}
+                            disabled={refundingPayment}
                             className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
                           >
-                            {refundingPayment === payment.id ? 'Processing...' : 'Refund'}
+                            Refund
                           </button>
                         )}
                       </div>
@@ -359,7 +383,8 @@ function PaymentsContent() {
           </div>
         </div>
       </div>
-    </PageHeader>
+      </PageHeader>
+    </>
   );
 }
 
