@@ -10,6 +10,7 @@ export default function PaymentFilters() {
   const [status, setStatus] = useState(searchParams.get('status') || '');
   const [timeRange, setTimeRange] = useState(searchParams.get('timeRange') || '');
   const [planType, setPlanType] = useState(searchParams.get('planType') || '');
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -17,19 +18,41 @@ export default function PaymentFilters() {
     if (status) params.set('status', status);
     if (timeRange) params.set('timeRange', timeRange);
     if (planType) params.set('planType', planType);
+    if (searchQuery) params.set('search', searchQuery);
     
     const queryString = params.toString();
     router.push(`/admin/payments${queryString ? `?${queryString}` : ''}`);
-  }, [status, timeRange, planType, router]);
+  }, [status, timeRange, planType, searchQuery, router]);
 
   const handleReset = () => {
     setStatus('');
     setTimeRange('');
     setPlanType('');
+    setSearchQuery('');
   };
 
   return (
     <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
+      {/* Search Bar */}
+      <div className="mb-4">
+        <label htmlFor="search-input" className="block text-sm font-medium text-gray-700 mb-2">
+          Search Transactions
+        </label>
+        <input
+          type="text"
+          id="search-input"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by Payment ID, User ID, or Campaign ID..."
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+          aria-label="Search transactions by ID"
+        />
+        <p className="mt-1 text-xs text-gray-500">
+          Enter full or partial Payment ID, User ID, or Campaign ID to search
+        </p>
+      </div>
+      
+      {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-2">

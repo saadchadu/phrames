@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const planType = searchParams.get('planType');
     const timeRange = searchParams.get('timeRange');
+    const searchQuery = searchParams.get('search');
 
     let query: Query = db.collection('payments');
 
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     const snapshot = await query.get();
     
-    const payments = snapshot.docs.map(doc => {
+    let payments = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -73,6 +74,21 @@ export async function GET(request: NextRequest) {
         createdAt: toDate(data.createdAt)?.toISOString(),
       };
     });
+
+    // Apply search filter if provided (client-side filtering)
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      payments = payments.filter(payment => {
+        const p = payment as any;
+        return (
+          p.id?.toLowerCase().includes(searchLower) ||
+          p.userId?.toLowerCase().includes(searchLower) ||
+          p.campaignId?.toLowerCase().includes(searchLower) ||
+          p.orderId?.toLowerCase().includes(searchLower) ||
+          p.cashfreeOrderId?.toLowerCase().includes(searchLower)
+        );
+      });
+    }
 
     // Calculate analytics
     const successfulPayments = payments.filter(p => {
