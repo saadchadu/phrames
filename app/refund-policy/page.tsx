@@ -132,12 +132,27 @@ export default function RefundPolicyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-primary mb-4">10. Contact for Refund Requests</h2>
+            <h2 className="text-2xl font-semibold text-primary mb-4">10. Business Information</h2>
+            <p className="text-primary/80 mb-4">
+              Phrames is operated by:
+            </p>
+            <div className="bg-gray-50 rounded-lg p-6 mb-4">
+              <ul className="list-none text-primary/80 space-y-2">
+                <li><strong>Proprietor:</strong> ABDULLA SAAD KP</li>
+                <li><strong>Business Name:</strong> Cleffon</li>
+                <li><strong>Email:</strong> <a href="mailto:support@cleffon.com" className="text-secondary hover:underline">support@cleffon.com</a></li>
+                <li><strong>Website:</strong> <a href="https://cleffon.com" className="text-secondary hover:underline">cleffon.com</a></li>
+              </ul>
+            </div>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold text-primary mb-4">11. Contact for Refund Requests</h2>
             <p className="text-primary/80 mb-4">
               For any refund-related queries or requests, please contact us at:
             </p>
             <p className="text-primary/80 mb-4">
-              Website: <a href="https://cleffon.com" className="text-secondary hover:underline">cleffon.com</a>
+              Email: <a href="mailto:support@cleffon.com" className="text-secondary hover:underline">support@cleffon.com</a>
             </p>
             <p className="text-primary/80 mb-4">
               Please include your transaction details, campaign information, and a clear explanation of why you believe you are eligible for a refund.

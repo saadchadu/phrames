@@ -137,11 +137,38 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-primary mb-4">12. Contact Information</h2>
+            <h2 className="text-2xl font-semibold text-primary mb-4">12. Business Information</h2>
             <p className="text-primary/80 mb-4">
-              For questions about these terms, please contact us through our website at{' '}
-              <a href="https://cleffon.com" className="text-secondary hover:underline">
-                cleffon.com
+              Phrames is operated by:
+            </p>
+            <div className="bg-gray-50 rounded-lg p-6 mb-4">
+              <p className="text-primary/80 mb-2">
+                <strong>Proprietor:</strong> ABDULLA SAAD KP
+              </p>
+              <p className="text-primary/80 mb-2">
+                <strong>Business Name:</strong> Cleffon
+              </p>
+              <p className="text-primary/80 mb-2">
+                <strong>Website:</strong>{' '}
+                <a href="https://cleffon.com" className="text-secondary hover:underline">
+                  cleffon.com
+                </a>
+              </p>
+              <p className="text-primary/80">
+                <strong>Email:</strong>{' '}
+                <a href="mailto:support@cleffon.com" className="text-secondary hover:underline">
+                  support@cleffon.com
+                </a>
+              </p>
+            </div>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold text-primary mb-4">13. Contact Information</h2>
+            <p className="text-primary/80 mb-4">
+              For questions about these terms, please contact us at{' '}
+              <a href="mailto:support@cleffon.com" className="text-secondary hover:underline">
+                support@cleffon.com
               </a>
             </p>
           </section>

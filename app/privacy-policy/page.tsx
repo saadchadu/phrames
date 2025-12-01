@@ -171,14 +171,27 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold text-primary mb-4">12. Contact Us</h2>
+            <h2 className="text-2xl font-semibold text-primary mb-4">12. Business Information</h2>
+            <p className="text-primary/80 mb-4">
+              Phrames is operated by:
+            </p>
+            <div className="bg-gray-50 rounded-lg p-6 mb-4">
+              <ul className="list-none text-primary/80 space-y-2">
+                <li><strong>Proprietor:</strong> ABDULLA SAAD KP</li>
+                <li><strong>Business Name:</strong> Cleffon</li>
+                <li><strong>Website:</strong> <a href="https://cleffon.com" className="text-secondary hover:underline">cleffon.com</a></li>
+              </ul>
+            </div>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold text-primary mb-4">13. Contact Us</h2>
             <p className="text-primary/80 mb-4">
               If you have questions about this privacy policy or how we handle your data, please contact us:
             </p>
             <ul className="list-none text-primary/80 space-y-2 mb-4">
               <li><strong>Support:</strong> <a href="mailto:support@cleffon.com" className="text-secondary hover:underline">support@cleffon.com</a></li>
               <li><strong>Business Inquiries:</strong> <a href="mailto:hello@cleffon.com" className="text-secondary hover:underline">hello@cleffon.com</a></li>
-              <li><strong>Website:</strong> <a href="https://cleffon.com" className="text-secondary hover:underline">cleffon.com</a></li>
             </ul>
           </section>
         </div>

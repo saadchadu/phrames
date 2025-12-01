@@ -61,6 +61,31 @@ export default function ContactPage() {
               </div>
             </div>
 
+            <div className="bg-gray-50 rounded-2xl p-8 mb-8">
+              <h2 className="text-2xl font-bold text-primary mb-4">Business Information</h2>
+              <div className="space-y-3">
+                <div>
+                  <h3 className="font-semibold text-primary mb-2">Proprietor</h3>
+                  <p className="text-primary/80">ABDULLA SAAD KP</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-primary mb-2">Business Name</h3>
+                  <p className="text-primary/80">Cleffon</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-primary mb-2">Website</h3>
+                  <a 
+                    href="https://cleffon.com" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-secondary hover:underline"
+                  >
+                    cleffon.com
+                  </a>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-gray-50 rounded-2xl p-8">
               <h2 className="text-2xl font-bold text-primary mb-4">Quick Links</h2>
               <ul className="space-y-3">
