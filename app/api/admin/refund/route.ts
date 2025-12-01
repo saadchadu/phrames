@@ -82,7 +82,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Can only refund successful payments' }, { status: 400 })
     }
 
-    const orderId = paymentData?.cashfreeOrderId || paymentData?.orderId
+    // Cashfree needs the order_id that was used when creating the payment
+    // This is stored in the orderId field (format: order_timestamp_campaignId)
+    const orderId = paymentData?.orderId
 
     if (!orderId) {
       return NextResponse.json({ error: 'Order ID not found in payment record' }, { status: 400 })
@@ -91,8 +93,13 @@ export async function POST(request: NextRequest) {
     // Calculate refund amount (default to full amount)
     const amountToRefund = refundAmount || paymentData?.amount
 
+    // Determine the correct API URL based on environment
+    const cashfreeApiUrl = process.env.CASHFREE_ENV === 'PRODUCTION' 
+      ? 'https://api.cashfree.com/pg/orders'
+      : 'https://sandbox.cashfree.com/pg/orders'
+
     // Call Cashfree Refund API
-    const cashfreeResponse = await fetch(`https://api.cashfree.com/pg/orders/${orderId}/refunds`, {
+    const cashfreeResponse = await fetch(`${cashfreeApiUrl}/${orderId}/refunds`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
