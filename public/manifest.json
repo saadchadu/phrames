@@ -1,28 +1,38 @@
 {
-  "name": "Phrames - Photo Frame Campaigns",
+  "name": "Phrames - Create Viral Photo Frame Campaigns",
   "short_name": "Phrames",
-  "description": "Create and share beautiful photo frame campaigns instantly",
-  "start_url": "/",
+  "description": "Create custom photo frames for events, brands, and causes. Free trial available. Best Twibbon alternative for viral campaigns.",
+  "start_url": "/?utm_source=pwa",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#00dd78",
   "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icons/favicon.png",
       "sizes": "50x50",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
-  "categories": ["photo", "social", "utilities"],
-
+  "categories": ["photo", "social", "utilities", "productivity", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "/images/Hero.png",
+      "sizes": "450x490",
+      "type": "image/png",
+      "label": "Create viral photo frame campaigns"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Create Campaign",
       "short_name": "Create",
       "description": "Create a new photo frame campaign",
-      "url": "/create",
+      "url": "/create?utm_source=pwa_shortcut",
       "icons": [
         {
           "src": "/icons/favicon.png",
@@ -34,7 +44,7 @@
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "View your campaigns",
-      "url": "/dashboard",
+      "url": "/dashboard?utm_source=pwa_shortcut",
       "icons": [
         {
           "src": "/icons/favicon.png",
@@ -43,5 +53,6 @@
       ]
     }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "related_applications": []
 }

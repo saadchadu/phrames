@@ -55,8 +55,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Malformed URL' }, { status: 400 })
     }
 
-    console.log('🔄 Proxying Firebase image')
-
     // Fetch the image from Firebase Storage with timeout
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
@@ -72,14 +70,11 @@ export async function GET(request: NextRequest) {
     clearTimeout(timeoutId)
     
     if (!response.ok) {
-      console.error('❌ Failed to fetch image:', response.status)
       return NextResponse.json({ error: `Failed to fetch image: ${response.status}` }, { status: response.status })
     }
 
     const imageBuffer = await response.arrayBuffer()
     const contentType = response.headers.get('content-type') || 'image/png'
-    
-    console.log('✅ Image proxied successfully, size:', imageBuffer.byteLength)
     
     return new NextResponse(imageBuffer, {
       status: 200,
@@ -93,8 +88,6 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('❌ Image proxy error:', error)
-    
     // Return a more specific error for debugging
     if (error instanceof Error) {
       if (error.name === 'AbortError') {

@@ -31,13 +31,10 @@ if (getApps().length === 0) {
 }
 
 export async function POST(request: NextRequest) {
-  console.log('=== Payment Initiate API Called ===')
-  
   const tracker = new PerformanceTracker('payment_initiation')
   trackRequest()
   
   try {
-    console.log('Starting payment initiation...')
     // Verify Cashfree configuration
     const configCheck = verifyCashfreeConfig()
     if (!configCheck.valid) {
@@ -209,7 +206,6 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.error('Error fetching price from Firestore, using fallback:', error)
       amount = PRICING_PLANS[planType].price
     }
     
@@ -241,7 +237,6 @@ export async function POST(request: NextRequest) {
 
     let cashfreeResponse
     try {
-      console.log('Initializing Cashfree SDK...')
       const { Cashfree: CashfreeSDK, CFEnvironment } = await import('cashfree-pg')
       const environment = process.env.CASHFREE_ENV === 'PRODUCTION' 
         ? CFEnvironment.PRODUCTION 
@@ -253,19 +248,9 @@ export async function POST(request: NextRequest) {
         process.env.CASHFREE_CLIENT_SECRET!
       )
       
-      console.log('Creating Cashfree order with request:', JSON.stringify(orderRequest, null, 2))
       const response = await cashfree.PGCreateOrder(orderRequest)
-      console.log('Cashfree response received successfully')
-      console.log('Full Cashfree response:', JSON.stringify(response.data, null, 2))
-      console.log('Order ID:', response.data?.order_id)
-      console.log('Payment Session ID:', response.data?.payment_session_id)
       cashfreeResponse = response.data
     } catch (error: any) {
-      console.error('Cashfree order creation error:', error.message)
-      if (error.response?.data) {
-        console.error('Cashfree error response:', error.response.data)
-      }
-      console.error('Error status:', error.response?.status || 'unknown')
       trackError()
       logApiError({
         endpoint: '/api/payments/initiate',
@@ -310,11 +295,8 @@ export async function POST(request: NextRequest) {
     try {
       const db = getFirestore()
       const paymentRef = await db.collection('payments').add(paymentRecord)
-      console.log('Payment record created successfully:', paymentRef.id)
-      console.log('Stored orderId:', orderId)
-      console.log('Stored cashfreeOrderId:', cashfreeResponse.cf_order_id || orderId)
       
-      // Also log to admin logs for debugging
+      // Also log to admin logs
       await db.collection('logs').add({
         eventType: 'payment_initiated',
         actorId: userId,
@@ -330,7 +312,6 @@ export async function POST(request: NextRequest) {
         createdAt: Timestamp.now()
       })
     } catch (recordError: any) {
-      console.error('Failed to create payment record:', recordError)
       logApiError({
         endpoint: '/api/payments/initiate',
         error: `Failed to create payment record: ${recordError.message}`,
@@ -379,11 +360,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('=== PAYMENT INITIATION ERROR ===')
-    console.error('Error:', error)
-    console.error('Error message:', error.message)
-    console.error('Error stack:', error.stack)
-    
     trackError()
     logApiError({
       endpoint: '/api/payments/initiate',

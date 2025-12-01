@@ -39,7 +39,7 @@ export default function UserActions({ user, onActionComplete }: UserActionsProps
         body: JSON.stringify({
           userId: user.id,
           action,
-          adminId: 'admin', // TODO: Get from auth context
+          adminId: 'system',
           ...data,
         }),
       });

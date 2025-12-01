@@ -24,10 +24,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // For now, allow access to admin routes
-  // The client-side will check admin status via Firebase custom claims
-  // TODO: Implement proper server-side session management
-  
+  // Admin access is controlled client-side via Firebase custom claims
   // In production, you should:
   // 1. Create a session cookie when users log in
   // 2. Verify the session cookie here

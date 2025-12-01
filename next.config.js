@@ -1,11 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable instrumentation for environment validation on startup
-  experimental: {
-    instrumentationHook: true,
-  },
   
-  // Security headers
+  // Security and SEO headers
   async headers() {
     return [
       {
@@ -34,8 +30,55 @@ const nextConfig = {
           {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()'
+          },
+          {
+            key: 'X-Robots-Tag',
+            value: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
           }
         ],
+      },
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow'
+          }
+        ],
+      },
+      {
+        source: '/dashboard/:path*',
+        headers: [
+          {
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow'
+          }
+        ],
+      },
+      {
+        source: '/admin/:path*',
+        headers: [
+          {
+            key: 'X-Robots-Tag',
+            value: 'noindex, nofollow'
+          }
+        ],
+      },
+    ]
+  },
+  
+  // Redirects for SEO
+  async redirects() {
+    return [
+      {
+        source: '/home',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/index',
+        destination: '/',
+        permanent: true,
       },
     ]
   },
@@ -51,13 +94,9 @@ const nextConfig = {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
   
-  // Image optimization settings
+  // Image optimization settings for better SEO and performance
   images: {
     formats: ['image/webp', 'image/avif'],
-    domains: [
-      'firebasestorage.googleapis.com',
-      'lh3.googleusercontent.com'
-    ],
     remotePatterns: [
       {
         protocol: 'https',
@@ -65,8 +104,29 @@ const nextConfig = {
         port: '',
         pathname: '/v0/b/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: false,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+  
+  // Compression for better performance
+  compress: true,
+  
+  // Generate ETags for caching
+  generateEtags: true,
+  
+  // Power by header removal for security
+  poweredByHeader: false,
   
   // Webpack configuration for better compatibility
   webpack: (config, { isServer }) => {

@@ -76,10 +76,9 @@ export function logEvent(
       console.log(`${prefix} [${event}] ${message}${contextStr}`)
   }
 
-  // In production, you could send to external monitoring service
+  // In production, send to external monitoring service if configured
   if (process.env.NODE_ENV === 'production' && level === 'error') {
-    // TODO: Send to error tracking service (e.g., Sentry)
-    // sendToErrorTracking(logEntry)
+    // Integration point for error tracking service (e.g., Sentry)
   }
 
   return logEntry

@@ -4,12 +4,9 @@ import { verifyIdToken } from '@/lib/firebase-admin'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[activate-free] API called')
-    
     // Get the authorization token
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('[activate-free] No authorization header')
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -17,14 +14,11 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1]
-    console.log('[activate-free] Verifying token...')
     const decodedToken = await verifyIdToken(token)
     const userId = decodedToken.uid
-    console.log('[activate-free] User ID:', userId)
 
     // Get request body
     const { campaignId } = await request.json()
-    console.log('[activate-free] Campaign ID:', campaignId)
 
     if (!campaignId) {
       return NextResponse.json(
@@ -120,7 +114,6 @@ export async function POST(request: NextRequest) {
       expiresAt: expiryDate.toISOString()
     })
   } catch (error: any) {
-    console.error('Error activating free campaign:', error)
     return NextResponse.json(
       { error: error.message || 'Failed to activate free campaign' },
       { status: 500 }

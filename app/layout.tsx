@@ -4,26 +4,54 @@ import AuthProvider from '@/components/AuthProvider'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import Navbar from '@/components/Navbar'
 import { Toaster } from '@/components/ui/toaster'
+import GoogleAnalytics from '@/components/GoogleAnalytics'
 
 export const metadata: Metadata = {
-  title: 'Phrames - Create Viral Photo Frame Campaigns | Free Trial',
-  description: 'Create custom photo frames for your campaign in minutes. Perfect for events, brands, and causes. Start free for 1 month - no credit card required.',
-  keywords: ['photo frame', 'campaign creator', 'frame generator', 'twibbon alternative', 'online frame app', 'Phrames', 'viral campaign', 'social media frames', 'custom profile frames', 'event frames'],
-  authors: [{ name: 'Cleffon' }],
+  title: {
+    default: 'Phrames - Create Viral Photo Frame Campaigns | Free Trial',
+    template: '%s | Phrames'
+  },
+  description: 'Create custom photo frames for your campaign in minutes. Perfect for events, brands, and causes. Start free for 1 month - no credit card required. Best Twibbon alternative.',
+  keywords: [
+    'photo frame creator',
+    'campaign frame maker',
+    'twibbon alternative',
+    'custom photo frames',
+    'viral campaign tool',
+    'social media frames',
+    'event photo frames',
+    'brand campaign frames',
+    'profile picture frames',
+    'frame generator online',
+    'photo overlay maker',
+    'campaign marketing tool',
+    'free photo frame app',
+    'online frame creator',
+    'custom frame design',
+    'social media campaign',
+    'photo frame app',
+    'event marketing tool',
+    'brand awareness campaign',
+    'digital campaign creator'
+  ],
+  authors: [{ name: 'Cleffon', url: 'https://cleffon.com' }],
   creator: 'Cleffon',
   publisher: 'Cleffon',
   metadataBase: new URL('https://phrames.cleffon.com'),
   alternates: {
     canonical: '/',
+    languages: {
+      'en-US': '/',
+    },
   },
   openGraph: {
     title: 'Phrames - Create Viral Photo Frame Campaigns | Free Trial',
-    description: 'Create custom photo frames for your campaign in minutes. Perfect for events, brands, and causes. Start free for 1 month.',
+    description: 'Create custom photo frames for your campaign in minutes. Perfect for events, brands, and causes. Start free for 1 month - no credit card required.',
     url: 'https://phrames.cleffon.com',
     siteName: 'Phrames',
     images: [
       {
-        url: '/og-image.png',
+        url: '/images/Hero.png',
         width: 1200,
         height: 630,
         alt: 'Phrames - Create Viral Photo Frame Campaigns',
@@ -35,12 +63,15 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Phrames - Create Viral Photo Frame Campaigns | Free Trial',
-    description: 'Create custom photo frames for your campaign in minutes. Perfect for events, brands, and causes.',
-    images: ['/og-image.png'],
+    description: 'Create custom photo frames for your campaign in minutes. Perfect for events, brands, and causes. Start free for 1 month.',
+    images: ['/images/Hero.png'],
+    creator: '@cleffon',
+    site: '@phrames',
   },
   robots: {
     index: true,
     follow: true,
+    nocache: false,
     googleBot: {
       index: true,
       follow: true,
@@ -61,6 +92,23 @@ export const metadata: Metadata = {
     shortcut: '/icons/favicon.png',
   },
   manifest: '/manifest.json',
+  category: 'technology',
+  classification: 'Photo Frame Campaign Creator',
+  applicationName: 'Phrames',
+  appleWebApp: {
+    capable: true,
+    title: 'Phrames',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+  },
 }
 
 export default function RootLayout({
@@ -79,10 +127,15 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <meta name="HandheldFriendly" content="true" />
         <link rel="apple-touch-icon" href="/icons/favicon.png" />
+        <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
+        <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         {/* Cashfree Payment Gateway SDK v3 */}
         <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
       </head>
       <body className="font-sans antialiased">
+        <GoogleAnalytics />
         <ErrorBoundary>
           <AuthProvider>
             <Navbar />

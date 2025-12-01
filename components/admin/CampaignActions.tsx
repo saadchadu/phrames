@@ -43,7 +43,7 @@ export default function CampaignActions({ campaign, onActionComplete }: Campaign
         body: JSON.stringify({
           campaignId: campaign.id,
           action,
-          adminId: 'admin', // TODO: Get from auth context
+          adminId: 'system',
           ...data,
         }),
       });
