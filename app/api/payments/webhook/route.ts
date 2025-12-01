@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 import { verifyCashfreeSignature } from '@/lib/webhookVerification'
-import { getPaymentByOrderId } from '@/lib/firestore'
 import { calculateExpiryDate } from '@/lib/cashfree'
 import {
   PerformanceTracker,
@@ -29,6 +28,38 @@ if (getApps().length === 0) {
 }
 
 const db = getFirestore()
+
+// Helper function to get payment by order ID using Firebase Admin
+async function getPaymentByOrderId(orderId: string) {
+  try {
+    // First try to find by orderId
+    let querySnapshot = await db.collection('payments')
+      .where('orderId', '==', orderId)
+      .limit(1)
+      .get()
+    
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0]
+      return { id: doc.id, ...doc.data() }
+    }
+    
+    // If not found, try to find by cashfreeOrderId
+    querySnapshot = await db.collection('payments')
+      .where('cashfreeOrderId', '==', orderId)
+      .limit(1)
+      .get()
+    
+    if (!querySnapshot.empty) {
+      const doc = querySnapshot.docs[0]
+      return { id: doc.id, ...doc.data() }
+    }
+    
+    return null
+  } catch (error) {
+    console.error('Error getting payment by order ID:', error)
+    return null
+  }
+}
 
 export async function POST(request: NextRequest) {
   const tracker = new PerformanceTracker('webhook_processing')
