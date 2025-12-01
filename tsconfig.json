@@ -41,7 +41,6 @@
     "functions-setup",
     "functions",
     "tests",
-    "scripts/check-payment-status.ts",
-    "scripts/manually-activate-campaign.ts"
+    "scripts/**/*.ts"
   ]
 }

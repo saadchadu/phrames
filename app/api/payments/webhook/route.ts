@@ -29,8 +29,21 @@ if (getApps().length === 0) {
 
 const db = getFirestore()
 
+// Payment record interface for webhook handler
+interface PaymentRecord {
+  id: string
+  orderId: string
+  campaignId: string
+  userId: string
+  planType: string
+  amount: number
+  status: string
+  cashfreeOrderId: string
+  [key: string]: any
+}
+
 // Helper function to get payment by order ID using Firebase Admin
-async function getPaymentByOrderId(orderId: string) {
+async function getPaymentByOrderId(orderId: string): Promise<PaymentRecord | null> {
   try {
     // First try to find by orderId
     let querySnapshot = await db.collection('payments')
@@ -40,7 +53,7 @@ async function getPaymentByOrderId(orderId: string) {
     
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0]
-      return { id: doc.id, ...doc.data() }
+      return { id: doc.id, ...doc.data() } as PaymentRecord
     }
     
     // If not found, try to find by cashfreeOrderId
@@ -51,7 +64,7 @@ async function getPaymentByOrderId(orderId: string) {
     
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0]
-      return { id: doc.id, ...doc.data() }
+      return { id: doc.id, ...doc.data() } as PaymentRecord
     }
     
     return null
@@ -289,7 +302,7 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
     }
 
     // Calculate expiry date
-    const expiryDate = calculateExpiryDate(planType)
+    const expiryDate = calculateExpiryDate(planType as 'free' | 'week' | 'month' | '3month' | '6month' | 'year')
 
     // Update campaign with payment details
     const campaignRef = db.collection('campaigns').doc(campaignId)
