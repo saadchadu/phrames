@@ -15,7 +15,6 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [photoURL, setPhotoURL] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [signupDisabled, setSignupDisabled] = useState(false)
@@ -138,7 +137,7 @@ export default function SignupPage() {
       return
     }
 
-    const { user, error: authError } = await signUpWithEmail(email, password, name, photoURL)
+    const { user, error: authError } = await signUpWithEmail(email, password, name)
     
     if (authError) {
       setError(authError)
@@ -238,9 +237,6 @@ export default function SignupPage() {
                 required
                 className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
-              <p className="text-xs text-primary/60">
-                Use Gmail, Outlook, Hotmail, Apple (iCloud), Yahoo, or your company email
-              </p>
             </div>
             
             {/* Password Field */}
@@ -303,22 +299,6 @@ export default function SignupPage() {
               </div>
             </div>
 
-            {/* Photo URL Field (Optional) */}
-            <div className="flex flex-col gap-2 w-full">
-              <label htmlFor="photoURL" className="text-primary text-sm sm:text-base font-semibold">
-                Profile Photo URL <span className="text-primary/50 font-normal">(optional)</span>
-              </label>
-              <input
-                id="photoURL"
-                type="url"
-                placeholder="https://example.com/photo.jpg"
-                value={photoURL}
-                onChange={(e) => setPhotoURL(e.target.value)}
-                className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
-              />
-              <p className="text-xs sm:text-sm text-primary/60">Add a link to your profile photo</p>
-            </div>
-            
             {/* Submit Button */}
             <button
               type="submit"
