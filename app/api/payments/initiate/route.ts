@@ -71,9 +71,27 @@ export async function POST(request: NextRequest) {
     
     // Verify Firebase token
     let userId: string
+    let emailVerified: boolean
     try {
       const decodedToken = await getAuth().verifyIdToken(token)
       userId = decodedToken.uid
+      emailVerified = decodedToken.email_verified || false
+      
+      // Require email verification for payments
+      if (!emailVerified) {
+        trackError()
+        logApiError({
+          endpoint: '/api/payments/initiate',
+          error: 'Email not verified',
+          userId,
+          statusCode: 403
+        })
+        tracker.end(false)
+        return NextResponse.json(
+          { error: 'Please verify your email address before making a payment. Check your inbox for the verification link.' },
+          { status: 403 }
+        )
+      }
     } catch (error) {
       trackError()
       logApiError({

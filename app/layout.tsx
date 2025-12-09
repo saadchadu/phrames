@@ -3,6 +3,7 @@ import './globals.css'
 import AuthProvider from '@/components/AuthProvider'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import Navbar from '@/components/Navbar'
+import EmailVerificationBanner from '@/components/EmailVerificationBanner'
 import { Toaster } from '@/components/ui/toaster'
 import GoogleAnalytics from '@/components/GoogleAnalytics'
 
@@ -139,6 +140,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <AuthProvider>
             <Navbar />
+            <EmailVerificationBanner />
             <main>
               {children}
             </main>

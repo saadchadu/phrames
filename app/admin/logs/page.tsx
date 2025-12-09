@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import LogFilters, { getEventTypeColor } from '@/components/admin/LogFilters';
 import AdminErrorBoundary, { ErrorDisplay } from '@/components/admin/AdminErrorBoundary';
@@ -121,8 +121,8 @@ function LogsContent() {
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <>
-                    <tr key={log.id} className="hover:bg-gray-50">
+                  <React.Fragment key={log.id}>
+                    <tr className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm">
                         <button
                           onClick={() => toggleRow(log.id)}
@@ -150,7 +150,7 @@ function LogsContent() {
                       </td>
                     </tr>
                     {expandedRows.has(log.id) && (
-                      <tr key={`${log.id}-metadata`}>
+                      <tr>
                         <td colSpan={5} className="px-6 py-4 bg-gray-50">
                           <div className="text-sm">
                             <div className="font-medium text-gray-700 mb-2">Metadata:</div>
@@ -163,7 +163,7 @@ function LogsContent() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 ))
               )}
             </tbody>

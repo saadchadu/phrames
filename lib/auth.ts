@@ -141,6 +141,16 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
 
     const result = await createUserWithEmailAndPassword(auth, email, password)
     
+    // Send email verification
+    const { sendEmailVerification } = await import('firebase/auth')
+    try {
+      await sendEmailVerification(result.user)
+      console.log('Verification email sent to:', email)
+    } catch (verifyError) {
+      console.error('Failed to send verification email:', verifyError)
+      // Don't block signup if verification email fails
+    }
+    
     // Create user profile in Firestore with custom data
     await createUserProfile(result.user, displayName, photoURL)
     

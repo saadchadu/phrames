@@ -103,6 +103,11 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
         throw new Error('You must be logged in to make a payment')
       }
 
+      // Check email verification
+      if (!user.emailVerified) {
+        throw new Error('Please verify your email address before making a payment. Check your inbox for the verification link.')
+      }
+
       const token = await user.getIdToken()
       
       const response = await fetch('/api/payments/initiate', {

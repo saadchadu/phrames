@@ -14,5 +14,6 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "liveServer.settings.multiRootWorkspaceName": "phrames"
+  "liveServer.settings.multiRootWorkspaceName": "phrames",
+  "typescript.autoClosingTags": false
 }
