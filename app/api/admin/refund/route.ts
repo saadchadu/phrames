@@ -32,14 +32,10 @@ export async function POST(request: NextRequest) {
       const decodedToken = await getAuth().verifyIdToken(token)
       adminUid = decodedToken.uid
       
-      // Check if user is admin
-      if (adminUid !== process.env.ADMIN_UID) {
+      // Check if user is admin using custom claim
+      if (!decodedToken.isAdmin) {
         return NextResponse.json({ 
-          error: 'Forbidden - Admin access required',
-          debug: process.env.NODE_ENV === 'development' ? {
-            yourUid: adminUid,
-            expectedUid: process.env.ADMIN_UID
-          } : undefined
+          error: 'Forbidden - Admin access required'
         }, { status: 403 })
       }
     } catch (error) {
