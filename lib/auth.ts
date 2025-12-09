@@ -96,8 +96,49 @@ export const signInWithEmail = async (email: string, password: string) => {
   }
 }
 
+// Validate email domain
+const validateEmailDomain = (email: string): boolean => {
+  const allowedDomains = [
+    'gmail.com', 'googlemail.com',
+    'outlook.com', 'outlook.in', 'outlook.co.uk', 'outlook.fr', 'outlook.de', 'outlook.es', 'outlook.it', 'outlook.jp', 'outlook.kr', 'outlook.com.br',
+    'hotmail.com', 'hotmail.co.uk', 'hotmail.fr', 'hotmail.de', 'hotmail.es', 'hotmail.it', 'hotmail.jp',
+    'live.com', 'live.co.uk', 'live.fr', 'live.de', 'live.it', 'msn.com',
+    'icloud.com', 'me.com', 'mac.com',
+    'yahoo.com', 'yahoo.co.uk', 'yahoo.fr', 'yahoo.de', 'yahoo.es', 'yahoo.it', 'yahoo.co.jp', 'yahoo.co.in', 'ymail.com',
+    'protonmail.com', 'proton.me', 'pm.me',
+    'zoho.com', 'aol.com', 'gmx.com', 'gmx.net', 'mail.com', 'fastmail.com', 'tutanota.com', 'tutanota.de', 'tuta.io'
+  ]
+
+  const emailDomain = email.toLowerCase().split('@')[1]
+  
+  if (!emailDomain) return false
+  
+  // Check if it's in allowed list
+  if (allowedDomains.includes(emailDomain)) return true
+  
+  // Check if it's a corporate email (basic validation)
+  const isCorporateEmail = 
+    !emailDomain.includes('temp') && 
+    !emailDomain.includes('disposable') &&
+    !emailDomain.includes('throwaway') &&
+    !emailDomain.includes('guerrilla') &&
+    !emailDomain.includes('mailinator') &&
+    !emailDomain.includes('10minute') &&
+    emailDomain.split('.').length >= 2
+  
+  return isCorporateEmail
+}
+
 export const signUpWithEmail = async (email: string, password: string, displayName?: string, photoURL?: string) => {
   try {
+    // Validate email domain
+    if (!validateEmailDomain(email)) {
+      return { 
+        user: null, 
+        error: 'Please use an email from Gmail, Outlook, Hotmail, Apple (iCloud), Yahoo, or your company email.' 
+      }
+    }
+
     const result = await createUserWithEmailAndPassword(auth, email, password)
     
     // Create user profile in Firestore with custom data

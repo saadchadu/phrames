@@ -10,13 +10,13 @@ import { db } from '@/lib/firebase'
 export default function PricingSection() {
   const { user } = useAuth()
   const router = useRouter()
-  const [pricing, setPricing] = useState({
-    week: 49,
-    month: 99,
-    '3month': 249,
-    '6month': 499,
-    year: 899,
-  })
+  const [pricing, setPricing] = useState<{
+    week: number
+    month: number
+    '3month': number
+    '6month': number
+    year: number
+  } | null>(null)
   const [discounts, setDiscounts] = useState({
     week: 0,
     month: 0,
@@ -25,10 +25,12 @@ export default function PricingSection() {
     year: 0,
   })
   const [offersEnabled, setOffersEnabled] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchPricing = async () => {
       try {
+        setLoading(true)
         const [plansDoc, systemDoc] = await Promise.all([
           getDoc(doc(db, 'settings', 'plans')),
           getDoc(doc(db, 'settings', 'system'))
@@ -59,7 +61,16 @@ export default function PricingSection() {
         }
       } catch (error) {
         console.error('Failed to fetch pricing:', error)
-        // Keep default pricing if fetch fails
+        // Set default pricing if fetch fails
+        setPricing({
+          week: 49,
+          month: 99,
+          '3month': 249,
+          '6month': 499,
+          year: 899,
+        })
+      } finally {
+        setLoading(false)
       }
     }
     fetchPricing()
@@ -74,6 +85,7 @@ export default function PricingSection() {
   }
 
   const calculateDiscountedPrice = (key: string) => {
+    if (!pricing) return 0
     const price = pricing[key as keyof typeof pricing]
     const discount = discounts[key as keyof typeof discounts]
     if (offersEnabled && discount > 0) {
@@ -90,7 +102,7 @@ export default function PricingSection() {
     return offersEnabled && getDiscount(key) > 0
   }
   
-  const plans = [
+  const plans = pricing ? [
     {
       name: '1 Week',
       price: pricing.week,
@@ -123,7 +135,7 @@ export default function PricingSection() {
       popular: false,
       features: ['Campaign visibility', 'Unlimited supporters', 'Analytics tracking', 'QR code generation']
     }
-  ]
+  ] : []
 
   return (
     <section className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 lg:px-8 bg-white">
@@ -144,7 +156,15 @@ export default function PricingSection() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        )}
+
         {/* Pricing Cards */}
+        {!loading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {plans.map((plan) => (
             <div
@@ -208,8 +228,10 @@ export default function PricingSection() {
             </div>
           ))}
         </div>
+        )}
 
         {/* Additional Info */}
+        {!loading && (
         <div className="mt-12 space-y-6">
           <div className="bg-gradient-to-r from-secondary/20 to-secondary/10 border-2 border-secondary rounded-2xl p-6 sm:p-8 text-center">
             <div className="flex items-center justify-center gap-3 mb-3">
@@ -235,6 +257,7 @@ export default function PricingSection() {
             </p>
           </div>
         </div>
+        )}
       </div>
     </section>
   )

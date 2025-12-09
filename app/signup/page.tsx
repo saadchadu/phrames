@@ -42,6 +42,84 @@ export default function SignupPage() {
     setLoading(true)
     setError('')
 
+    // Validate email domain
+    const allowedDomains = [
+      // Gmail
+      'gmail.com',
+      'googlemail.com',
+      // Outlook/Microsoft
+      'outlook.com',
+      'outlook.in',
+      'outlook.co.uk',
+      'outlook.fr',
+      'outlook.de',
+      'outlook.es',
+      'outlook.it',
+      'outlook.jp',
+      'outlook.kr',
+      'outlook.com.br',
+      'hotmail.com',
+      'hotmail.co.uk',
+      'hotmail.fr',
+      'hotmail.de',
+      'hotmail.es',
+      'hotmail.it',
+      'hotmail.jp',
+      'live.com',
+      'live.co.uk',
+      'live.fr',
+      'live.de',
+      'live.it',
+      'msn.com',
+      // Apple
+      'icloud.com',
+      'me.com',
+      'mac.com',
+      // Yahoo
+      'yahoo.com',
+      'yahoo.co.uk',
+      'yahoo.fr',
+      'yahoo.de',
+      'yahoo.es',
+      'yahoo.it',
+      'yahoo.co.jp',
+      'yahoo.co.in',
+      'ymail.com',
+      // ProtonMail
+      'protonmail.com',
+      'proton.me',
+      'pm.me',
+      // Other reputable providers
+      'zoho.com',
+      'aol.com',
+      'gmx.com',
+      'gmx.net',
+      'mail.com',
+      'fastmail.com',
+      'tutanota.com',
+      'tutanota.de',
+      'tuta.io',
+      // Corporate domains (common)
+      'company.com',
+      'corp.com',
+      'enterprise.com'
+    ]
+
+    const emailDomain = email.toLowerCase().split('@')[1]
+    
+    // Check if it's a corporate email (has company name pattern)
+    const isCorporateEmail = emailDomain && 
+      !emailDomain.includes('temp') && 
+      !emailDomain.includes('disposable') &&
+      !emailDomain.includes('throwaway') &&
+      emailDomain.split('.').length >= 2
+
+    if (!allowedDomains.includes(emailDomain) && !isCorporateEmail) {
+      setError('Please use an email from Gmail, Outlook, Hotmail, Apple (iCloud), Yahoo, or your company email.')
+      setLoading(false)
+      return
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match')
       setLoading(false)
@@ -160,6 +238,9 @@ export default function SignupPage() {
                 required
                 className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
+              <p className="text-xs text-primary/60">
+                Use Gmail, Outlook, Hotmail, Apple (iCloud), Yahoo, or your company email
+              </p>
             </div>
             
             {/* Password Field */}

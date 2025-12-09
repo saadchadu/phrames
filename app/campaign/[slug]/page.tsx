@@ -4,9 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { getCampaignBySlug, incrementSupportersCount, incrementCampaignVisit, incrementCampaignDownload, Campaign } from '@/lib/firestore'
 import { getUserProfile, UserProfile } from '@/lib/auth'
-import { ArrowDownTrayIcon, PhotoIcon, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon } from '@heroicons/react/24/outline'
+import { ArrowDownTrayIcon, PhotoIcon, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon, ScissorsIcon } from '@heroicons/react/24/outline'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import CampaignQRCode from '@/components/CampaignQRCode'
+import ImageCropModal from '@/components/ImageCropModal'
 import { useAuth } from '@/components/AuthProvider'
 
 // Prevent static generation for this dynamic page
@@ -27,11 +28,13 @@ export default function CampaignPage() {
   const [creatorProfile, setCreatorProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [userImage, setUserImage] = useState<string | null>(null)
+  const [originalImage, setOriginalImage] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [transform, setTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [showQRCode, setShowQRCode] = useState(false)
+  const [showCropModal, setShowCropModal] = useState(false)
   
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -300,24 +303,28 @@ export default function CampaignPage() {
     const reader = new FileReader()
     reader.onload = (e) => {
       const imageUrl = e.target?.result as string
-      setUserImage(imageUrl)
-      
-      // Auto-fit the image
-      const img = new Image()
-      img.onload = () => {
-        const canvasSize = 400
-        const imageAspect = img.width / img.height
-        
-        // Scale to cover the entire canvas
-        let initialScale = Math.max(canvasSize / img.width, canvasSize / img.height)
-        
-        const initialTransform = { x: 0, y: 0, scale: initialScale }
-        setTransform(initialTransform)
-        updatePreview(imageUrl, initialTransform)
-      }
-      img.src = imageUrl
+      setOriginalImage(imageUrl)
+      setShowCropModal(true)
     }
     reader.readAsDataURL(file)
+  }
+
+  const handleCropComplete = (croppedImage: string) => {
+    setUserImage(croppedImage)
+    
+    // Auto-fit the cropped image
+    const img = new Image()
+    img.onload = () => {
+      const canvasSize = 400
+      
+      // Scale to cover the entire canvas
+      let initialScale = Math.max(canvasSize / img.width, canvasSize / img.height)
+      
+      const initialTransform = { x: 0, y: 0, scale: initialScale }
+      setTransform(initialTransform)
+      updatePreview(croppedImage, initialTransform)
+    }
+    img.src = croppedImage
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -332,7 +339,7 @@ export default function CampaignPage() {
     })
   }
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDragging || !userImage) return
     e.preventDefault()
     
@@ -356,7 +363,7 @@ export default function CampaignPage() {
         rafRef.current = null
       })
     }
-  }
+  }, [isDragging, userImage, transform, dragStart])
 
   const handleMouseUp = () => {
     setIsDragging(false)
@@ -808,13 +815,27 @@ export default function CampaignPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-3 sm:gap-4">
-                {/* Change Photo Button */}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-white border border-[#00240010] hover:border-[#00240020] active:scale-95 text-primary px-6 sm:px-7 py-3.5 sm:py-4 rounded-2xl font-semibold text-base sm:text-lg transition-all shadow-sm"
-                >
-                  Change Photo
-                </button>
+                {/* Photo Actions */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full bg-white border border-[#00240010] hover:border-[#00240020] active:scale-95 text-primary px-4 sm:px-5 py-3.5 sm:py-4 rounded-2xl font-semibold text-sm sm:text-base transition-all shadow-sm"
+                  >
+                    Change Photo
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (userImage) {
+                        setOriginalImage(userImage)
+                        setShowCropModal(true)
+                      }
+                    }}
+                    className="w-full bg-white border border-[#00240010] hover:border-[#00240020] active:scale-95 text-primary px-4 sm:px-5 py-3.5 sm:py-4 rounded-2xl font-semibold text-sm sm:text-base transition-all shadow-sm flex items-center justify-center gap-2"
+                  >
+                    <ScissorsIcon className="w-5 h-5" />
+                    <span>Crop</span>
+                  </button>
+                </div>
 
                 {/* Adjust & Download Section */}
                 <div className="bg-white border border-[#00240010] rounded-2xl p-5 sm:p-6 lg:p-7 shadow-sm">
@@ -905,6 +926,16 @@ export default function CampaignPage() {
           <canvas ref={canvasRef} className="hidden" />
         </div>
       </div>
+
+      {/* Image Crop Modal */}
+      {originalImage && (
+        <ImageCropModal
+          isOpen={showCropModal}
+          onClose={() => setShowCropModal(false)}
+          image={originalImage}
+          onCropComplete={handleCropComplete}
+        />
+      )}
     </div>
   )
 }
