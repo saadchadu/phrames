@@ -8,7 +8,7 @@ import {
   logUserDeleted, 
   logUserAdminSet, 
   logUserFreeCampaignReset 
-} from '@/lib/admin-logging';
+} from '@/lib/admin-logging-server';
 import { setAdminClaim } from '@/lib/admin-auth';
 
 const db = adminDb;
@@ -135,6 +135,16 @@ export async function PATCH(request: NextRequest) {
     switch (action) {
       case 'setAdmin':
         const isAdmin = data.isAdmin === true;
+        
+        // Protected users cannot have admin privileges removed
+        const protectedEmails = ['saadchadu@gmail.com'];
+        if (userData?.email && protectedEmails.includes(userData.email) && !isAdmin) {
+          return NextResponse.json(
+            { error: 'This user is protected and admin privileges cannot be removed' },
+            { status: 403 }
+          );
+        }
+        
         await userRef.update({ isAdmin });
         await setAdminClaim(userId, isAdmin);
         await logUserAdminSet(
@@ -224,6 +234,15 @@ export async function DELETE(request: NextRequest) {
     }
 
     const userData = userDoc.data();
+    
+    // Protected users that cannot be deleted
+    const protectedEmails = ['saadchadu@gmail.com'];
+    if (userData?.email && protectedEmails.includes(userData.email)) {
+      return NextResponse.json(
+        { error: 'This user is protected and cannot be deleted' },
+        { status: 403 }
+      );
+    }
     
     // Delete user from Firestore
     await userRef.delete();

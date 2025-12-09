@@ -122,18 +122,31 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                {filteredUsers.map((user) => {
+                  const isSuperAdmin = user.email === 'saadchadu@gmail.com';
+                  return (
+                  <tr 
+                    key={user.id} 
+                    className={`${
+                      isSuperAdmin 
+                        ? 'bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border-l-4 border-purple-500' 
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
                             {user.displayName || 'User'}
-                            {user.isAdmin && (
-                              <span className="ml-2 px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
+                            {isSuperAdmin ? (
+                              <span className="px-2 py-1 text-xs rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold shadow-sm">
+                                ⭐ Super Admin
+                              </span>
+                            ) : user.isAdmin ? (
+                              <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
                                 Admin
                               </span>
-                            )}
+                            ) : null}
                           </div>
                           <div className="text-sm text-gray-500">{user.email}</div>
                           {user.username && (
@@ -167,7 +180,8 @@ export default function AdminUsersPage() {
                       <UserActions user={user} onActionComplete={fetchUsers} />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
             </div>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import type { Query } from 'firebase-admin/firestore';
-import { logCampaignDeactivated, logCampaignReactivated, logCampaignExtended, logCampaignDeleted } from '@/lib/admin-logging';
+import { logCampaignDeactivated, logCampaignReactivated, logCampaignExtended, logCampaignDeleted } from '@/lib/admin-logging-server';
 
 const db = adminDb;
 

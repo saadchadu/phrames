@@ -103,19 +103,37 @@ export default function UserActions({ user, onActionComplete }: UserActionsProps
     handleAction('unblock');
   }
 
+  // Protected users that cannot be deleted or have admin removed
+  const isProtectedUser = user.email === 'saadchadu@gmail.com';
+
   return (
     <>
       <div className="flex items-center space-x-2">
         {/* Set Admin Toggle */}
         <button
           onClick={() => setShowSetAdminModal(true)}
+          disabled={isProtectedUser && user.isAdmin}
           className={`transition-colors ${
-            user.isAdmin
+            isProtectedUser && user.isAdmin
+              ? 'text-purple-400 cursor-not-allowed'
+              : user.isAdmin
               ? 'text-purple-600 hover:text-purple-900'
               : 'text-gray-400 hover:text-gray-600'
           }`}
-          title={user.isAdmin ? 'Remove admin privileges' : 'Grant admin privileges'}
-          aria-label={user.isAdmin ? 'Remove admin privileges' : 'Grant admin privileges'}
+          title={
+            isProtectedUser && user.isAdmin
+              ? 'Protected user - admin privileges cannot be removed'
+              : user.isAdmin
+              ? 'Remove admin privileges'
+              : 'Grant admin privileges'
+          }
+          aria-label={
+            isProtectedUser && user.isAdmin
+              ? 'Protected user - admin privileges cannot be removed'
+              : user.isAdmin
+              ? 'Remove admin privileges'
+              : 'Grant admin privileges'
+          }
         >
           <Shield className="h-4 w-4" />
         </button>
@@ -166,15 +184,17 @@ export default function UserActions({ user, onActionComplete }: UserActionsProps
           <ExternalLink className="h-4 w-4" />
         </a>
 
-        {/* Delete Button */}
-        <button
-          onClick={() => setShowDeleteModal(true)}
-          className="text-red-600 hover:text-red-900 transition-colors"
-          title="Delete user"
-          aria-label="Delete user"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        {/* Delete Button - Hidden for protected users */}
+        {!isProtectedUser && (
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="text-red-600 hover:text-red-900 transition-colors"
+            title="Delete user"
+            aria-label="Delete user"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Set Admin Confirmation Modal */}
@@ -235,7 +255,7 @@ export default function UserActions({ user, onActionComplete }: UserActionsProps
         onClose={() => setShowDeleteModal(false)}
         onConfirm={handleDelete}
         title="Delete User"
-        message={`Are you sure you want to permanently delete "${user.displayName || user.email}"? This will delete their account and all associated data. This action cannot be undone.`}
+        message={`Are you sure you want to permanently delete "${user.displayName || user.email}"?\n\nThis will delete their account and all associated data. This action cannot be undone.`}
         confirmText="Delete User"
         isDestructive={true}
         isLoading={loading}
