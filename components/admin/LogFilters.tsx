@@ -39,7 +39,7 @@ export default function LogFilters() {
           <select
             value={currentEventType}
             onChange={(e) => handleFilterChange('eventType', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
           >
             <option value="">All Events</option>
             <option value={LogEventType.ADMIN_ACTION}>Admin Action</option>
@@ -71,7 +71,7 @@ export default function LogFilters() {
           <select
             value={currentDateRange}
             onChange={(e) => handleFilterChange('dateRange', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
           >
             <option value="">All Time</option>
             <option value="today">Today</option>

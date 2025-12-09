@@ -55,7 +55,7 @@ export default function UserFilters({ onFilterChange }: UserFiltersProps) {
               placeholder="Search by name, email, username, or ID..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
             />
           </div>
         </div>
@@ -65,7 +65,7 @@ export default function UserFilters({ onFilterChange }: UserFiltersProps) {
           <select
             value={freeCampaignUsed}
             onChange={(e) => setFreeCampaignUsed(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900"
           >
             <option value="all">All Users</option>
             <option value="false">Free Campaign Available</option>
@@ -78,7 +78,7 @@ export default function UserFilters({ onFilterChange }: UserFiltersProps) {
           <select
             value={blocked}
             onChange={(e) => setBlocked(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900"
           >
             <option value="all">All Status</option>
             <option value="false">Active Only</option>
@@ -98,7 +98,7 @@ export default function UserFilters({ onFilterChange }: UserFiltersProps) {
           placeholder="Filter by minimum campaigns..."
           value={minCampaigns}
           onChange={(e) => setMinCampaigns(e.target.value)}
-          className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
         />
       </div>
     </div>

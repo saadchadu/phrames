@@ -101,7 +101,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             placeholder="Search by name, campaign ID, or user ID..."
-            className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+            className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
           />
           {localSearch && (
             <button
@@ -121,7 +121,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
           <select
             value={filters.status}
             onChange={(e) => updateFilter('status', e.target.value)}
-            className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+            className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900"
           >
             <option value="">All Status</option>
             <option value="active">Active</option>
@@ -135,7 +135,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
           <select
             value={filters.paymentType}
             onChange={(e) => updateFilter('paymentType', e.target.value)}
-            className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+            className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900"
           >
             <option value="">All Types</option>
             <option value="free">Free</option>
@@ -153,7 +153,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
             value={filters.userId}
             onChange={(e) => updateFilter('userId', e.target.value)}
             placeholder="Filter by User ID..."
-            className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+            className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-400"
           />
           {filters.userId && (
             <button
@@ -175,7 +175,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
             value={filters.dateFrom}
             onChange={(e) => updateFilter('dateFrom', e.target.value)}
             placeholder="From Date"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900"
           />
         </div>
 
@@ -189,7 +189,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
             value={filters.dateTo}
             onChange={(e) => updateFilter('dateTo', e.target.value)}
             placeholder="To Date"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900"
           />
         </div>
       </div>
