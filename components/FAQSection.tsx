@@ -6,7 +6,7 @@ import { ChevronDown } from 'lucide-react'
 const faqs = [
   {
     question: 'What image format should I upload?',
-    answer: 'Upload PNG images with transparency for best results. This allows your frame to overlay perfectly on user photos. Recommended size is 1080x1080px for optimal quality.'
+    answer: 'Upload PNG images with transparency for best results. This allows your frame to overlay perfectly on user photos. Supported aspect ratios: 1:1 (1080×1080px), 4:5 (1080×1350px), or 3:4 (1080×1440px).'
   },
   {
     question: 'What happens when my plan expires?',
@@ -26,7 +26,7 @@ const faqs = [
   },
   {
     question: 'Is there a limit on frame file size?',
-    answer: 'Frame images should be under 5MB for optimal performance. We recommend using PNG format with transparency at 1080x1080px resolution.'
+    answer: 'Frame images should be under 10MB for optimal performance. We recommend using PNG format with transparency. Supported aspect ratios: 1:1 (1080×1080px), 4:5 (1080×1350px), or 3:4 (1080×1440px).'
   },
   {
     question: 'Can I create multiple campaigns?',

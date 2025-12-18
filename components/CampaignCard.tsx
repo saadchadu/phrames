@@ -93,7 +93,11 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
   return (
     <div className="bg-white rounded-2xl border border-[#00240010] overflow-hidden hover:border-[#00240020] transition-all shadow-sm hover:shadow-md">
       {/* Image */}
-      <div className="relative w-full aspect-square overflow-hidden bg-gray-50">
+      <div className={`relative w-full overflow-hidden bg-gray-50 ${
+        campaign.aspectRatio === '4:5' ? 'aspect-[4/5]' : 
+        campaign.aspectRatio === '3:4' ? 'aspect-[3/4]' : 
+        'aspect-square'
+      }`}>
         <Image
           src={campaign.frameURL}
           alt={campaign.campaignName}

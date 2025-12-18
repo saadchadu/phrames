@@ -1,5 +1,6 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { storage } from './firebase'
+import { detectAspectRatio, getAspectRatioDimensions, type AspectRatio } from './aspect-ratios'
 
 export const uploadImage = async (file: File, path: string): Promise<string | null> => {
   try {
@@ -96,7 +97,7 @@ export const checkImageTransparency = (file: File): Promise<boolean> => {
   })
 }
 
-export const validateFrameImage = async (file: File): Promise<{ valid: boolean; error?: string }> => {
+export const validateFrameImage = async (file: File): Promise<{ valid: boolean; error?: string; aspectRatio?: AspectRatio }> => {
   // First check basic file validation
   const basicValidation = validateImageFile(file)
   if (!basicValidation.valid) {
@@ -107,19 +108,24 @@ export const validateFrameImage = async (file: File): Promise<{ valid: boolean; 
     // Check dimensions
     const dimensions = await checkImageDimensions(file)
     
-    // Must be square (1:1 aspect ratio)
-    if (dimensions.width !== dimensions.height) {
+    // Detect aspect ratio
+    const detectedAspectRatio = detectAspectRatio(dimensions.width, dimensions.height)
+    
+    if (!detectedAspectRatio) {
       return { 
         valid: false, 
-        error: 'Image must be square (1:1 aspect ratio). Please upload an image with equal width and height.' 
+        error: 'Image must have a supported aspect ratio: 1:1 (square), 4:5 (portrait), or 3:4 (portrait).' 
       }
     }
     
-    // Must be at least 1080x1080
-    if (dimensions.width < 1080 || dimensions.height < 1080) {
+    // Get minimum dimensions for this aspect ratio
+    const { width: minWidth, height: minHeight } = getAspectRatioDimensions(detectedAspectRatio)
+    
+    // Check minimum dimensions based on aspect ratio
+    if (dimensions.width < minWidth || dimensions.height < minHeight) {
       return { 
         valid: false, 
-        error: 'Image must be at least 1080x1080 pixels' 
+        error: `Image must be at least ${minWidth}x${minHeight} pixels for ${detectedAspectRatio} aspect ratio` 
       }
     }
     
@@ -132,7 +138,7 @@ export const validateFrameImage = async (file: File): Promise<{ valid: boolean; 
       }
     }
     
-    return { valid: true }
+    return { valid: true, aspectRatio: detectedAspectRatio }
   } catch (error) {
     return { valid: false, error: 'Error validating image. Please try again.' }
   }

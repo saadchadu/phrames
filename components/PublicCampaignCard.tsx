@@ -41,7 +41,11 @@ export default function PublicCampaignCard({ campaign, onClick }: PublicCampaign
       aria-label={`View campaign: ${campaign.campaignName}`}
     >
       {/* Image */}
-      <div className="relative w-full aspect-square overflow-hidden bg-gray-50">
+      <div className={`relative w-full overflow-hidden bg-gray-50 ${
+        campaign.aspectRatio === '4:5' ? 'aspect-[4/5]' : 
+        campaign.aspectRatio === '3:4' ? 'aspect-[3/4]' : 
+        'aspect-square'
+      }`}>
         <Image
           src={campaign.frameURL}
           alt={campaign.campaignName}

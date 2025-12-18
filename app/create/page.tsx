@@ -27,6 +27,7 @@ export default function CreateCampaignPage() {
   
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
+  const [aspectRatio, setAspectRatio] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -78,6 +79,7 @@ export default function CreateCampaignPage() {
       }
 
       setFile(selectedFile)
+      setAspectRatio(validation.aspectRatio || null)
       setError('')
       
       // Create preview
@@ -118,6 +120,7 @@ export default function CreateCampaignPage() {
         slug: formData.slug,
         visibility: formData.visibility,
         frameURL: imageUrl,
+        aspectRatio: aspectRatio,
         createdBy: user.uid,
         createdByEmail: user.email
       }
@@ -441,8 +444,16 @@ export default function CreateCampaignPage() {
                     )}
                   </div>
                   <p className="text-primary/60 text-xs leading-relaxed">
-                    PNG format with transparency required • Minimum size: 1080×1080px • Maximum file size: 10MB
+                    PNG format with transparency required • Supported aspect ratios: 1:1 (1080×1080px), 4:5 (1080×1350px), 3:4 (1080×1440px) • Maximum file size: 10MB
                   </p>
+                  {aspectRatio && (
+                    <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-green-700 text-sm font-medium">Aspect Ratio: {aspectRatio}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             {/* Submit Button - Full Width Below Both Columns */}

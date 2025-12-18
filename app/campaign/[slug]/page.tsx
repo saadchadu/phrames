@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import CampaignQRCode from '@/components/CampaignQRCode'
 import ImageCropModal from '@/components/ImageCropModal'
 import { useAuth } from '@/components/AuthProvider'
+import { getCanvasDimensions, getAspectRatioDimensions } from '@/lib/aspect-ratios'
 
 // Prevent static generation for this dynamic page
 export const dynamic = 'force-dynamic'
@@ -118,12 +119,15 @@ export default function CampaignPage() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const size = 400
-    canvas.width = size
-    canvas.height = size
+    // Calculate canvas dimensions based on aspect ratio
+    const aspectRatio = campaign?.aspectRatio || '1:1'
+    const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions(aspectRatio, 400)
+    
+    canvas.width = canvasWidth
+    canvas.height = canvasHeight
 
     // Clear canvas
-    ctx.clearRect(0, 0, size, size)
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
     try {
       console.log('Rendering user image on canvas')
@@ -148,7 +152,7 @@ export default function CampaignPage() {
       ctx.save()
       
       // Apply transform to user image
-      ctx.translate(size / 2, size / 2)
+      ctx.translate(canvasWidth / 2, canvasHeight / 2)
       ctx.scale(currentTransform.scale, currentTransform.scale)
       ctx.translate(currentTransform.x, currentTransform.y)
       
@@ -173,15 +177,19 @@ export default function CampaignPage() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const size = isHighRes ? 1080 : 400
-    canvas.width = size
-    canvas.height = size
+    // Calculate canvas dimensions based on aspect ratio
+    const aspectRatio = campaign?.aspectRatio || '1:1'
+    const baseSize = isHighRes ? 1080 : 400
+    const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions(aspectRatio, baseSize)
+    
+    canvas.width = canvasWidth
+    canvas.height = canvasHeight
 
     // Clear canvas with transparent background
-    ctx.clearRect(0, 0, size, size)
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
     try {
-      console.log('🎯 Starting STITCHED frame render with size:', size)
+      console.log('🎯 Starting STITCHED frame render with size:', canvasWidth, 'x', canvasHeight)
       console.log('Frame URL being used:', campaign.frameURL)
       
       // Load frame image FIRST to get its dimensions and structure
@@ -217,13 +225,13 @@ export default function CampaignPage() {
       })
 
       // Calculate scale factor
-      const scaleFactor = isHighRes ? size / 400 : 1
+      const scaleFactor = isHighRes ? canvasHeight / 400 : 1
 
       // STEP 1: Draw user image FIRST (background layer)
       ctx.save()
       
       // Apply transform to user image
-      ctx.translate(size / 2, size / 2)
+      ctx.translate(canvasWidth / 2, canvasHeight / 2)
       ctx.scale(currentTransform.scale * scaleFactor, currentTransform.scale * scaleFactor)
       ctx.translate(currentTransform.x / scaleFactor, currentTransform.y / scaleFactor)
       
@@ -235,7 +243,7 @@ export default function CampaignPage() {
 
       // STEP 2: Draw frame ON TOP (foreground layer with transparency)
       ctx.globalCompositeOperation = 'source-over'
-      ctx.drawImage(frameImg, 0, 0, size, size)
+      ctx.drawImage(frameImg, 0, 0, canvasWidth, canvasHeight)
       console.log('✅ Frame drawn on top with transparency')
       
       console.log('🎉 STITCHED frame render complete: Frame with user photo in transparent areas')
@@ -252,13 +260,13 @@ export default function CampaignPage() {
           userImg.src = imageUrl
         })
         
-        ctx.clearRect(0, 0, size, size)
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight)
         ctx.fillStyle = 'white'
-        ctx.fillRect(0, 0, size, size)
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight)
         
-        const scaleFactor = isHighRes ? size / 400 : 1
+        const scaleFactor = isHighRes ? canvasHeight / 400 : 1
         ctx.save()
-        ctx.translate(size / 2, size / 2)
+        ctx.translate(canvasWidth / 2, canvasHeight / 2)
         ctx.scale(currentTransform.scale * scaleFactor, currentTransform.scale * scaleFactor)
         ctx.translate(currentTransform.x / scaleFactor, currentTransform.y / scaleFactor)
         ctx.drawImage(userImg, -userImg.width / 2, -userImg.height / 2)
@@ -401,10 +409,13 @@ export default function CampaignPage() {
     try {
       console.log('🎯 Creating single canvas with frame + user photo...')
       
-      // Create final canvas for download
+      // Create final canvas for download with correct aspect ratio
       const canvas = document.createElement('canvas')
-      canvas.width = 1080
-      canvas.height = 1080
+      const aspectRatio = campaign.aspectRatio || '1:1'
+      const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions(aspectRatio, 1080)
+      
+      canvas.width = canvasWidth
+      canvas.height = canvasHeight
       const ctx = canvas.getContext('2d')
       
       if (!ctx) {
@@ -424,12 +435,12 @@ export default function CampaignPage() {
       })
 
       // Draw user's photo with EXACT same positioning as preview
-      const scaleFactor = 1080 / 400 // Scale from 400px preview to 1080px download
+      const scaleFactor = canvasHeight / 400 // Scale from 400px preview height to final canvas height
       
       ctx.save()
       
       // Use EXACT same transform logic as preview canvas
-      ctx.translate(1080 / 2, 1080 / 2) // Center of 1080px canvas (same as size/2 in preview)
+      ctx.translate(canvasWidth / 2, canvasHeight / 2) // Center of canvas
       ctx.scale(transform.scale, transform.scale) // Use original scale (not multiplied by scaleFactor)
       ctx.translate(transform.x * scaleFactor, transform.y * scaleFactor) // Scale the position
       
@@ -481,7 +492,7 @@ export default function CampaignPage() {
       })
 
       // Draw frame PNG on top (transparent areas will show user photo)
-      ctx.drawImage(frameImg, 0, 0, 1080, 1080)
+      ctx.drawImage(frameImg, 0, 0, canvasWidth, canvasHeight)
       console.log('✅ Frame PNG drawn on top - transparent areas show user photo')
 
       // Step 3: Download the single combined image using toBlob (handles tainted canvas)
@@ -614,14 +625,18 @@ export default function CampaignPage() {
                 {/* Layered Frame Display */}
                 <div 
                   id="final-image-container" 
-                  className="aspect-square bg-white rounded-xl overflow-hidden mb-3 sm:mb-4 relative w-full border border-[#00240010] touch-none"
+                  className={`bg-white rounded-xl overflow-hidden mb-3 sm:mb-4 relative w-full border border-[#00240010] touch-none ${
+                    campaign.aspectRatio === '4:5' ? 'aspect-[4/5]' : 
+                    campaign.aspectRatio === '3:4' ? 'aspect-[3/4]' : 
+                    'aspect-square'
+                  }`}
                 >
               {/* User Photo Canvas (Background Layer) */}
               {userImage && (
                 <canvas
                   ref={previewCanvasRef}
-                  width={400}
-                  height={400}
+                  width={getCanvasDimensions(campaign?.aspectRatio || '1:1', 400).width}
+                  height={getCanvasDimensions(campaign?.aspectRatio || '1:1', 400).height}
                   className="absolute inset-0 w-full h-full"
                   style={{ 
                     zIndex: 1,
