@@ -3,14 +3,14 @@
  * Cleanup Inactive Campaigns Script
  * 
  * This script identifies and deletes campaigns that have been inactive for 30+ days.
- * It also sends reminder emails to users before deletion.
+ * It also sends reminder notifications to users before deletion.
  * 
  * Usage:
  *   npm run cleanup-inactive [--dry-run] [--send-reminders] [--delete-expired]
  *   
  * Options:
  *   --dry-run           Show what would be done without actually doing it
- *   --send-reminders    Send reminder emails (7, 3, 1 days before deletion)
+ *   --send-reminders    Send reminder notifications (7, 3, 1 days before deletion)
  *   --delete-expired    Delete campaigns that are 30+ days inactive
  *   --verbose           Show detailed information
  * 
@@ -23,7 +23,6 @@
 
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore'
-import { generateCampaignReminderEmail, logEmailSent, sendEmail } from '../lib/email'
 import { createCampaignDeletionWarning, createCampaignDeletedNotification } from '../lib/notifications'
 import * as dotenv from 'dotenv'
 
@@ -48,7 +47,6 @@ interface InactiveCampaign {
   campaignName: string
   slug: string
   createdBy: string
-  createdByEmail?: string
   lastActivityAt: Date
   daysInactive: number
   status: string
@@ -139,10 +137,10 @@ async function main() {
     
     // Send reminder emails
     if (sendReminders && campaignsForReminders.length > 0) {
-      console.log('📧 Sending reminder emails...')
+      console.log('📧 Sending reminder notifications...')
       for (const campaign of campaignsForReminders) {
         try {
-          await sendReminderEmail(campaign, isDryRun)
+          await sendReminderNotification(campaign, isDryRun)
           stats.remindersSent++
           if (verbose) {
             console.log(`  ✅ Reminder sent for: ${campaign.campaignName}`)
@@ -153,7 +151,7 @@ async function main() {
           console.error(`  ❌ ${errorMsg}`)
         }
       }
-      console.log(`📧 Sent ${stats.remindersSent} reminder emails\n`)
+      console.log(`📧 Sent ${stats.remindersSent} reminder notifications\n`)
     }
     
     // Delete expired campaigns
@@ -234,7 +232,6 @@ async function analyzeInactiveCampaigns(campaignDocs: any[]): Promise<InactiveCa
         campaignName: campaign.campaignName || 'Untitled Campaign',
         slug: campaign.slug,
         createdBy: campaign.createdBy,
-        createdByEmail: campaign.createdByEmail,
         lastActivityAt,
         daysInactive,
         status: campaign.status,
@@ -246,7 +243,7 @@ async function analyzeInactiveCampaigns(campaignDocs: any[]): Promise<InactiveCa
   return inactiveCampaigns.sort((a, b) => b.daysInactive - a.daysInactive)
 }
 
-async function sendReminderEmail(campaign: InactiveCampaign, isDryRun: boolean): Promise<void> {
+async function sendReminderNotification(campaign: InactiveCampaign, isDryRun: boolean): Promise<void> {
   const daysUntilDeletion = DELETION_THRESHOLD_DAYS - campaign.daysInactive
   
   if (!isDryRun) {
