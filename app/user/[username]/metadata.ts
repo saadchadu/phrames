@@ -2,9 +2,10 @@ import { Metadata } from 'next'
 import { getUserByUsername } from '@/lib/auth'
 import { getUserCampaigns } from '@/lib/firestore'
 
-export async function generateMetadata({ params }: { params: { username: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   try {
-    const user = await getUserByUsername(params.username)
+    const { username } = await params
+    const user = await getUserByUsername(username)
     
     if (!user) {
       return {
@@ -17,10 +18,10 @@ export async function generateMetadata({ params }: { params: { username: string 
     const publicCampaigns = campaigns.filter(c => c.visibility === 'Public')
     const totalDownloads = user.totalDownloads || 0
 
-    const title = `${user.displayName || params.username} (@${params.username}) | Phrames`
+    const title = `${user.displayName || username} (@${username}) | Phrames`
     const description = user.bio 
       ? `${user.bio} - ${publicCampaigns.length} campaigns, ${totalDownloads} downloads`
-      : `View ${user.displayName || params.username}'s profile on Phrames. ${publicCampaigns.length} campaigns, ${totalDownloads} downloads.`
+      : `View ${user.displayName || username}'s profile on Phrames. ${publicCampaigns.length} campaigns, ${totalDownloads} downloads.`
 
     return {
       title,
@@ -29,13 +30,13 @@ export async function generateMetadata({ params }: { params: { username: string 
         title,
         description,
         type: 'profile',
-        url: `https://phrames.cleffon.com/user/${params.username}`,
+        url: `https://phrames.cleffon.com/user/${username}`,
         images: user.avatarURL || user.photoURL ? [
           {
             url: user.avatarURL || user.photoURL || '',
             width: 400,
             height: 400,
-            alt: `${user.displayName || params.username}'s profile picture`,
+            alt: `${user.displayName || username}'s profile picture`,
           }
         ] : [],
       },

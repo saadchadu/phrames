@@ -1,8 +1,9 @@
 import { Metadata } from 'next'
 import { getCampaignBySlug } from '@/lib/firestore'
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const campaign = await getCampaignBySlug(params.slug)
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const campaign = await getCampaignBySlug(slug)
   
   if (!campaign) {
     return {
