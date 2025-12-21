@@ -16,7 +16,9 @@
     "cleanup-test-users": "ts-node --project tsconfig.scripts.json scripts/cleanup-test-users.ts",
     "list-all-users": "ts-node --project tsconfig.scripts.json scripts/list-all-users.ts",
     "delete-all-except": "ts-node --project tsconfig.scripts.json scripts/delete-all-except.ts",
-    "check-user": "ts-node --project tsconfig.scripts.json scripts/check-current-user.ts"
+    "check-user": "ts-node --project tsconfig.scripts.json scripts/check-current-user.ts",
+    "cleanup-inactive": "ts-node --project tsconfig.scripts.json scripts/cleanup-inactive-campaigns.ts",
+    "fix-supporters": "ts-node --project tsconfig.scripts.json scripts/fix-supporters-count.ts"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
@@ -40,6 +42,7 @@
     "cashfree-pg": "^5.1.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "date-fns": "^4.1.0",
     "firebase": "^12.5.0",
     "firebase-admin": "^13.6.0",
     "framer-motion": "^10.16.5",

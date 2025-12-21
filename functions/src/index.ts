@@ -1,5 +1,5 @@
 /**
- * Firebase Cloud Functions for Campaign Expiry Management
+ * Firebase Cloud Functions for Campaign Management
  * 
  * SETUP INSTRUCTIONS:
  * 1. Initialize Firebase Functions in your project:
@@ -11,10 +11,12 @@
  *    cd functions
  *    npm install
  * 
- * 4. Deploy the function:
- *    firebase deploy --only functions:scheduledCampaignExpiryCheck
+ * 4. Deploy the functions:
+ *    firebase deploy --only functions
  * 
- * The function will run daily at midnight UTC to check for expired campaigns
+ * Functions included:
+ * - scheduledCampaignExpiryCheck: Daily expiry check for paid campaigns
+ * - scheduledInactiveCampaignCleanup: Daily cleanup for inactive campaigns (30+ days)
  */
 
 import * as functions from 'firebase-functions'
@@ -24,6 +26,60 @@ import * as admin from 'firebase-admin'
 admin.initializeApp()
 
 const db = admin.firestore()
+
+// Email template generation (simplified version for Cloud Functions)
+interface EmailTemplate {
+  subject: string
+  htmlBody: string
+  textBody: string
+}
+
+function generateCampaignReminderEmail(
+  campaignName: string, 
+  campaignSlug: string, 
+  daysUntilDeletion: number, 
+  userName?: string
+): EmailTemplate {
+  const greeting = userName ? `Hi ${userName}` : 'Hello'
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://phrames.com'
+  const campaignUrl = `${baseUrl}/campaign/${campaignSlug}`
+  
+  const subject = daysUntilDeletion === 0 
+    ? `Your campaign "${campaignName}" has been deleted due to inactivity`
+    : `Reminder: Your campaign "${campaignName}" will be deleted in ${daysUntilDeletion} days`
+
+  const htmlBody = daysUntilDeletion === 0 
+    ? `<p>${greeting},</p><p>Your campaign "${campaignName}" has been deleted due to 30 days of inactivity.</p>`
+    : `<p>${greeting},</p><p>Your campaign "${campaignName}" will be deleted in ${daysUntilDeletion} days due to inactivity.</p><p><a href="${campaignUrl}">View Campaign</a></p>`
+
+  const textBody = daysUntilDeletion === 0
+    ? `${greeting}, Your campaign "${campaignName}" has been deleted due to 30 days of inactivity.`
+    : `${greeting}, Your campaign "${campaignName}" will be deleted in ${daysUntilDeletion} days due to inactivity. View: ${campaignUrl}`
+
+  return { subject, htmlBody, textBody }
+}
+
+async function logEmailSent(
+  userId: string, 
+  email: string, 
+  type: 'reminder' | 'deletion_notice',
+  campaignId: string,
+  daysUntilDeletion?: number
+): Promise<void> {
+  try {
+    await db.collection('emailLogs').add({
+      userId,
+      email,
+      type,
+      campaignId,
+      daysUntilDeletion: daysUntilDeletion || 0,
+      sentAt: admin.firestore.Timestamp.now(),
+      status: 'logged' // In real implementation, integrate with email service
+    })
+  } catch (error) {
+    console.error('Failed to log email:', error)
+  }
+}
 
 /**
  * Scheduled function that runs daily to check for expired campaigns
@@ -335,6 +391,343 @@ export const manualCampaignExpiryCheck = functions.https.onRequest(async (req, r
     res.status(500).json({ 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+})
+
+/**
+ * Scheduled function that runs daily to cleanup inactive campaigns
+ * Sends reminders at 7, 3, 1 days before deletion and deletes after 30 days
+ */
+export const scheduledInactiveCampaignCleanup = functions.pubsub
+  .schedule('0 1 * * *') // Run daily at 1 AM UTC (after expiry check)
+  .timeZone('UTC')
+  .onRun(async () => {
+    const startTime = Date.now()
+    const now = admin.firestore.Timestamp.now()
+    const batchId = `inactive_cleanup_${Date.now()}`
+    
+    try {
+      console.log('🧹 INFO [inactive_cleanup_started] Starting inactive campaign cleanup', { batchId })
+      
+      // Create admin log for cleanup start
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: 'Inactive campaign cleanup cron job started',
+        metadata: {
+          cronType: 'inactive_campaign_cleanup',
+          batchId,
+          startTime: new Date(startTime).toISOString()
+        },
+        createdAt: now
+      })
+      
+      // Get all active campaigns
+      const campaignsSnapshot = await db.collection('campaigns')
+        .where('isActive', '==', true)
+        .where('status', '==', 'Active')
+        .get()
+      
+      console.log(`🧹 INFO [inactive_cleanup] Found ${campaignsSnapshot.size} active campaigns to analyze`)
+      
+      if (campaignsSnapshot.empty) {
+        const duration = Date.now() - startTime
+        console.log('🧹 INFO [inactive_cleanup_completed] No active campaigns to process', { duration, batchId })
+        
+        await db.collection('logs').add({
+          eventType: 'cron_execution',
+          actorId: 'system',
+          description: 'Inactive campaign cleanup completed - no campaigns to process',
+          metadata: {
+            cronType: 'inactive_campaign_cleanup',
+            result: 'success',
+            batchId,
+            campaignsAnalyzed: 0,
+            remindersSent: 0,
+            campaignsDeleted: 0,
+            duration
+          },
+          createdAt: admin.firestore.Timestamp.now()
+        })
+        
+        return null
+      }
+      
+      const REMINDER_DAYS = [7, 3, 1]
+      const DELETION_THRESHOLD_DAYS = 30
+      const currentDate = new Date()
+      
+      let remindersSent = 0
+      let campaignsDeleted = 0
+      let errors: string[] = []
+      
+      // Process each campaign
+      for (const doc of campaignsSnapshot.docs) {
+        try {
+          const campaign = doc.data()
+          const campaignId = doc.id
+          
+          // Determine last activity date
+          let lastActivityAt = campaign.createdAt?.toDate() || new Date()
+          
+          // Check for more recent activity in stats
+          try {
+            const statsQuery = await db.collection('CampaignStatsDaily')
+              .where('campaignId', '==', campaignId)
+              .orderBy('date', 'desc')
+              .limit(1)
+              .get()
+            
+            if (!statsQuery.empty) {
+              const latestStat = statsQuery.docs[0].data()
+              const statDate = new Date(latestStat.date + 'T00:00:00Z')
+              if (statDate > lastActivityAt) {
+                lastActivityAt = statDate
+              }
+            }
+          } catch (statsError) {
+            console.warn(`Could not fetch stats for campaign ${campaignId}:`, statsError)
+          }
+          
+          // Calculate days inactive
+          const daysInactive = Math.floor((currentDate.getTime() - lastActivityAt.getTime()) / (1000 * 60 * 60 * 24))
+          
+          // Skip if not inactive long enough
+          if (daysInactive < 20) continue
+          
+          const daysUntilDeletion = DELETION_THRESHOLD_DAYS - daysInactive
+          
+          // Check if campaign should be deleted
+          if (daysInactive >= DELETION_THRESHOLD_DAYS) {
+            console.log(`🗑️ Deleting campaign ${campaignId} (${daysInactive} days inactive)`)
+            
+            // Get user info for notification
+            let userEmail = campaign.createdByEmail
+            let userName: string | undefined
+            
+            if (!userEmail) {
+              const userDoc = await db.collection('users').doc(campaign.createdBy).get()
+              if (userDoc.exists()) {
+                const userData = userDoc.data()!
+                userEmail = userData.email
+                userName = userData.displayName || userData.username
+              }
+            }
+            
+            // Get user info for notification
+            let userEmail = campaign.createdByEmail
+            let userName: string | undefined
+            
+            if (!userEmail) {
+              const userDoc = await db.collection('users').doc(campaign.createdBy).get()
+              if (userDoc.exists()) {
+                const userData = userDoc.data()!
+                userEmail = userData.email
+                userName = userData.displayName || userData.username
+              }
+            }
+            
+            // Create deletion notification
+            try {
+              const { createCampaignDeletedNotification } = await import('../lib/notifications')
+              
+              await createCampaignDeletedNotification(
+                campaign.createdBy,
+                campaign.campaignName || 'Untitled Campaign',
+                '30 days of inactivity'
+              )
+              
+              console.log(`📧 Deletion notification created for user ${campaign.createdBy}`)
+            } catch (notificationError) {
+              console.warn(`Failed to create deletion notification for ${campaignId}:`, notificationError)
+            }
+            
+            // Delete campaign
+            await db.collection('campaigns').doc(campaignId).delete()
+            
+            // Delete related stats
+            const statsQuery = await db.collection('CampaignStatsDaily')
+              .where('campaignId', '==', campaignId)
+              .get()
+            
+            const batch = db.batch()
+            statsQuery.docs.forEach(statDoc => {
+              batch.delete(statDoc.ref)
+            })
+            await batch.commit()
+            
+            // Create admin log for deletion
+            await db.collection('logs').add({
+              eventType: 'campaign_deleted',
+              actorId: 'system',
+              description: `Campaign "${campaign.campaignName || 'Untitled'}" deleted due to ${daysInactive} days of inactivity`,
+              metadata: {
+                campaignId,
+                campaignName: campaign.campaignName || 'Untitled Campaign',
+                slug: campaign.slug,
+                userId: campaign.createdBy,
+                daysInactive,
+                lastActivityAt: lastActivityAt.toISOString(),
+                reason: 'inactivity_cleanup',
+                batchId
+              },
+              createdAt: admin.firestore.Timestamp.now()
+            })
+            
+            campaignsDeleted++
+            
+          } else if (REMINDER_DAYS.includes(daysUntilDeletion)) {
+            // Send reminder email
+            console.log(`📧 Sending reminder for campaign ${campaignId} (${daysUntilDeletion} days until deletion)`)
+            
+            try {
+              // Create dashboard notification instead of email
+              const { createCampaignDeletionWarning } = await import('../lib/notifications')
+              
+              const notificationId = await createCampaignDeletionWarning(
+                campaign.createdBy,
+                campaignId,
+                campaign.campaignName || 'Untitled Campaign',
+                daysUntilDeletion
+              )
+              
+              if (notificationId) {
+                // Create admin log for reminder
+                await db.collection('logs').add({
+                  eventType: 'campaign_reminder_sent',
+                  actorId: 'system',
+                  description: `Dashboard notification created for campaign "${campaign.campaignName || 'Untitled'}" (${daysUntilDeletion} days remaining)`,
+                  metadata: {
+                    campaignId,
+                    campaignName: campaign.campaignName || 'Untitled Campaign',
+                    userId: campaign.createdBy,
+                    daysUntilDeletion,
+                    daysInactive,
+                    notificationId,
+                    notificationType: 'dashboard',
+                    batchId
+                  },
+                  createdAt: admin.firestore.Timestamp.now()
+                })
+                
+                remindersSent++
+                console.log(`📧 Dashboard notification created for user ${campaign.createdBy}`)
+              } else {
+                throw new Error('Failed to create dashboard notification')
+              }
+            } catch (notificationError) {
+              const errorMsg = `Failed to create notification for ${campaignId}: ${notificationError}`
+              errors.push(errorMsg)
+              console.error(errorMsg)
+            }
+          }
+          
+        } catch (campaignError) {
+          const errorMsg = `Error processing campaign ${doc.id}: ${campaignError}`
+          errors.push(errorMsg)
+          console.error(errorMsg)
+        }
+      }
+      
+      const duration = Date.now() - startTime
+      
+      // Log cleanup summary
+      await db.collection('cleanupLogs').add({
+        type: 'inactive_campaign_cleanup',
+        batchId,
+        stats: {
+          totalCampaigns: campaignsSnapshot.size,
+          remindersSent,
+          campaignsDeleted,
+          errors: errors.length,
+          errorMessages: errors
+        },
+        executedAt: admin.firestore.Timestamp.now(),
+        duration
+      })
+      
+      // Create final admin log
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: 'Inactive campaign cleanup cron job completed',
+        metadata: {
+          cronType: 'inactive_campaign_cleanup',
+          result: errors.length > 0 ? 'partial_success' : 'success',
+          batchId,
+          campaignsAnalyzed: campaignsSnapshot.size,
+          remindersSent,
+          campaignsDeleted,
+          errors: errors.length,
+          duration
+        },
+        createdAt: admin.firestore.Timestamp.now()
+      })
+      
+      console.log(`🧹 INFO [inactive_cleanup_completed] Cleanup completed`, {
+        batchId,
+        campaignsAnalyzed: campaignsSnapshot.size,
+        remindersSent,
+        campaignsDeleted,
+        errors: errors.length,
+        duration
+      })
+      
+      return null
+      
+    } catch (error: any) {
+      const duration = Date.now() - startTime
+      console.error('🧹 ERROR [inactive_cleanup_failed] Cleanup failed:', error)
+      
+      // Log failure
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: `Inactive campaign cleanup cron job failed: ${error.message}`,
+        metadata: {
+          cronType: 'inactive_campaign_cleanup',
+          result: 'failure',
+          batchId,
+          error: error.message,
+          stack: error.stack,
+          duration
+        },
+        createdAt: admin.firestore.Timestamp.now()
+      })
+      
+      throw error
+    }
+  })
+
+/**
+ * Manual trigger for inactive campaign cleanup (for testing)
+ */
+export const manualInactiveCampaignCleanup = functions.https.onRequest(async (req, res) => {
+  // Verify API key
+  const apiKey = req.headers['x-api-key'] || req.query.apiKey
+  if (apiKey !== process.env.CRON_API_KEY) {
+    res.status(401).json({ error: 'Unauthorized' })
+    return
+  }
+  
+  try {
+    console.log('🧹 Manual inactive campaign cleanup triggered')
+    
+    // Call the same logic as the scheduled function
+    await scheduledInactiveCampaignCleanup.run({} as any, {} as any)
+    
+    res.json({ 
+      success: true, 
+      message: 'Inactive campaign cleanup completed',
+      timestamp: new Date().toISOString()
+    })
+  } catch (error: any) {
+    console.error('Manual inactive campaign cleanup failed:', error)
+    res.status(500).json({ 
+      error: 'Cleanup failed', 
+      message: error.message,
+      timestamp: new Date().toISOString()
     })
   }
 })

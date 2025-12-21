@@ -1,74 +1,20 @@
-import * as admin from 'firebase-admin'
+import { initializeApp, getApps, cert } from 'firebase-admin/app'
+import { getAuth } from 'firebase-admin/auth'
+import { getFirestore } from 'firebase-admin/firestore'
 
-// Lazy initialization function
-function initializeFirebaseAdmin() {
-  if (admin.apps.length > 0) {
-    return admin.apps[0]!
+// Initialize Firebase Admin SDK
+if (!getApps().length) {
+  const serviceAccount = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   }
 
-  try {
-    const projectId = process.env.FIREBASE_PROJECT_ID
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY
-
-    if (!projectId || !clientEmail || !privateKey) {
-      throw new Error('Missing Firebase Admin credentials in environment variables')
-    }
-
-    // Handle different private key formats
-    // Check if it's base64 encoded (no BEGIN/END markers)
-    if (!privateKey.includes('BEGIN PRIVATE KEY')) {
-      try {
-        // Try to decode from base64
-        privateKey = Buffer.from(privateKey, 'base64').toString('utf-8')
-      } catch (e) {
-        // Not base64, continue with other formats
-      }
-    }
-    
-    // Remove quotes if present
-    privateKey = privateKey.replace(/^["']|["']$/g, '')
-    // Replace literal \n with actual newlines
-    privateKey = privateKey.replace(/\\n/g, '\n')
-    // Trim any extra whitespace
-    privateKey = privateKey.trim()
-    
-    const app = admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        clientEmail,
-        privateKey
-      })
-    })
-    
-    return app
-  } catch (error) {
-    throw error
-  }
+  initializeApp({
+    credential: cert(serviceAccount),
+    projectId: process.env.FIREBASE_PROJECT_ID,
+  })
 }
 
-// Lazy getters
-export const adminDb = new Proxy({} as admin.firestore.Firestore, {
-  get(target, prop) {
-    initializeFirebaseAdmin()
-    return (admin.firestore() as any)[prop]
-  }
-})
-
-export const adminAuth = new Proxy({} as admin.auth.Auth, {
-  get(target, prop) {
-    initializeFirebaseAdmin()
-    return (admin.auth() as any)[prop]
-  }
-})
-
-// Verify ID token
-export async function verifyIdToken(token: string) {
-  try {
-    return await adminAuth.verifyIdToken(token)
-  } catch (error) {
-    throw new Error('Invalid authentication token')
-  }
-}
-
-export default admin
+export const auth = getAuth()
+export const adminDb = getFirestore()

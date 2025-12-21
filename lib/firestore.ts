@@ -211,7 +211,10 @@ export const deleteCampaign = async (id: string) => {
   }
 }
 
+// DEPRECATED: Use addSupporter from @/lib/supporters instead
+// This function is kept for backward compatibility but should not be used
 export const incrementSupportersCount = async (campaignId: string) => {
+  console.warn('incrementSupportersCount is deprecated. Use addSupporter from @/lib/supporters instead.')
   try {
     const docRef = doc(db, 'campaigns', campaignId)
     await updateDoc(docRef, {

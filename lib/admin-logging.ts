@@ -23,6 +23,7 @@ export enum LogEventType {
   CAMPAIGN_REACTIVATED = 'campaign_reactivated',
   CAMPAIGN_EXTENDED = 'campaign_extended',
   CAMPAIGN_DELETED = 'campaign_deleted',
+  CAMPAIGN_REMINDER_SENT = 'campaign_reminder_sent',
   USER_BLOCKED = 'user_blocked',
   USER_UNBLOCKED = 'user_unblocked',
   USER_DELETED = 'user_deleted',
@@ -458,6 +459,29 @@ export async function logDataExport(
     metadata: {
       exportType,
       recordCount,
+    },
+  });
+}
+/**
+ * Helper function to create campaign reminder sent log
+ */
+export async function logCampaignReminderSent(
+  campaignId: string,
+  campaignName: string,
+  userId: string,
+  userEmail: string,
+  daysUntilDeletion: number
+): Promise<string> {
+  return createLog({
+    eventType: LogEventType.CAMPAIGN_REMINDER_SENT,
+    actorId: 'system',
+    description: `Deletion reminder sent for campaign "${campaignName}" (${daysUntilDeletion} days remaining)`,
+    metadata: {
+      campaignId,
+      campaignName,
+      userId,
+      userEmail,
+      daysUntilDeletion,
     },
   });
 }

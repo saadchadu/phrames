@@ -94,6 +94,25 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isOwner(resource.data.createdBy);
     }
     
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Users can only read their own notifications
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      
+      // Only system can create notifications (via server-side code)
+      allow create: if false;
+      
+      // Users can update their own notifications (mark as read)
+      allow update: if isAuthenticated() && 
+                      isOwner(resource.data.userId) &&
+                      // Only allow updating isRead field
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']) &&
+                      request.resource.data.isRead is bool;
+      
+      // Users can delete their own notifications
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+    
     // Payment records - read-only for users
     match /payments/{paymentId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
@@ -131,6 +150,16 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
+    // Cleanup logs collection - only admins can access
+    match /cleanupLogs/{logId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Email logs collection - only admins can access
+    match /emailLogs/{logId} {
+      allow read, write: if isAdmin();
+    }
+    
     // Settings collection - pricing is public, system settings require auth, only admins can write
     match /settings/plans {
       allow read: if true; // Public pricing
@@ -140,6 +169,33 @@ service cloud.firestore {
     match /settings/{document} {
       allow read: if document == 'system' ? true : isAuthenticated(); // System settings public for feature flags
       allow write: if isAdmin();
+    }
+    
+    // Supporters collection - tracks who supported which campaigns
+    match /supporters/{supporterId} {
+      // Anyone can read supporter records (for public stats)
+      allow read: if true;
+      
+      // Anyone can create supporter records (for tracking downloads)
+      // Validation ensures data integrity
+      allow create: if request.resource.data.keys().hasAll(['campaignId', 'sessionId', 'supportedAt', 'downloadCount']) &&
+                      request.resource.data.campaignId is string &&
+                      request.resource.data.sessionId is string &&
+                      request.resource.data.downloadCount is int &&
+                      request.resource.data.downloadCount > 0 &&
+                      // Optional fields validation
+                      (!request.resource.data.keys().hasAny(['userId']) || request.resource.data.userId is string) &&
+                      (!request.resource.data.keys().hasAny(['userEmail']) || request.resource.data.userEmail is string) &&
+                      (!request.resource.data.keys().hasAny(['ipAddress']) || request.resource.data.ipAddress is string) &&
+                      (!request.resource.data.keys().hasAny(['userAgent']) || request.resource.data.userAgent is string);
+      
+      // Only allow updating download count and last download time
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloadCount', 'lastDownloadAt']) &&
+                      request.resource.data.downloadCount is int &&
+                      request.resource.data.downloadCount > resource.data.downloadCount;
+      
+      // Only admins can delete supporter records
+      allow delete: if isAdmin();
     }
     
     // Deny all other access

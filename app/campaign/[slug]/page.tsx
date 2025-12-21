@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { getCampaignBySlug, incrementSupportersCount, incrementCampaignVisit, incrementCampaignDownload, Campaign } from '@/lib/firestore'
+import { getCampaignBySlug, incrementCampaignVisit, incrementCampaignDownload, Campaign } from '@/lib/firestore'
+import { addSupporter, hasUserSupported, getSessionId } from '@/lib/supporters'
 import { getUserProfile, UserProfile } from '@/lib/auth'
 import { ArrowDownTrayIcon, PhotoIcon, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon, ScissorsIcon } from '@heroicons/react/24/outline'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -518,10 +519,28 @@ export default function CampaignPage() {
         console.log('🎉 Single combined image downloaded!')
       }, 'image/png', 1.0)
 
-      // Increment supporters count and track download
+      // Add supporter (with deduplication) and track download
       if (campaign.id) {
-        await incrementSupportersCount(campaign.id)
-        setCampaign(prev => prev ? { ...prev, supportersCount: prev.supportersCount + 1 } : null)
+        try {
+          const sessionId = getSessionId()
+          const result = await addSupporter(
+            campaign.id,
+            user?.uid,
+            user?.email || undefined,
+            sessionId
+          )
+          
+          if (result.success && result.isNewSupporter) {
+            // Only increment UI count if this is a new supporter
+            setCampaign(prev => prev ? { ...prev, supportersCount: prev.supportersCount + 1 } : null)
+            console.log('New supporter added')
+          } else {
+            console.log('Existing supporter - download counted but not added to supporters count')
+          }
+        } catch (error) {
+          console.error('Error adding supporter:', error)
+          // Don't block download on supporter tracking error
+        }
         
         // Track download for analytics
         try {
