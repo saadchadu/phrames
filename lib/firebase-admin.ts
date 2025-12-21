@@ -17,4 +17,10 @@ if (!getApps().length) {
 }
 
 export const auth = getAuth()
+export const adminAuth = getAuth() // Alias for backward compatibility
 export const adminDb = getFirestore()
+
+// Helper function for token verification
+export const verifyIdToken = async (idToken: string) => {
+  return await auth.verifyIdToken(idToken)
+}
