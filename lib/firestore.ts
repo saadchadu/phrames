@@ -37,6 +37,10 @@ export interface Campaign {
   paymentId?: string | null
   expiresAt?: any | null // Timestamp - null for free campaigns
   lastPaymentAt?: any // Timestamp
+  
+  // Trending data (computed fields, not stored in Firestore)
+  weeklyDownloads?: number
+  trendingScore?: number
 }
 
 export interface User {
@@ -448,29 +452,145 @@ export const getCampaignStats = async (campaignId: string, days: number = 30): P
     
     const querySnapshot = await getDocs(q)
     const stats: DailyStats[] = []
-    
-    querySnapshot.forEach((doc) => {
-      const data = doc.data() as CampaignStatsDaily
-      stats.push({
-        date: data.date,
-        visits: data.visits || 0,
-        downloads: data.downloads || 0
-      })
-    })
-    
-    // Filter to last N days and sort ascending
+
+    // Get the last N days
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - days)
-    const cutoffStr = cutoffDate.toISOString().split('T')[0]
-    
+    const cutoffDateStr = cutoffDate.toISOString().split('T')[0]
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data()
+      if (data.date >= cutoffDateStr) {
+        stats.push({
+          date: data.date,
+          visits: data.visits || 0,
+          downloads: data.downloads || 0
+        })
+      }
+    })
+
     return stats
-      .filter(stat => stat.date >= cutoffStr)
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-days)
   } catch (error) {
     console.error('Error getting campaign stats:', error)
     return []
   }
+}
+
+// Get weekly downloads for a campaign
+export const getCampaignWeeklyDownloads = async (campaignId: string): Promise<number> => {
+  try {
+    const statsRef = collection(db, 'CampaignStatsDaily')
+    
+    // Get last 7 days
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const cutoffDateStr = sevenDaysAgo.toISOString().split('T')[0]
+    
+    const q = query(
+      statsRef,
+      where('campaignId', '==', campaignId),
+      where('date', '>=', cutoffDateStr)
+    )
+    
+    const querySnapshot = await getDocs(q)
+    let totalDownloads = 0
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data()
+      totalDownloads += data.downloads || 0
+    })
+    
+    return totalDownloads
+  } catch (error) {
+    console.error('Error getting weekly downloads:', error)
+    return 0
+  }
+}
+
+// Get trending campaigns based on weekly downloads and supporters count
+export const getTrendingCampaigns = async (limit: number = 8): Promise<Campaign[]> => {
+  try {
+    // Get all active public campaigns with pre-calculated trending scores
+    const campaignsRef = collection(db, 'campaigns')
+    const q = query(
+      campaignsRef,
+      where('visibility', '==', 'Public'),
+      where('status', '==', 'Active'),
+      where('isActive', '==', true),
+      orderBy('trendingScore', 'desc'),
+      orderBy('createdAt', 'desc')
+    )
+    
+    const querySnapshot = await getDocs(q)
+    const campaigns: Campaign[] = []
+    
+    querySnapshot.forEach((doc) => {
+      const data = doc.data()
+      campaigns.push({
+        id: doc.id,
+        campaignName: data.campaignName,
+        slug: data.slug,
+        description: data.description,
+        visibility: data.visibility,
+        frameURL: data.frameURL,
+        aspectRatio: data.aspectRatio,
+        status: data.status,
+        supportersCount: data.supportersCount || 0,
+        createdBy: data.createdBy,
+        createdByEmail: data.createdByEmail,
+        createdAt: data.createdAt,
+        isFreeCampaign: data.isFreeCampaign,
+        isActive: data.isActive,
+        planType: data.planType,
+        amountPaid: data.amountPaid,
+        paymentId: data.paymentId,
+        expiresAt: data.expiresAt,
+        lastPaymentAt: data.lastPaymentAt,
+        weeklyDownloads: data.weeklyDownloads || 0,
+        trendingScore: data.trendingScore || 0
+      } as Campaign)
+    })
+    
+    // If no campaigns have trending scores yet, fall back to supporters count
+    if (campaigns.length === 0 || campaigns.every(c => !c.trendingScore)) {
+      console.log('No trending scores found, falling back to supporters count sorting')
+      const fallbackCampaigns = await getPublicActiveCampaigns()
+      return fallbackCampaigns
+        .sort((a, b) => (b.supportersCount || 0) - (a.supportersCount || 0))
+        .slice(0, limit)
+    }
+    
+    return campaigns.slice(0, limit)
+  } catch (error) {
+    console.error('Error getting trending campaigns:', error)
+    
+    // Fallback to basic sorting by supporters count
+    try {
+      const fallbackCampaigns = await getPublicActiveCampaigns()
+      return fallbackCampaigns
+        .sort((a, b) => (b.supportersCount || 0) - (a.supportersCount || 0))
+        .slice(0, limit)
+    } catch (fallbackError) {
+      console.error('Error in fallback trending campaigns:', fallbackError)
+      return []
+    }
+  }
+}
+
+// Calculate trending score based on supporters count and weekly downloads
+const calculateTrendingScore = (supportersCount: number, weeklyDownloads: number): number => {
+  // Weight: 70% supporters count, 30% weekly downloads
+  // This gives more importance to supporters (long-term engagement) 
+  // while still considering recent activity (weekly downloads)
+  const supportersWeight = 0.7
+  const downloadsWeight = 0.3
+  
+  // Normalize the values to prevent one metric from dominating
+  // Use logarithmic scaling to handle large differences
+  const normalizedSupporters = Math.log(supportersCount + 1) * 10
+  const normalizedDownloads = Math.log(weeklyDownloads + 1) * 10
+  
+  return (normalizedSupporters * supportersWeight) + (normalizedDownloads * downloadsWeight)
 }
 
 // Get aggregate stats for a user (all their campaigns)

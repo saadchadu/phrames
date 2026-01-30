@@ -17,16 +17,31 @@
 
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
-import { fixAllCampaignsSupportersCount, cleanupOrphanedSupporters, recalculateSupportersCount } from '../lib/supporters'
 
-// Initialize Firebase (you may need to adjust this based on your setup)
+// Initialize Firebase using environment variables
 const firebaseConfig = {
-  // Add your Firebase config here
-  // This should match your production config
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+}
+
+// Validate Firebase config
+const requiredKeys = ['projectId']
+const missingKeys = requiredKeys.filter(key => !firebaseConfig[key as keyof typeof firebaseConfig])
+
+if (missingKeys.length > 0) {
+  console.error('❌ Missing Firebase configuration:', missingKeys.join(', '))
+  console.error('Please ensure NEXT_PUBLIC_FIREBASE_PROJECT_ID environment variable is set')
+  process.exit(1)
 }
 
 const app = initializeApp(firebaseConfig)
-const db = getFirestore(app)
+
+// Import functions after Firebase is initialized
+import { fixAllCampaignsSupportersCount, cleanupOrphanedSupporters, recalculateSupportersCount } from '../lib/supporters'
 
 async function main() {
   const args = process.argv.slice(2)

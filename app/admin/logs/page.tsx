@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import LogFilters, { getEventTypeColor } from '@/components/admin/LogFilters';
+import LogFilters from '@/components/admin/LogFilters';
 import AdminErrorBoundary, { ErrorDisplay } from '@/components/admin/AdminErrorBoundary';
 import { TableSkeleton } from '@/components/admin/LoadingState';
 import PageHeader from '@/components/admin/PageHeader';
+import ExpandableDataTable, { ExpandableColumn } from '@/components/admin/ExpandableDataTable';
 
 interface LogEntry {
   id: string;
@@ -70,6 +71,121 @@ function LogsContent() {
     setExpandedRows(newExpanded);
   };
 
+  const getEventTypeColor = (eventType: string) => {
+    const colors: Record<string, string> = {
+      'ADMIN_ACTION': 'bg-blue-100 text-blue-800',
+      'CRON_EXECUTION': 'bg-green-100 text-green-800',
+      'WEBHOOK_FAILURE': 'bg-red-100 text-red-800',
+      'CAMPAIGN_EXPIRY': 'bg-yellow-100 text-yellow-800',
+      'CAMPAIGN_DEACTIVATED': 'bg-orange-100 text-orange-800',
+      'CAMPAIGN_REACTIVATED': 'bg-emerald-100 text-emerald-800',
+      'CAMPAIGN_EXTENDED': 'bg-purple-100 text-purple-800',
+      'CAMPAIGN_DELETED': 'bg-red-100 text-red-800',
+      'USER_BLOCKED': 'bg-red-100 text-red-800',
+      'USER_UNBLOCKED': 'bg-green-100 text-green-800',
+      'USER_DELETED': 'bg-red-100 text-red-800',
+      'USER_ADMIN_SET': 'bg-indigo-100 text-indigo-800',
+      'USER_FREE_CAMPAIGN_RESET': 'bg-cyan-100 text-cyan-800',
+      'SETTINGS_CHANGED': 'bg-gray-100 text-gray-800',
+      'PAYMENT_SUCCESS': 'bg-green-100 text-green-800',
+      'PAYMENT_FAILURE': 'bg-red-100 text-red-800',
+      'MANUAL_CRON_TRIGGER': 'bg-blue-100 text-blue-800',
+      'DATA_EXPORT': 'bg-purple-100 text-purple-800',
+    };
+    return colors[eventType] || 'bg-gray-100 text-gray-800';
+  };
+
+  const columns: ExpandableColumn<LogEntry>[] = [
+    {
+      key: 'eventType',
+      header: 'Event',
+      sortable: true,
+      render: (log) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEventTypeColor(log.eventType)}`}>
+          {log.eventType.replace(/_/g, ' ')}
+        </span>
+      ),
+    },
+    {
+      key: 'actorId',
+      header: 'Actor',
+      sortable: true,
+      render: (log) => (
+        <div className="text-sm text-gray-900 font-mono">
+          {log.actorId ? log.actorId.slice(0, 8) + '...' : 'System'}
+        </div>
+      ),
+    },
+    {
+      key: 'description',
+      header: 'Description',
+      sortable: true,
+      render: (log) => (
+        <div className="text-sm text-gray-900 max-w-md truncate">
+          {log.description}
+        </div>
+      ),
+    },
+    {
+      key: 'createdAt',
+      header: 'Date',
+      sortable: true,
+      render: (log) => (
+        <div className="text-sm text-gray-500">
+          {new Date(log.createdAt).toLocaleString('en-IN', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+          })}
+        </div>
+      ),
+    },
+  ];
+
+  const renderExpandableContent = (log: LogEntry) => (
+    <div className="space-y-4">
+      <div>
+        <h4 className="font-semibold text-sm text-gray-700 mb-2">Log Details:</h4>
+        <div className="bg-white p-4 rounded border border-gray-200 text-sm text-gray-900">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <span className="font-medium">Event ID:</span>
+              <p className="font-mono text-xs mt-1">{log.id}</p>
+            </div>
+            <div>
+              <span className="font-medium">Event Type:</span>
+              <p className="mt-1">{log.eventType}</p>
+            </div>
+            <div>
+              <span className="font-medium">Actor ID:</span>
+              <p className="font-mono text-xs mt-1">{log.actorId || 'System'}</p>
+            </div>
+            <div>
+              <span className="font-medium">Timestamp:</span>
+              <p className="mt-1">{new Date(log.createdAt).toISOString()}</p>
+            </div>
+          </div>
+          <div className="mt-3">
+            <span className="font-medium">Description:</span>
+            <p className="mt-1">{log.description}</p>
+          </div>
+        </div>
+      </div>
+      
+      {log.metadata && Object.keys(log.metadata).length > 0 && (
+        <div>
+          <h4 className="font-semibold text-sm text-gray-700 mb-2">Metadata:</h4>
+          <pre className="bg-white p-4 rounded border border-gray-200 overflow-x-auto text-xs text-gray-900 font-mono">
+            {JSON.stringify(log.metadata, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+
   if (loading) {
     return (
       <PageHeader 
@@ -99,78 +215,17 @@ function LogsContent() {
         </div>
       )}
       
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <div className="inline-block min-w-full align-middle">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-8"></th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Event</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actor</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {logs.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                    No logs found
-                  </td>
-                </tr>
-              ) : (
-                logs.map((log) => (
-                  <React.Fragment key={log.id}>
-                    <tr className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm">
-                        <button
-                          onClick={() => toggleRow(log.id)}
-                          className="text-gray-400 hover:text-gray-600"
-                          title="View metadata"
-                        >
-                          {expandedRows.has(log.id) ? '▼' : '▶'}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEventTypeColor(log.eventType)}`}>
-                          {log.eventType}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {log.actorId === 'system' ? (
-                          <span className="font-mono text-purple-600">system</span>
-                        ) : (
-                          <span className="font-mono">{log.actorId}</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">{log.description}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {new Date(log.createdAt).toLocaleString()}
-                      </td>
-                    </tr>
-                    {expandedRows.has(log.id) && (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-4 bg-gray-50">
-                          <div className="text-sm">
-                            <div className="font-medium text-gray-700 mb-2">Metadata:</div>
-                            <pre className="bg-white p-4 rounded border border-gray-200 overflow-x-auto text-xs text-gray-900 font-mono">
-                              {log.metadata && Object.keys(log.metadata).length > 0 
-                                ? JSON.stringify(log.metadata, null, 2)
-                                : 'No metadata available'}
-                            </pre>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))
-              )}
-            </tbody>
-          </table>
-          </div>
-        </div>
-      </div>
+      <ExpandableDataTable
+        columns={columns}
+        data={logs}
+        keyExtractor={(log) => log.id}
+        emptyMessage="No logs found"
+        isLoading={loading}
+        defaultSort={{ key: 'createdAt', direction: 'desc' }}
+        expandableContent={renderExpandableContent}
+        expandedRows={expandedRows}
+        onToggleRow={toggleRow}
+      />
 
       {logs.length > 0 && (
         <div className="mt-4 text-xs sm:text-sm text-gray-500 text-center">

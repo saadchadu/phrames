@@ -410,3 +410,361 @@ export const scheduledInactiveCampaignCleanup = functions.pubsub
       throw error
     }
   })
+
+/**
+ * Scheduled function that runs every 6 hours to fix stuck campaigns and supporters counts
+ * This ensures campaigns are properly activated and supporters counts are accurate
+ */
+export const scheduledCampaignFix = functions.pubsub
+  .schedule('0 */6 * * *') // Run every 6 hours
+  .timeZone('UTC')
+  .onRun(async () => {
+    const startTime = Date.now()
+    const now = admin.firestore.Timestamp.now()
+    const batchId = `campaign_fix_${Date.now()}`
+    
+    try {
+      console.log('🔧 INFO [campaign_fix_started] Starting campaign fix job', { batchId })
+      
+      // Create admin log for fix start
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: 'Campaign fix cron job started',
+        metadata: {
+          cronType: 'campaign_fix',
+          batchId,
+          startTime: new Date(startTime).toISOString()
+        },
+        createdAt: now
+      })
+      
+      // Find campaigns that should be active but aren't
+      const inactiveCampaigns = await db.collection('campaigns')
+        .where('isActive', '==', false)
+        .get()
+      
+      console.log(`🔧 INFO [campaign_fix] Found ${inactiveCampaigns.size} inactive campaigns to analyze`)
+      
+      let fixedCount = 0
+      const batch = db.batch()
+      
+      for (const campaignDoc of inactiveCampaigns.docs) {
+        const campaignId = campaignDoc.id
+        const campaignData = campaignDoc.data()
+        let shouldActivate = false
+        let updateData: any = {
+          isActive: true,
+          status: 'Active',
+          lastPaymentAt: now
+        }
+        
+        // Check if there are successful payments for this campaign (paid campaigns)
+        const successfulPayments = await db.collection('payments')
+          .where('campaignId', '==', campaignId)
+          .where('status', '==', 'success')
+          .limit(1)
+          .get()
+        
+        if (!successfulPayments.empty) {
+          // This is a paid campaign with successful payment
+          const payment = successfulPayments.docs[0].data()
+          shouldActivate = true
+          
+          // Calculate expiry date
+          const planDurations: { [key: string]: number } = {
+            'week': 7,
+            'month': 30,
+            '3month': 90,
+            '6month': 180,
+            'year': 365
+          }
+          
+          const days = planDurations[payment.planType]
+          let expiryDate = null
+          if (days) {
+            expiryDate = new Date()
+            expiryDate.setDate(expiryDate.getDate() + days)
+          }
+          
+          updateData = {
+            ...updateData,
+            isFreeCampaign: false,
+            planType: payment.planType,
+            amountPaid: payment.amount,
+            paymentId: payment.orderId,
+            expiresAt: expiryDate ? admin.firestore.Timestamp.fromDate(expiryDate) : null,
+          }
+        } else {
+          // Check if this should be a free campaign
+          const userId = campaignData.createdBy
+          if (userId) {
+            const userDoc = await db.collection('users').doc(userId).get()
+            const userData = userDoc.exists ? userDoc.data() : null
+            
+            // If user hasn't used free campaign or if campaign was created as free
+            if (!userData?.freeCampaignUsed || campaignData.isFreeCampaign === true) {
+              shouldActivate = true
+              
+              // Set as free campaign with 30-day expiry
+              const expiryDate = new Date()
+              expiryDate.setDate(expiryDate.getDate() + 30)
+              
+              updateData = {
+                ...updateData,
+                isFreeCampaign: true,
+                planType: 'free',
+                amountPaid: 0,
+                paymentId: null,
+                expiresAt: admin.firestore.Timestamp.fromDate(expiryDate),
+              }
+              
+              // Mark user's free campaign as used if not already
+              if (!userData?.freeCampaignUsed) {
+                if (userDoc.exists) {
+                  batch.update(userDoc.ref, { freeCampaignUsed: true })
+                } else {
+                  batch.set(userDoc.ref, {
+                    uid: userId,
+                    freeCampaignUsed: true,
+                    createdAt: now
+                  })
+                }
+              }
+            }
+          }
+        }
+        
+        if (shouldActivate) {
+          batch.update(campaignDoc.ref, updateData)
+          fixedCount++
+          
+          // Log the fix
+          const logRef = db.collection('logs').doc()
+          batch.set(logRef, {
+            eventType: 'campaign_auto_fix',
+            actorId: 'system',
+            description: `Auto-fixed stuck campaign: ${campaignData.campaignName}`,
+            metadata: {
+              campaignId,
+              campaignName: campaignData.campaignName,
+              userId: campaignData.createdBy,
+              fixType: updateData.isFreeCampaign ? 'free' : 'paid',
+              planType: updateData.planType,
+              batchId
+            },
+            createdAt: now
+          })
+        }
+      }
+      
+      // Now fix supporters counts for all active campaigns
+      const activeCampaigns = await db.collection('campaigns')
+        .where('isActive', '==', true)
+        .get()
+      
+      let supportersFixed = 0
+      
+      for (const campaignDoc of activeCampaigns.docs) {
+        const campaignId = campaignDoc.id
+        const campaignData = campaignDoc.data()
+        
+        // Count actual supporters
+        const supporters = await db.collection('supporters')
+          .where('campaignId', '==', campaignId)
+          .get()
+        
+        const actualCount = supporters.size
+        const currentCount = campaignData.supportersCount || 0
+        
+        // Update if counts don't match
+        if (actualCount !== currentCount) {
+          batch.update(campaignDoc.ref, {
+            supportersCount: actualCount
+          })
+          supportersFixed++
+        }
+      }
+      
+      // Commit all fixes
+      if (fixedCount > 0 || supportersFixed > 0) {
+        await batch.commit()
+        console.log(`🔧 INFO [campaign_fix] Fixed ${fixedCount} campaigns and ${supportersFixed} supporter counts`)
+      }
+      
+      const duration = Date.now() - startTime
+      console.log(`🔧 INFO [campaign_fix_completed] Fix job completed`, {
+        campaignsFixed: fixedCount,
+        supportersFixed,
+        duration,
+        batchId
+      })
+      
+      // Log summary
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: `Campaign fix completed - fixed ${fixedCount} campaigns and ${supportersFixed} supporter counts`,
+        metadata: {
+          cronType: 'campaign_fix',
+          result: 'success',
+          batchId,
+          campaignsFixed: fixedCount,
+          supportersFixed,
+          duration
+        },
+        createdAt: now
+      })
+      
+      return null
+    } catch (error) {
+      console.error('Campaign fix error:', error)
+      
+      // Log error
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: 'Campaign fix failed',
+        metadata: {
+          cronType: 'campaign_fix',
+          result: 'error',
+          batchId,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        },
+        createdAt: admin.firestore.Timestamp.now()
+      })
+      
+      throw error
+    }
+  })
+
+/**
+ * Scheduled function that runs every hour to update trending scores
+ * This pre-calculates trending data for better homepage performance
+ */
+export const scheduledTrendingUpdate = functions.pubsub
+  .schedule('0 * * * *') // Run every hour
+  .timeZone('UTC')
+  .onRun(async () => {
+    const startTime = Date.now()
+    const now = admin.firestore.Timestamp.now()
+    const batchId = `trending_update_${Date.now()}`
+    
+    try {
+      console.log('📈 INFO [trending_update_started] Starting trending scores update', { batchId })
+      
+      // Create admin log for trending update start
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: 'Trending scores update cron job started',
+        metadata: {
+          cronType: 'trending_update',
+          batchId,
+          startTime: new Date(startTime).toISOString()
+        },
+        createdAt: now
+      })
+      
+      // Get all active public campaigns
+      const activeCampaigns = await db.collection('campaigns')
+        .where('isActive', '==', true)
+        .where('visibility', '==', 'Public')
+        .where('status', '==', 'Active')
+        .get()
+      
+      console.log(`📈 INFO [trending_update] Found ${activeCampaigns.size} active campaigns to update`)
+      
+      let updatedCount = 0
+      const batch = db.batch()
+      
+      // Get date range for weekly downloads (last 7 days)
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+      const cutoffDateStr = sevenDaysAgo.toISOString().split('T')[0]
+      
+      for (const campaignDoc of activeCampaigns.docs) {
+        const campaignId = campaignDoc.id
+        const campaignData = campaignDoc.data()
+        
+        // Get weekly downloads for this campaign
+        const weeklyStatsQuery = await db.collection('CampaignStatsDaily')
+          .where('campaignId', '==', campaignId)
+          .where('date', '>=', cutoffDateStr)
+          .get()
+        
+        let weeklyDownloads = 0
+        weeklyStatsQuery.forEach((doc) => {
+          const data = doc.data()
+          weeklyDownloads += data.downloads || 0
+        })
+        
+        // Calculate trending score
+        const supportersCount = campaignData.supportersCount || 0
+        const supportersWeight = 0.7
+        const downloadsWeight = 0.3
+        
+        const normalizedSupporters = Math.log(supportersCount + 1) * 10
+        const normalizedDownloads = Math.log(weeklyDownloads + 1) * 10
+        
+        const trendingScore = (normalizedSupporters * supportersWeight) + (normalizedDownloads * downloadsWeight)
+        
+        // Update campaign with trending data
+        batch.update(campaignDoc.ref, {
+          weeklyDownloads,
+          trendingScore,
+          trendingUpdatedAt: now
+        })
+        
+        updatedCount++
+      }
+      
+      // Commit all updates
+      if (updatedCount > 0) {
+        await batch.commit()
+        console.log(`📈 INFO [trending_update] Updated ${updatedCount} campaigns with trending scores`)
+      }
+      
+      const duration = Date.now() - startTime
+      console.log(`📈 INFO [trending_update_completed] Trending update completed`, {
+        campaignsUpdated: updatedCount,
+        duration,
+        batchId
+      })
+      
+      // Log summary
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: `Trending scores update completed - updated ${updatedCount} campaigns`,
+        metadata: {
+          cronType: 'trending_update',
+          result: 'success',
+          batchId,
+          campaignsUpdated: updatedCount,
+          duration
+        },
+        createdAt: now
+      })
+      
+      return null
+    } catch (error) {
+      console.error('Trending update error:', error)
+      
+      // Log error
+      await db.collection('logs').add({
+        eventType: 'cron_execution',
+        actorId: 'system',
+        description: 'Trending scores update failed',
+        metadata: {
+          cronType: 'trending_update',
+          result: 'error',
+          batchId,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        },
+        createdAt: admin.firestore.Timestamp.now()
+      })
+      
+      throw error
+    }
+  })

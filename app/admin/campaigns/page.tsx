@@ -6,6 +6,7 @@ import CampaignActions from '@/components/admin/CampaignActions';
 import AdminErrorBoundary, { ErrorDisplay } from '@/components/admin/AdminErrorBoundary';
 import { TableSkeleton } from '@/components/admin/LoadingState';
 import PageHeader from '@/components/admin/PageHeader';
+import DataTable, { Column } from '@/components/admin/DataTable';
 
 interface Campaign {
   id: string;
@@ -78,6 +79,95 @@ export default function AdminCampaignsPage() {
     fetchCampaigns();
   }
 
+  const columns: Column<Campaign>[] = [
+    {
+      key: 'campaign',
+      header: 'Campaign',
+      sortable: true,
+      sortKey: 'campaignName',
+      render: (campaign) => (
+        <div className="flex items-center gap-3">
+          {campaign.imageUrl && (
+            <img 
+              src={campaign.imageUrl} 
+              alt={campaign.campaignName}
+              className="w-12 h-12 rounded object-cover flex-shrink-0"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          )}
+          <div className="text-sm font-medium text-gray-900">{campaign.campaignName}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'type',
+      header: 'Type',
+      sortable: true,
+      sortKey: 'isFreeCampaign',
+      render: (campaign) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          campaign.isFreeCampaign 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-blue-100 text-blue-800'
+        }`}>
+          {campaign.isFreeCampaign ? 'Free' : campaign.planType || 'Paid'}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      sortKey: 'isActive',
+      render: (campaign) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          campaign.isExpired 
+            ? 'bg-red-100 text-red-800'
+            : campaign.isActive 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-gray-100 text-gray-800'
+        }`}>
+          {campaign.isExpired ? 'Expired' : campaign.isActive ? 'Active' : 'Inactive'}
+        </span>
+      ),
+    },
+    {
+      key: 'campaignId',
+      header: 'Campaign ID',
+      sortable: true,
+      sortKey: 'id',
+      render: (campaign) => (
+        <div className="text-sm text-gray-900 font-mono">{campaign.id}</div>
+      ),
+    },
+    {
+      key: 'expires',
+      header: 'Expires',
+      sortable: true,
+      sortKey: 'expiresAt',
+      render: (campaign) => (
+        <div className="text-sm text-gray-900">
+          {campaign.expiresAt 
+            ? new Date(campaign.expiresAt).toLocaleDateString()
+            : 'Never'
+          }
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (campaign) => (
+        <CampaignActions 
+          campaign={campaign} 
+          onActionComplete={handleActionComplete} 
+        />
+      ),
+    },
+  ];
+
   return (
     <AdminErrorBoundary>
       <PageHeader 
@@ -99,99 +189,18 @@ export default function AdminCampaignsPage() {
         )}
 
         {/* Table */}
-        <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-          {loading ? (
-            <TableSkeleton rows={5} columns={5} />
-          ) : campaigns.length === 0 ? (
-          <div className="p-8 sm:p-12 text-center">
-            <p className="text-sm sm:text-base text-gray-500">No campaigns found</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <div className="inline-block min-w-full align-middle">
-              <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Campaign
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Campaign ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Expires
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {campaigns.map((campaign) => (
-                  <tr key={campaign.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        {campaign.imageUrl && (
-                          <img 
-                            src={campaign.imageUrl} 
-                            alt={campaign.campaignName}
-                            className="w-12 h-12 rounded object-cover flex-shrink-0"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
-                        )}
-                        <div className="text-sm font-medium text-gray-900">{campaign.campaignName}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        campaign.isFreeCampaign 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {campaign.isFreeCampaign ? 'Free' : campaign.planType || 'Paid'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        campaign.isActive && !campaign.isExpired
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {campaign.isActive && !campaign.isExpired ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="font-mono text-xs">{campaign.id}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {campaign.expiresAt ? new Date(campaign.expiresAt).toLocaleDateString() : 'Never'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <CampaignActions 
-                        campaign={campaign} 
-                        onActionComplete={handleActionComplete}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            </div>
-          </div>
-        )}
-      </div>
+        <DataTable
+          columns={columns}
+          data={campaigns}
+          keyExtractor={(campaign) => campaign.id}
+          emptyMessage="No campaigns found"
+          isLoading={loading}
+          defaultSort={{ key: 'createdAt', direction: 'desc' }}
+        />
 
-      <div className="mt-4 text-xs sm:text-sm text-gray-500">
-        Showing {campaigns.length} campaign(s)
-      </div>
+        <div className="mt-4 text-xs sm:text-sm text-gray-500">
+          Showing {campaigns.length} campaign(s)
+        </div>
       </PageHeader>
     </AdminErrorBoundary>
   );

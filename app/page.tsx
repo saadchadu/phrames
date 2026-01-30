@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthProvider'
-import { getPublicActiveCampaigns, Campaign } from '@/lib/firestore'
+import { getPublicActiveCampaigns, getTrendingCampaigns, Campaign } from '@/lib/firestore'
 import SearchInput from '@/components/SearchInput'
 import SearchResults from '@/components/SearchResults'
 import PricingSection from '@/components/PricingSection'
@@ -21,38 +21,47 @@ export default function Home() {
   const { user } = useAuth()
   const router = useRouter()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [trendingCampaigns, setTrendingCampaigns] = useState<Campaign[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
-  // Fetch public active campaigns on mount
+  // Handle hydration
   useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Fetch campaigns on mount
+  useEffect(() => {
+    if (!mounted) return
+    
     const fetchCampaigns = async () => {
       try {
         setLoading(true)
-        const publicCampaigns = await getPublicActiveCampaigns()
-        setCampaigns(publicCampaigns)
+        
+        // Fetch trending campaigns (top 8 based on weekly downloads + supporters)
+        const trending = await getTrendingCampaigns(8)
+        setTrendingCampaigns(trending)
+        
+        // Also fetch all public campaigns for search functionality
+        const allCampaigns = await getPublicActiveCampaigns()
+        setCampaigns(allCampaigns)
       } catch (error) {
         console.error('Failed to fetch campaigns:', error)
         toast('Failed to load campaigns. Please refresh the page.', 'error')
         setCampaigns([])
+        setTrendingCampaigns([])
       } finally {
         setLoading(false)
       }
     }
     
     fetchCampaigns()
-  }, [])
-
-  // Get top 8 trending campaigns based on supporters count
-  const trendingCampaigns = useMemo(() => {
-    // Sort by supporters count in descending order and take top 8
-    return [...campaigns]
-      .sort((a, b) => b.supportersCount - a.supportersCount)
-      .slice(0, 8)
-  }, [campaigns])
+  }, [mounted])
 
   // Filter campaigns based on search query
   const filteredCampaigns = useMemo(() => {
+    // Use trending campaigns when no search query, all campaigns when searching
     const campaignsToFilter = searchQuery.trim() ? campaigns : trendingCampaigns
 
     if (!searchQuery.trim()) {
@@ -76,7 +85,8 @@ export default function Home() {
     // This function is for the button click if needed
   }
 
-  const jsonLd = {
+  // Create stable JSON-LD data to prevent hydration issues (must be before early return)
+  const stableJsonLd = useMemo(() => ({
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: 'Phrames',
@@ -98,7 +108,7 @@ export default function Home() {
     aggregateRating: {
       '@type': 'AggregateRating',
       ratingValue: '4.8',
-      ratingCount: campaigns.length > 0 ? campaigns.reduce((sum, c) => sum + c.supportersCount, 0) : '100',
+      ratingCount: '100', // Use stable value to prevent hydration issues
     },
     featureList: [
       'Upload custom PNG frames',
@@ -109,9 +119,9 @@ export default function Home() {
       'No watermarks',
       'Free to use'
     ],
-  }
+  }), [])
 
-  const breadcrumbJsonLd = {
+  const stableBreadcrumbJsonLd = useMemo(() => ({
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
@@ -122,6 +132,33 @@ export default function Home() {
         item: 'https://phrames.cleffon.com',
       },
     ],
+  }), [])
+
+  const jsonLd = stableJsonLd
+  const breadcrumbJsonLd = stableBreadcrumbJsonLd
+
+  // Prevent hydration mismatch by not rendering dynamic content until mounted
+  if (!mounted) {
+    return (
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        />
+        <main className="min-h-screen bg-white">
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary mx-auto mb-4"></div>
+              <p className="text-primary/60">Loading...</p>
+            </div>
+          </div>
+        </main>
+      </>
+    )
   }
 
   return (
@@ -229,21 +266,21 @@ export default function Home() {
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center text-white">
                 Trending Campaigns
               </h2>
-              {campaigns.length === 0 && !loading && (
+              {trendingCampaigns.length === 0 && !loading && (
                 <span className="bg-secondary/20 border border-secondary text-white px-3 py-1 rounded-full text-sm font-semibold">
                   Coming Soon
                 </span>
               )}
             </div>
             <p className="text-base sm:text-lg text-white/90 text-center">
-              {campaigns.length === 0 && !loading 
+              {trendingCampaigns.length === 0 && !loading 
                 ? 'Check back soon for inspiring campaigns from our community!'
-                : 'Discover the most popular campaigns at phrames'
+                : 'Most popular campaigns based on supporters and weekly downloads'
               }
             </p>
           </div>
 
-          {campaigns.length > 0 && (
+          {trendingCampaigns.length > 0 && (
             <>
               {/* Search Input and Button */}
               <div className="flex flex-col items-center justify-center sm:flex-row items-stretch sm:items-end gap-5 mb-10">
@@ -271,7 +308,7 @@ export default function Home() {
             </>
           )}
 
-          {campaigns.length === 0 && !loading && (
+          {trendingCampaigns.length === 0 && !loading && (
             <div className="text-center py-12">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-white/10 rounded-full mb-6">
                 <svg className="w-10 h-10 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">

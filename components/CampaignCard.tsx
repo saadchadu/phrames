@@ -5,6 +5,8 @@ import { Campaign } from '@/lib/firestore'
 import { PencilIcon, LinkIcon, TrashIcon, QrCodeIcon } from '@heroicons/react/24/outline'
 import { toast } from '@/components/ui/toaster'
 import QRCode from 'qrcode'
+import useCampaignStats from '@/hooks/useCampaignStats'
+import ClientOnly from './ClientOnly'
 
 interface CampaignCardProps {
   campaign: Campaign
@@ -48,6 +50,8 @@ function isCampaignActive(campaign: Campaign): boolean {
 }
 
 export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onReactivate }: CampaignCardProps) {
+  // Use real-time campaign stats
+  const { stats: campaignStats } = useCampaignStats(campaign.id)
   const isActive = isCampaignActive(campaign)
   const isFree = campaign.isFreeCampaign === true
   const expiryText = campaign.expiresAt ? formatExpiryCountdown(campaign.expiresAt) : ''
@@ -189,7 +193,9 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
             </svg>
             <span className="text-primary/60 text-xs sm:text-sm font-medium leading-tight">
-              {campaign.supportersCount} supporter{campaign.supportersCount !== 1 ? 's' : ''}
+              <ClientOnly fallback={<span>{campaign.supportersCount} supporter{campaign.supportersCount !== 1 ? 's' : ''}</span>}>
+                {campaignStats?.supportersCount ?? campaign.supportersCount} supporter{(campaignStats?.supportersCount ?? campaign.supportersCount) !== 1 ? 's' : ''}
+              </ClientOnly>
             </span>
           </div>
 

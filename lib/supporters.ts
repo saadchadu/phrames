@@ -43,12 +43,18 @@ export interface SupporterStats {
 
 // Generate a session ID for anonymous users
 export const getSessionId = (): string => {
-  let sessionId = sessionStorage.getItem('phrames_session_id')
-  if (!sessionId) {
-    sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    sessionStorage.setItem('phrames_session_id', sessionId)
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    let sessionId = window.sessionStorage.getItem('phrames_session_id')
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+      window.sessionStorage.setItem('phrames_session_id', sessionId)
+    }
+    return sessionId
   }
-  return sessionId
+  
+  // For server-side or when sessionStorage is not available, generate a random ID
+  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
 }
 
 // Check if user/session has already supported this campaign

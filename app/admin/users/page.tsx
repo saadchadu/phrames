@@ -6,6 +6,7 @@ import UserActions from '@/components/admin/UserActions';
 import AdminErrorBoundary, { ErrorDisplay } from '@/components/admin/AdminErrorBoundary';
 import { TableSkeleton } from '@/components/admin/LoadingState';
 import PageHeader from '@/components/admin/PageHeader';
+import DataTable, { Column } from '@/components/admin/DataTable';
 
 interface User {
   id: string;
@@ -60,6 +61,11 @@ export default function AdminUsersPage() {
   }
 
   const filteredUsers = users.filter(user => {
+    // Hide the super admin user from the list
+    if (user.email === 'saadchadu@gmail.com') {
+      return false;
+    }
+    
     if (!filters.search) return true;
     const searchLower = filters.search.toLowerCase();
     return (
@@ -69,6 +75,85 @@ export default function AdminUsersPage() {
       user.id.toLowerCase().includes(searchLower)
     );
   });
+
+  const columns: Column<User>[] = [
+    {
+      key: 'user',
+      header: 'User',
+      sortable: true,
+      sortKey: 'displayName',
+      render: (user) => {
+        const isSuperAdmin = user.email === 'saadchadu@gmail.com';
+        return (
+          <div className="flex items-center">
+            <div>
+              <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                {user.displayName || 'User'}
+                {user.isAdmin ? (
+                  <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
+                    Admin
+                  </span>
+                ) : null}
+              </div>
+              <div className="text-sm text-gray-500">{user.email}</div>
+              {user.username && (
+                <div className="text-xs text-gray-400">@{user.username}</div>
+              )}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'campaigns',
+      header: 'Campaigns',
+      sortable: true,
+      sortKey: 'totalCampaigns',
+      render: (user) => (
+        <div className="text-sm text-gray-900">{user.totalCampaigns}</div>
+      ),
+    },
+    {
+      key: 'freeCampaign',
+      header: 'Free Campaign',
+      sortable: true,
+      sortKey: 'freeCampaignUsed',
+      render: (user) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          user.freeCampaignUsed 
+            ? 'bg-red-100 text-red-800' 
+            : 'bg-green-100 text-green-800'
+        }`}>
+          {user.freeCampaignUsed ? 'Used' : 'Available'}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      sortKey: 'isBlocked',
+      render: (user) => (
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          user.isBlocked 
+            ? 'bg-red-100 text-red-800' 
+            : 'bg-green-100 text-green-800'
+        }`}>
+          {user.isBlocked ? 'Blocked' : 'Active'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (user) => (
+        <UserActions 
+          user={user} 
+          onActionComplete={fetchUsers} 
+        />
+      ),
+    },
+  ];
 
   return (
     <AdminErrorBoundary>
@@ -91,107 +176,18 @@ export default function AdminUsersPage() {
         )}
 
         {/* Table */}
-        <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-          {loading ? (
-            <TableSkeleton rows={5} columns={5} />
-          ) : filteredUsers.length === 0 ? (
-          <div className="p-8 sm:p-12 text-center">
-            <p className="text-sm sm:text-base text-gray-500">No users found</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
-            <div className="inline-block min-w-full align-middle">
-              <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Campaigns
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Free Campaign
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => {
-                  const isSuperAdmin = user.email === 'saadchadu@gmail.com';
-                  return (
-                  <tr 
-                    key={user.id} 
-                    className={`${
-                      isSuperAdmin 
-                        ? 'bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 border-l-4 border-purple-500' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                            {user.displayName || 'User'}
-                            {isSuperAdmin ? (
-                              <span className="px-2 py-1 text-xs rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold shadow-sm">
-                                ⭐ Super Admin
-                              </span>
-                            ) : user.isAdmin ? (
-                              <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
-                                Admin
-                              </span>
-                            ) : null}
-                          </div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
-                          {user.username && (
-                            <div className="text-xs text-gray-400">@{user.username}</div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.totalCampaigns}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        user.freeCampaignUsed 
-                          ? 'bg-gray-100 text-gray-800' 
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {user.freeCampaignUsed ? 'Used' : 'Available'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        user.isBlocked 
-                          ? 'bg-red-100 text-red-800' 
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {user.isBlocked ? 'Blocked' : 'Active'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <UserActions user={user} onActionComplete={fetchUsers} />
-                    </td>
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            </div>
-          </div>
-        )}
-      </div>
+        <DataTable
+          columns={columns}
+          data={filteredUsers}
+          keyExtractor={(user) => user.id}
+          emptyMessage="No users found"
+          isLoading={loading}
+          defaultSort={{ key: 'createdAt', direction: 'desc' }}
+        />
 
-      <div className="mt-4 text-xs sm:text-sm text-gray-500">
-        Showing {filteredUsers.length} user(s)
-      </div>
+        <div className="mt-4 text-xs sm:text-sm text-gray-500">
+          Showing {filteredUsers.length} user(s)
+        </div>
       </PageHeader>
     </AdminErrorBoundary>
   );

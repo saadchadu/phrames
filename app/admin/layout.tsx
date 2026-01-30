@@ -30,6 +30,6 @@ export default async function AdminLayout({
   // 2. Verify the session cookie here
   // 3. Redirect non-admin users
   
-  // Temporary: Allow access, client-side will handle admin checks
+  // Client-side will handle admin checks
   return <AdminLayoutClient>{children}</AdminLayoutClient>;
 }

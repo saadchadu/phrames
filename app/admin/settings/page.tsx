@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Download, Play } from 'lucide-react';
 import PricingEditor from '@/components/admin/PricingEditor';
+import SupportersManager from '@/components/admin/SupportersManager';
 import AdminErrorBoundary, { ErrorDisplay } from '@/components/admin/AdminErrorBoundary';
 import LoadingState from '@/components/admin/LoadingState';
 import PageHeader from '@/components/admin/PageHeader';
@@ -211,6 +212,14 @@ export default function AdminSettingsPage() {
               {actionLoading === 'triggerExpiryCron' ? 'Running...' : 'Run Expiry Check'}
             </button>
             <button
+              onClick={() => handleAction('fixStuckCampaigns')}
+              disabled={actionLoading !== null}
+              className="flex items-center justify-center px-4 py-2.5 sm:py-3 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Play className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+              {actionLoading === 'fixStuckCampaigns' ? 'Fixing...' : 'Fix Stuck Campaigns'}
+            </button>
+            <button
               onClick={() => handleAction('exportPayments')}
               disabled={actionLoading !== null}
               className="flex items-center justify-center px-4 py-2.5 sm:py-3 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -227,6 +236,15 @@ export default function AdminSettingsPage() {
               {actionLoading === 'exportCampaigns' ? 'Exporting...' : 'Export Campaigns'}
             </button>
           </div>
+        </div>
+
+        {/* Supporters Management */}
+        <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Supporters Management</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Fix supporter counts that may be stuck at 0 due to payment processing issues.
+          </p>
+          <SupportersManager />
         </div>
         </div>
       </PageHeader>

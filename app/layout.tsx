@@ -117,7 +117,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="scroll-smooth" data-scroll-behavior="smooth">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -134,7 +134,7 @@ export default function RootLayout({
         {/* Cashfree Payment Gateway SDK v3 */}
         <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
       </head>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased" suppressHydrationWarning={true}>
         <GoogleAnalytics />
         <ErrorBoundary>
           <AuthProvider>

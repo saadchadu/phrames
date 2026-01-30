@@ -87,8 +87,7 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.text()
     
     // Verify signature (in production)
-    // TEMPORARILY DISABLED FOR TESTING - RE-ENABLE AFTER FIXING WEBHOOK ISSUES
-    if (false && process.env.CASHFREE_ENV === 'PRODUCTION') {
+    if (process.env.CASHFREE_ENV === 'PRODUCTION') {
       if (!signature || !timestamp) {
         trackError()
         logWebhookError({

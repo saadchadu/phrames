@@ -11,6 +11,8 @@ import CampaignQRCode from '@/components/CampaignQRCode'
 import ImageCropModal from '@/components/ImageCropModal'
 import { useAuth } from '@/components/AuthProvider'
 import { getCanvasDimensions, getAspectRatioDimensions } from '@/lib/aspect-ratios'
+import useCampaignStats from '@/hooks/useCampaignStats'
+import ClientOnly from '@/components/ClientOnly'
 
 // Prevent static generation for this dynamic page
 export const dynamic = 'force-dynamic'
@@ -43,6 +45,9 @@ export default function CampaignPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const rafRef = useRef<number | null>(null)
   const pendingTransformRef = useRef<ImageTransform | null>(null)
+
+  // Use real-time campaign stats
+  const { stats: campaignStats } = useCampaignStats(campaign?.id || null)
 
   useEffect(() => {
     if (slug) {
@@ -523,22 +528,40 @@ export default function CampaignPage() {
       if (campaign.id) {
         try {
           const sessionId = getSessionId()
-          const result = await addSupporter(
-            campaign.id,
-            user?.uid,
-            user?.email || undefined,
-            sessionId
-          )
+          
+          // Call the API endpoint instead of direct function
+          const response = await fetch('/api/supporters/add', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              campaignId: campaign.id,
+              userId: user?.uid,
+              userEmail: user?.email,
+              sessionId: sessionId
+            })
+          })
+          
+          const result = await response.json()
           
           if (result.success && result.isNewSupporter) {
             // Only increment UI count if this is a new supporter
             setCampaign(prev => prev ? { ...prev, supportersCount: prev.supportersCount + 1 } : null)
-            console.log('New supporter added')
+            console.log('✅ New supporter added via API')
+            
+            // Force refresh campaign stats after a short delay
+            setTimeout(() => {
+              console.log('🔄 Force refreshing campaign data...')
+              loadCampaign()
+            }, 1000)
+          } else if (result.success) {
+            console.log('ℹ️ Existing supporter - download counted but not added to supporters count')
           } else {
-            console.log('Existing supporter - download counted but not added to supporters count')
+            console.error('❌ API returned error:', result.error)
           }
         } catch (error) {
-          console.error('Error adding supporter:', error)
+          console.error('❌ Error calling supporters API:', error)
           // Don't block download on supporter tracking error
         }
         
@@ -600,9 +623,13 @@ export default function CampaignPage() {
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   {creatorProfile && (
                     <div className="flex items-center gap-2">
-                      {creatorProfile.photoURL ? (
+                      {creatorProfile.photoURL || creatorProfile.avatarURL ? (
                         <img
-                          src={creatorProfile.photoURL}
+                          src={
+                            (creatorProfile.photoURL || creatorProfile.avatarURL)?.startsWith('https://lh')
+                              ? `/api/image-proxy?url=${encodeURIComponent((creatorProfile.photoURL || creatorProfile.avatarURL) || '')}`
+                              : creatorProfile.photoURL || creatorProfile.avatarURL || ''
+                          }
                           alt={creatorProfile.displayName || 'Creator'}
                           className="w-6 h-6 sm:w-7 sm:h-7 rounded-full object-cover"
                         />
@@ -621,7 +648,11 @@ export default function CampaignPage() {
               
               {/* Stats */}
               <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm flex-wrap">
-                <span className="text-primary/60">{campaign.supportersCount} supporters</span>
+                <span className="text-primary/60">
+                  <ClientOnly fallback={<span>{campaign.supportersCount} supporters</span>}>
+                    {campaignStats?.supportersCount ?? campaign.supportersCount} supporters
+                  </ClientOnly>
+                </span>
                 <span className="text-primary/30">•</span>
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <div className={`w-2 h-2 rounded-full ${
@@ -778,7 +809,11 @@ export default function CampaignPage() {
                   
                   {/* Stats */}
                   <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm mb-5 sm:mb-7 pb-5 sm:pb-7 border-b border-[#00240010] flex-wrap">
-                    <span className="text-primary/60">{campaign.supportersCount} supporters</span>
+                    <span className="text-primary/60">
+                      <ClientOnly fallback={<span>{campaign.supportersCount} supporters</span>}>
+                        {campaignStats?.supportersCount ?? campaign.supportersCount} supporters
+                      </ClientOnly>
+                    </span>
                     <span className="text-primary/30">•</span>
                     <div className="flex items-center gap-1.5 sm:gap-2">
                       <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${
@@ -792,9 +827,13 @@ export default function CampaignPage() {
                   <div className="flex items-center gap-3 text-sm sm:text-base">
                     {creatorProfile && (
                       <>
-                        {creatorProfile.photoURL ? (
+                        {creatorProfile.photoURL || creatorProfile.avatarURL ? (
                           <img
-                            src={creatorProfile.photoURL}
+                            src={
+                              (creatorProfile.photoURL || creatorProfile.avatarURL)?.startsWith('https://lh')
+                                ? `/api/image-proxy?url=${encodeURIComponent((creatorProfile.photoURL || creatorProfile.avatarURL) || '')}`
+                                : creatorProfile.photoURL || creatorProfile.avatarURL || ''
+                            }
                             alt={creatorProfile.displayName || 'Creator'}
                             className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
                           />

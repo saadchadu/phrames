@@ -1,9 +1,9 @@
 'use client';
 
-import { ReactNode, useState, useMemo } from 'react';
+import React, { ReactNode, useState, useMemo, useCallback } from 'react';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
-export interface Column<T> {
+export interface ExpandableColumn<T> {
   key: string;
   header: string;
   render: (item: T) => ReactNode;
@@ -12,14 +12,17 @@ export interface Column<T> {
   sortKey?: string; // Optional custom sort key for nested properties
 }
 
-interface DataTableProps<T> {
-  columns: Column<T>[];
+interface ExpandableDataTableProps<T> {
+  columns: ExpandableColumn<T>[];
   data: T[];
   keyExtractor: (item: T) => string;
   emptyMessage?: string;
   isLoading?: boolean;
   onRowClick?: (item: T) => void;
   defaultSort?: { key: string; direction: 'asc' | 'desc' };
+  expandableContent?: (item: T) => ReactNode;
+  expandedRows?: Set<string>;
+  onToggleRow?: (id: string) => void;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -29,7 +32,7 @@ const getNestedValue = (obj: any, path: string) => {
   return path.split('.').reduce((current, key) => current?.[key], obj);
 };
 
-export default function DataTable<T>({
+export default function ExpandableDataTable<T>({
   columns,
   data,
   keyExtractor,
@@ -37,13 +40,16 @@ export default function DataTable<T>({
   isLoading = false,
   onRowClick,
   defaultSort,
-}: DataTableProps<T>) {
+  expandableContent,
+  expandedRows = new Set(),
+  onToggleRow,
+}: ExpandableDataTableProps<T>) {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: SortDirection }>({
     key: defaultSort?.key || '',
     direction: defaultSort?.direction || null,
   });
 
-  const handleSort = (column: Column<T>) => {
+  const handleSort = (column: ExpandableColumn<T>) => {
     if (!column.sortable) return;
 
     const sortKey = column.sortKey || column.key;
@@ -112,7 +118,7 @@ export default function DataTable<T>({
     });
   }, [data, sortConfig]);
 
-  const getSortIcon = (column: Column<T>) => {
+  const getSortIcon = (column: ExpandableColumn<T>) => {
     if (!column.sortable) return null;
 
     const sortKey = column.sortKey || column.key;
@@ -132,6 +138,12 @@ export default function DataTable<T>({
 
     return <ChevronsUpDown className="h-4 w-4 text-gray-400" />;
   };
+
+  const handleRowToggle = useCallback((item: T) => {
+    const id = keyExtractor(item);
+    onToggleRow?.(id);
+  }, [keyExtractor, onToggleRow]);
+
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -160,6 +172,9 @@ export default function DataTable<T>({
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                {expandableContent && (
+                  <th className="px-4 sm:px-6 py-3 w-8"></th>
+                )}
                 {columns.map((column) => (
                   <th
                     key={column.key}
@@ -177,24 +192,54 @@ export default function DataTable<T>({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {sortedData.map((item) => (
-                <tr
-                  key={keyExtractor(item)}
-                  onClick={() => onRowClick?.(item)}
-                  className={onRowClick ? 'hover:bg-gray-50 cursor-pointer' : 'hover:bg-gray-50'}
-                >
-                  {columns.map((column) => (
-                    <td
-                      key={column.key}
-                      className={`px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
-                        column.className || ''
-                      }`}
+              {sortedData.map((item) => {
+                const itemId = keyExtractor(item);
+                const isExpanded = expandedRows.has(itemId);
+                
+                return (
+                  <React.Fragment key={itemId}>
+                    <tr
+                      onClick={() => onRowClick?.(item)}
+                      className={onRowClick ? 'hover:bg-gray-50 cursor-pointer' : 'hover:bg-gray-50'}
                     >
-                      {column.render(item)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+                      {expandableContent && (
+                        <td className="px-4 sm:px-6 py-4 w-8">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRowToggle(item);
+                            }}
+                            className="text-gray-400 hover:text-gray-600 focus:outline-none"
+                          >
+                            {isExpanded ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </button>
+                        </td>
+                      )}
+                      {columns.map((column) => (
+                        <td
+                          key={column.key}
+                          className={`px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
+                            column.className || ''
+                          }`}
+                        >
+                          {column.render(item)}
+                        </td>
+                      ))}
+                    </tr>
+                    {expandableContent && isExpanded && (
+                      <tr key={`${itemId}-expanded`}>
+                        <td colSpan={columns.length + 1} className="px-4 sm:px-6 py-4 bg-gray-50">
+                          {expandableContent(item)}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

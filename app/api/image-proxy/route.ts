@@ -41,14 +41,25 @@ export async function GET(request: NextRequest) {
     }
 
     // Validate URL to prevent SSRF attacks
-    if (!imageUrl.startsWith('https://firebasestorage.googleapis.com/')) {
+    if (!imageUrl.startsWith('https://firebasestorage.googleapis.com/') && 
+        !imageUrl.startsWith('https://lh3.googleusercontent.com/') &&
+        !imageUrl.startsWith('https://lh4.googleusercontent.com/') &&
+        !imageUrl.startsWith('https://lh5.googleusercontent.com/') &&
+        !imageUrl.startsWith('https://lh6.googleusercontent.com/')) {
       return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 })
     }
 
     // Additional URL validation
     try {
       const url = new URL(imageUrl)
-      if (url.hostname !== 'firebasestorage.googleapis.com') {
+      const allowedHosts = [
+        'firebasestorage.googleapis.com',
+        'lh3.googleusercontent.com',
+        'lh4.googleusercontent.com', 
+        'lh5.googleusercontent.com',
+        'lh6.googleusercontent.com'
+      ]
+      if (!allowedHosts.includes(url.hostname)) {
         return NextResponse.json({ error: 'Invalid hostname' }, { status: 400 })
       }
     } catch {

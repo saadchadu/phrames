@@ -71,7 +71,7 @@ service cloud.firestore {
     
     // Campaigns collection
     match /campaigns/{campaignId} {
-      // TEMPORARY: Open read access for debugging
+      // Anyone can read public campaigns
       allow read: if true;
       
       // Only authenticated users can create campaigns
@@ -89,6 +89,13 @@ service cloud.firestore {
                       // Prevent modification of payment fields and free campaign flag
                       !request.resource.data.diff(resource.data).affectedKeys()
                         .hasAny(['isActive', 'expiresAt', 'planType', 'amountPaid', 'paymentId', 'lastPaymentAt', 'isFreeCampaign']);
+      
+      // Allow anyone to update supportersCount (for tracking supporters)
+      // This is needed for the supporters API to work
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['supportersCount']) &&
+                      request.resource.data.supportersCount is int &&
+                      request.resource.data.supportersCount >= 0 &&
+                      request.resource.data.supportersCount > resource.data.supportersCount;
       
       // Only the campaign owner can delete their campaign
       allow delete: if isAuthenticated() && isOwner(resource.data.createdBy);

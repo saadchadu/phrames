@@ -18,7 +18,8 @@
     "delete-all-except": "ts-node --project tsconfig.scripts.json scripts/delete-all-except.ts",
     "check-user": "ts-node --project tsconfig.scripts.json scripts/check-current-user.ts",
     "cleanup-inactive": "ts-node --project tsconfig.scripts.json scripts/cleanup-inactive-campaigns.ts",
-    "fix-supporters": "ts-node --project tsconfig.scripts.json scripts/fix-supporters-count.ts"
+    "fix-supporters": "ts-node --project tsconfig.scripts.json scripts/fix-supporters-count.ts",
+    "check-stuck-campaigns": "ts-node --project tsconfig.scripts.json scripts/check-stuck-campaigns.ts"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
