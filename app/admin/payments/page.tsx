@@ -389,7 +389,7 @@ function PaymentsContent() {
         </div>
         <ExpandableDataTable
           columns={columns}
-          data={(data?.payments || []).filter(payment => 
+          data={(data?.payments || []).filter((payment: any) => 
             !['b2c6f3SIoWx4nL2phwVx', 'rmwLGEzN88TyWwJ5tWHf'].includes(payment.id)
           )}
           keyExtractor={(payment) => payment.id}
