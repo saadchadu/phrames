@@ -244,7 +244,6 @@ export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
     let querySnapshot
     try {
       querySnapshot = await getDocs(q)
-      console.log('getPublicActiveCampaigns: Query successful, found:', querySnapshot.size, 'campaigns')
     } catch (orderError) {
       console.warn('getPublicActiveCampaigns: OrderBy query failed, trying without ordering:', orderError)
       // Fallback: query without ordering if index doesn't exist
@@ -553,7 +552,6 @@ export const getTrendingCampaigns = async (limit: number = 8): Promise<Campaign[
     
     // If no campaigns have trending scores yet, fall back to supporters count
     if (campaigns.length === 0 || campaigns.every(c => !c.trendingScore)) {
-      console.log('No trending scores found, falling back to supporters count sorting')
       const fallbackCampaigns = await getPublicActiveCampaigns()
       return fallbackCampaigns
         .sort((a, b) => (b.supportersCount || 0) - (a.supportersCount || 0))
@@ -825,9 +823,7 @@ export const activateFreeCampaign = async (campaignId: string, userId: string): 
       return { error: 'User not authenticated' }
     }
     
-    console.log('activateFreeCampaign: Getting ID token...')
     const idToken = await user.getIdToken()
-    console.log('activateFreeCampaign: ID token obtained, calling API...')
     
     // Call the API route to activate the free campaign
     const response = await fetch('/api/campaigns/activate-free', {

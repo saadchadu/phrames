@@ -57,9 +57,7 @@ export default function CampaignPage() {
 
   const loadCampaign = async () => {
     try {
-      console.log('Loading campaign with slug:', slug)
       const campaignData = await getCampaignBySlug(slug)
-      console.log('Campaign data loaded:', campaignData)
       
       // Check if campaign is active and not expired
       if (campaignData) {
@@ -67,7 +65,6 @@ export default function CampaignPage() {
         
         // Check if campaign is active
         if (!isActive) {
-          console.log('Campaign is inactive')
           setCampaign(null) // Will show inactive message
           setLoading(false)
           return
@@ -78,7 +75,6 @@ export default function CampaignPage() {
         const isExpired = hasExpiry && campaignData.expiresAt.toDate() < new Date()
         
         if (isExpired) {
-          console.log('Campaign is expired')
           setCampaign(null) // Will show inactive message
           setLoading(false)
           return
@@ -102,7 +98,6 @@ export default function CampaignPage() {
           try {
             await incrementCampaignVisit(campaignData.id)
             sessionStorage.setItem(visitKey, 'true')
-            console.log('Campaign visit tracked')
           } catch (error) {
             console.error('Error tracking visit:', error)
             // Don't block page load on tracking error
@@ -118,7 +113,6 @@ export default function CampaignPage() {
 
   const renderUserImageCanvas = useCallback(async (canvas: HTMLCanvasElement, imageUrl: string, currentTransform: ImageTransform) => {
     if (!canvas || !imageUrl) {
-      console.log('Missing requirements for user image canvas render:', { canvas: !!canvas, imageUrl: !!imageUrl })
       return
     }
 
@@ -136,7 +130,6 @@ export default function CampaignPage() {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
     try {
-      console.log('Rendering user image on canvas')
       
       // Load user image
       const userImg = new Image()
@@ -144,7 +137,6 @@ export default function CampaignPage() {
       
       await new Promise<void>((resolve, reject) => {
         userImg.onload = () => {
-          console.log('User image loaded:', userImg.width, 'x', userImg.height)
           resolve()
         }
         userImg.onerror = (e) => {
@@ -164,7 +156,6 @@ export default function CampaignPage() {
       
       // Draw user image
       ctx.drawImage(userImg, -userImg.width / 2, -userImg.height / 2)
-      console.log('User image drawn on canvas')
       
       // Restore context
       ctx.restore()
@@ -176,7 +167,6 @@ export default function CampaignPage() {
 
   const renderFinalCanvas = useCallback(async (canvas: HTMLCanvasElement, imageUrl: string, currentTransform: ImageTransform, isHighRes = false) => {
     if (!canvas || !imageUrl || !campaign?.frameURL) {
-      console.log('Missing requirements for final canvas render:', { canvas: !!canvas, imageUrl: !!imageUrl, frameURL: !!campaign?.frameURL })
       return
     }
 
@@ -195,8 +185,6 @@ export default function CampaignPage() {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
     try {
-      console.log('🎯 Starting STITCHED frame render with size:', canvasWidth, 'x', canvasHeight)
-      console.log('Frame URL being used:', campaign.frameURL)
       
       // Load frame image FIRST to get its dimensions and structure
       const frameImg = new Image()
@@ -204,7 +192,6 @@ export default function CampaignPage() {
       
       await new Promise<void>((resolve, reject) => {
         frameImg.onload = () => {
-          console.log('✅ Frame image loaded for stitching:', frameImg.width, 'x', frameImg.height)
           resolve()
         }
         frameImg.onerror = (e) => {
@@ -220,7 +207,6 @@ export default function CampaignPage() {
       
       await new Promise<void>((resolve, reject) => {
         userImg.onload = () => {
-          console.log('✅ User image loaded for stitching:', userImg.width, 'x', userImg.height)
           resolve()
         }
         userImg.onerror = (e) => {
@@ -243,21 +229,16 @@ export default function CampaignPage() {
       
       // Draw user image as background
       ctx.drawImage(userImg, -userImg.width / 2, -userImg.height / 2)
-      console.log('✅ User image drawn as background layer')
       
       ctx.restore()
 
       // STEP 2: Draw frame ON TOP (foreground layer with transparency)
       ctx.globalCompositeOperation = 'source-over'
       ctx.drawImage(frameImg, 0, 0, canvasWidth, canvasHeight)
-      console.log('✅ Frame drawn on top with transparency')
-      
-      console.log('🎉 STITCHED frame render complete: Frame with user photo in transparent areas')
 
     } catch (error) {
       console.error('❌ Error rendering final canvas:', error)
       // Fallback: just draw the user image if frame fails
-      console.log('🔄 Attempting fallback render with just user image...')
       try {
         const userImg = new Image()
         await new Promise<void>((resolve, reject) => {
@@ -278,7 +259,6 @@ export default function CampaignPage() {
         ctx.drawImage(userImg, -userImg.width / 2, -userImg.height / 2)
         ctx.restore()
         
-        console.log('⚠️ Fallback render completed (user image only)')
       } catch (fallbackError) {
         console.error('❌ Fallback render also failed:', fallbackError)
       }
@@ -413,7 +393,6 @@ export default function CampaignPage() {
     setProcessing(true)
     
     try {
-      console.log('🎯 Creating single canvas with frame + user photo...')
       
       // Create final canvas for download with correct aspect ratio
       const canvas = document.createElement('canvas')
@@ -434,7 +413,6 @@ export default function CampaignPage() {
       
       await new Promise<void>((resolve, reject) => {
         userImg.onload = () => {
-          console.log('✅ User image loaded for final canvas')
           resolve()
         }
         userImg.onerror = reject
@@ -456,18 +434,15 @@ export default function CampaignPage() {
       ctx.drawImage(userImg, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight)
       
       ctx.restore()
-      console.log('✅ User photo drawn with exact preview positioning')
 
       // Step 2: Load and draw frame PNG via proxy (FOREGROUND LAYER with transparency)
       const frameImg = new Image()
       const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(campaign.frameURL)}`
-      console.log('🔄 Loading frame via proxy:', proxyUrl)
       
       frameImg.crossOrigin = 'anonymous'
       
       await new Promise<void>((resolve, reject) => {
         frameImg.onload = () => {
-          console.log('✅ Frame PNG loaded via proxy, size:', frameImg.width, 'x', frameImg.height)
           resolve()
         }
         frameImg.onerror = async (e) => {
@@ -476,7 +451,6 @@ export default function CampaignPage() {
           // Fallback: try direct URL without crossOrigin
           const fallbackImg = new Image()
           fallbackImg.onload = () => {
-            console.log('✅ Frame loaded via fallback')
             // Copy properties to main image
             frameImg.width = fallbackImg.width
             frameImg.height = fallbackImg.height
@@ -499,7 +473,6 @@ export default function CampaignPage() {
 
       // Draw frame PNG on top (transparent areas will show user photo)
       ctx.drawImage(frameImg, 0, 0, canvasWidth, canvasHeight)
-      console.log('✅ Frame PNG drawn on top - transparent areas show user photo')
 
       // Step 3: Download the single combined image using toBlob (handles tainted canvas)
       canvas.toBlob((blob) => {
@@ -508,8 +481,6 @@ export default function CampaignPage() {
           alert('Error generating image. Please try again.')
           return
         }
-        
-        console.log('✅ Blob created successfully, size:', blob.size)
         
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
@@ -521,7 +492,6 @@ export default function CampaignPage() {
         // Clean up the object URL
         setTimeout(() => URL.revokeObjectURL(url), 100)
         
-        console.log('🎉 Single combined image downloaded!')
       }, 'image/png', 1.0)
 
       // Add supporter (with deduplication) and track download
@@ -548,15 +518,12 @@ export default function CampaignPage() {
           if (result.success && result.isNewSupporter) {
             // Only increment UI count if this is a new supporter
             setCampaign(prev => prev ? { ...prev, supportersCount: prev.supportersCount + 1 } : null)
-            console.log('✅ New supporter added via API')
             
             // Force refresh campaign stats after a short delay
             setTimeout(() => {
-              console.log('🔄 Force refreshing campaign data...')
               loadCampaign()
             }, 1000)
           } else if (result.success) {
-            console.log('ℹ️ Existing supporter - download counted but not added to supporters count')
           } else {
             console.error('❌ API returned error:', result.error)
           }
@@ -568,7 +535,6 @@ export default function CampaignPage() {
         // Track download for analytics
         try {
           await incrementCampaignDownload(campaign.id)
-          console.log('Campaign download tracked')
         } catch (error) {
           console.error('Error tracking download:', error)
           // Don't block download on tracking error

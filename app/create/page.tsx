@@ -130,7 +130,6 @@ export default function CreateCampaignPage() {
         campaignPayload.description = formData.description.trim()
       }
       
-      console.log('Creating campaign with payload:', campaignPayload)
       const { id, error: createError } = await createCampaign(campaignPayload)
 
       if (createError) {
@@ -138,14 +137,12 @@ export default function CreateCampaignPage() {
         throw new Error(createError)
       }
 
-      console.log('Campaign created successfully with ID:', id)
       
       // Check if user is eligible for free campaign
       const isEligibleForFree = await checkFreeCampaignEligibility(user.uid)
       
       if (isEligibleForFree) {
         // Activate as free campaign
-        console.log('User eligible for free campaign, activating...')
         const { error: activationError } = await activateFreeCampaign(id!, user.uid)
         
         if (activationError) {
@@ -153,14 +150,12 @@ export default function CreateCampaignPage() {
           throw new Error(activationError)
         }
         
-        console.log('Free campaign activated successfully')
         setLoading(false)
         
         // Show success message and redirect
         router.push('/dashboard?freeCampaign=true')
       } else {
         // User needs to pay - show payment modal
-        console.log('User needs to pay for campaign')
         setCreatedCampaignId(id)
         setShowPaymentModal(true)
       }

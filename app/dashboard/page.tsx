@@ -59,11 +59,9 @@ function DashboardContent() {
 
   const loadCampaigns = async (isRefresh = false) => {
     if (!user) {
-      console.log('No user found, skipping campaign load')
       return
     }
     
-    console.log('Loading campaigns for user:', user.uid)
     if (isRefresh) {
       setRefreshing(true)
     } else {
@@ -71,7 +69,6 @@ function DashboardContent() {
     }
     try {
       const userCampaigns = await getUserCampaigns(user.uid)
-      console.log('Loaded campaigns:', userCampaigns)
       setCampaigns(userCampaigns)
       if (isRefresh) {
         toast('Campaigns refreshed', 'success')

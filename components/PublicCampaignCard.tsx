@@ -27,7 +27,6 @@ export default function PublicCampaignCard({ campaign, onClick }: PublicCampaign
       setImageError(false) // Reset image error when fetching new publisher
       if (campaign.createdBy) {
         const profile = await getUserProfile(campaign.createdBy)
-        console.log('Publisher profile:', profile) // Debug log
         setPublisher(profile)
       }
       setLoading(false)
@@ -81,21 +80,27 @@ export default function PublicCampaignCard({ campaign, onClick }: PublicCampaign
               {/* Creator Photo */}
               {(publisher?.photoURL || publisher?.avatarURL) && !imageError ? (
                 <div className="w-4 h-4 flex-shrink-0 rounded-full overflow-hidden">
-                  <Image
-                    src={
-                      (publisher.photoURL || publisher.avatarURL)?.startsWith('https://lh') 
-                        ? `/api/image-proxy?url=${encodeURIComponent(publisher.photoURL || publisher.avatarURL || '')}`
-                        : publisher.photoURL || publisher.avatarURL || ''
-                    }
-                    alt={publisher.displayName || 'Creator'}
-                    width={16}
-                    height={16}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.log('Image load error:', publisher.photoURL || publisher.avatarURL, e)
-                      setImageError(true)
-                    }}
-                  />
+                  {(publisher.photoURL || publisher.avatarURL)?.startsWith('https://lh') ? (
+                    <img
+                      src={`/api/image-proxy?url=${encodeURIComponent(publisher.photoURL || publisher.avatarURL || '')}`}
+                      alt={publisher.displayName || 'Creator'}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        setImageError(true)
+                      }}
+                    />
+                  ) : (
+                    <Image
+                      src={publisher.photoURL || publisher.avatarURL || ''}
+                      alt={publisher.displayName || 'Creator'}
+                      width={16}
+                      height={16}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        setImageError(true)
+                      }}
+                    />
+                  )}
                 </div>
               ) : (
                 <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">

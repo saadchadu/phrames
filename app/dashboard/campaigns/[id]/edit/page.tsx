@@ -158,14 +158,12 @@ export default function EditCampaignPage() {
         updateData.description = formData.description.trim()
       }
 
-      console.log('Updating campaign with data:', updateData)
       const { error: updateError } = await updateCampaign(campaignId, updateData)
 
       if (updateError) {
         throw new Error(updateError)
       }
 
-      console.log('Campaign updated successfully')
       // Redirect to dashboard
       router.push('/dashboard')
     } catch (error: any) {

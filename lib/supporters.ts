@@ -317,7 +317,6 @@ export const fixAllCampaignsSupportersCount = async (): Promise<{ success: boole
           batchCount++
           fixed++
           
-          console.log(`Fixed campaign ${campaignId}: ${currentCount} -> ${actualCount}`)
         }
         
         // Commit batch every 500 operations (Firestore limit)
@@ -369,7 +368,6 @@ export const cleanupOrphanedSupporters = async (): Promise<{ success: boolean; c
           batchCount++
           cleaned++
           
-          console.log(`Cleaned orphaned supporter record for campaign ${campaignId}`)
         }
         
         // Commit batch every 500 operations

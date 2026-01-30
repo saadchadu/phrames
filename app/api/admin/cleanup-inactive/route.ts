@@ -35,9 +35,6 @@ export async function POST(request: NextRequest) {
       deleteExpired = true 
     } = body
 
-    console.log('🧹 Manual inactive campaign cleanup triggered by admin:', decodedToken.uid)
-    console.log('Parameters:', { dryRun, sendReminders, deleteExpired })
-
     // Implement cleanup logic directly here
     const now = new Date()
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000))

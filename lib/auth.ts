@@ -142,7 +142,6 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
     const result = await createUserWithEmailAndPassword(auth, email, password)
     
     // Email verification removed - not needed
-    console.log('User created successfully:', email)
     
     // Create user profile in Firestore with custom data
     await createUserProfile(result.user, displayName, photoURL)

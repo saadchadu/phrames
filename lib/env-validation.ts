@@ -104,7 +104,6 @@ export function validateAndLogEnvironment(): void {
       console.error('   Please check .env.local and ensure all required variables are set.\n')
     }
   } else {
-    console.log('✅ Environment configuration validated successfully')
   }
 }
 
