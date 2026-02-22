@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase'
 import Link from 'next/link'
 import { Download, Eye, Calendar, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react'
 import { toast } from '@/components/ui/toaster'
+import InvoiceDownloadToast from '@/components/pdf/InvoiceDownloadToast'
 
 interface Payment {
   id: string
@@ -28,6 +29,7 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'SUCCESS' | 'FAILED'>('all')
   const [downloading, setDownloading] = useState<string | null>(null)
+  const [showToast, setShowToast] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -77,7 +79,8 @@ export default function PaymentsPage() {
   const handleDownloadInvoice = async (paymentId: string, invoiceNumber: string) => {
     try {
       setDownloading(paymentId)
-      
+      setShowToast(true)
+
       const token = await user?.getIdToken()
       if (!token) {
         toast('Authentication required', 'error')
@@ -111,6 +114,7 @@ export default function PaymentsPage() {
     } catch (error: any) {
       console.error('Error downloading invoice:', error)
       toast(error.message || 'Failed to download invoice', 'error')
+      setShowToast(false)
     } finally {
       setDownloading(null)
     }
@@ -130,7 +134,7 @@ export default function PaymentsPage() {
   const getStatusBadge = (status: string) => {
     const normalizedStatus = status.toUpperCase()
     const baseClasses = 'px-3 py-1.5 rounded-lg text-xs font-semibold'
-    
+
     if (normalizedStatus === 'SUCCESS') {
       return <span className={`${baseClasses} bg-[#f2fff2] text-secondary border border-secondary/20`}>Success</span>
     } else if (normalizedStatus === 'FAILED') {
@@ -188,31 +192,28 @@ export default function PaymentsPage() {
         <div className="mb-6 flex gap-2">
           <button
             onClick={() => setFilter('all')}
-            className={`px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition-all shadow-sm ${
-              filter === 'all'
-                ? 'bg-secondary text-primary'
-                : 'bg-white text-primary/70 hover:bg-gray-50 border border-[#00240020]'
-            }`}
+            className={`px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition-all shadow-sm ${filter === 'all'
+              ? 'bg-secondary text-primary'
+              : 'bg-white text-primary/70 hover:bg-gray-50 border border-[#00240020]'
+              }`}
           >
             All
           </button>
           <button
             onClick={() => setFilter('SUCCESS')}
-            className={`px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition-all shadow-sm ${
-              filter === 'SUCCESS'
-                ? 'bg-secondary text-primary'
-                : 'bg-white text-primary/70 hover:bg-gray-50 border border-[#00240020]'
-            }`}
+            className={`px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition-all shadow-sm ${filter === 'SUCCESS'
+              ? 'bg-secondary text-primary'
+              : 'bg-white text-primary/70 hover:bg-gray-50 border border-[#00240020]'
+              }`}
           >
             Success
           </button>
           <button
             onClick={() => setFilter('FAILED')}
-            className={`px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition-all shadow-sm ${
-              filter === 'FAILED'
-                ? 'bg-secondary text-primary'
-                : 'bg-white text-primary/70 hover:bg-gray-50 border border-[#00240020]'
-            }`}
+            className={`px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition-all shadow-sm ${filter === 'FAILED'
+              ? 'bg-secondary text-primary'
+              : 'bg-white text-primary/70 hover:bg-gray-50 border border-[#00240020]'
+              }`}
           >
             Failed
           </button>
@@ -229,7 +230,7 @@ export default function PaymentsPage() {
                 {filter === 'all' ? 'No payments yet' : `No ${filter.toLowerCase()} payments`}
               </h3>
               <p className="text-primary/50 text-sm sm:text-base font-normal leading-normal text-center max-w-md px-4">
-                {filter === 'all' 
+                {filter === 'all'
                   ? "You haven't made any payments yet."
                   : `You don't have any ${filter.toLowerCase()} payments.`
                 }
@@ -353,7 +354,7 @@ export default function PaymentsPage() {
                     </div>
                     {getStatusIcon(payment.status)}
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
                     <div>
                       <div className="text-primary/50 text-xs">Plan</div>
@@ -406,6 +407,13 @@ export default function PaymentsPage() {
           </div>
         )}
       </div>
+
+      {/* Download Toast */}
+      {showToast && (
+        <InvoiceDownloadToast
+          onComplete={() => setShowToast(false)}
+        />
+      )}
     </div>
   )
 }

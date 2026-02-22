@@ -32,17 +32,17 @@ export default function InvoiceDownloadToast({ onComplete }: InvoiceDownloadToas
         </div>
         <div>
           <div className="text-sm font-semibold">
-            Preparing Invoice PDF...
+            Your invoice PDF is getting ready...
           </div>
           <div className="text-xs mt-0.5 opacity-80">
-            Download starting in {count} second{count !== 1 ? 's' : ''}
+            Ready in {count} second{count !== 1 ? 's' : ''}
           </div>
         </div>
       </div>
-      
+
       {/* Progress bar */}
       <div className="mt-3 h-1 bg-white/20 rounded-full overflow-hidden">
-        <div 
+        <div
           className="h-full bg-secondary transition-all duration-1000 ease-linear"
           style={{ width: `${((5 - count) / 5) * 100}%` }}
         ></div>
