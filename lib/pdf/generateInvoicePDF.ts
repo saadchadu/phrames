@@ -16,10 +16,19 @@ export async function generateInvoicePDF({ paymentId, baseUrl }: GeneratePDFOpti
       // Use @sparticuz/chromium for Vercel
       const chromium = await import('@sparticuz/chromium')
       
+      // Set Chromium path for Vercel
+      const executablePath = await chromium.default.executablePath()
+      
       browser = await puppeteer.launch({
-        args: chromium.default.args,
+        args: [
+          ...chromium.default.args,
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+        ],
         defaultViewport: { width: 1280, height: 720 },
-        executablePath: await chromium.default.executablePath(),
+        executablePath,
         headless: true,
       })
     } else {

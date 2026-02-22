@@ -144,7 +144,12 @@ const nextConfig = {
   },
   
   // Server external packages
-  serverExternalPackages: ['firebase-admin', 'cashfree-pg'],
+  serverExternalPackages: ['firebase-admin', 'cashfree-pg', '@sparticuz/chromium', 'puppeteer-core'],
+  
+  // Experimental features for better Chromium support
+  experimental: {
+    serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+  },
   
   // Turbopack configuration (empty to silence warning)
   turbopack: {},
