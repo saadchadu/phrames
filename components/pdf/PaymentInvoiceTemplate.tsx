@@ -32,12 +32,9 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
   }
 
   return (
-    <html>
-      <head>
-        <meta charSet="utf-8" />
-        <title>Invoice {data.invoiceNumber}</title>
-        <style dangerouslySetInnerHTML={{
-          __html: `
+    <div className="invoice-print-wrapper">
+      <style dangerouslySetInnerHTML={{
+        __html: `
             @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
             
             @page {
@@ -52,13 +49,26 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
               -webkit-font-smoothing: antialiased;
             }
             
+            /* Hide global site elements for the PDF */
+            nav, header, footer:not(.invoice-footer) {
+              display: none !important;
+            }
+            
             body {
               font-family: 'Manrope', sans-serif;
               font-size: 10pt;
               line-height: 1.5;
               color: ${colors.text};
+              background: white !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              width: 100%;
+            }
+
+            .invoice-print-wrapper {
               background: white;
               width: 100%;
+              min-height: 100vh;
             }
             
             .page-container {
@@ -315,7 +325,7 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
               line-height: 1.5;
             }
 
-            .footer {
+            .invoice-footer {
               margin-top: auto;
               padding-top: 20px;
               border-top: 1px solid ${colors.border};
@@ -331,7 +341,7 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
               font-size: 8.5pt;
             }
 
-            .footer a {
+            .invoice-footer a {
               color: ${colors.text};
               text-decoration: none;
               font-weight: 600;
@@ -347,140 +357,137 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
                letter-spacing: 10px;
                opacity: 0.03;
                text-transform: uppercase;
-               z-index: -1;
+               z-index: 0;
                pointer-events: none;
                white-space: nowrap;
                user-select: none;
                color: ${colors.primary};
             }
           `}} />
-      </head>
-      <body>
-        <div className="page-container">
-          {/* Watermark */}
-          <div className="invoice-watermark">PAID</div>
+      <div className="page-container">
+        {/* Watermark */}
+        <div className="invoice-watermark">PAID</div>
 
-          {/* 1. Header */}
-          <div className="header">
-            <div className="header-left">
-              <div className="company-name-text">{data.companyDetails.name}</div>
-              <div className="address-line">{data.companyDetails.address}</div>
-              <div className="contact-line">
-                {data.companyDetails.email}
-                {data.companyDetails.gstin && ` | GSTIN: ${data.companyDetails.gstin}`}
-              </div>
-            </div>
-
-            <div className="header-right">
-              <div className="invoice-title">INVOICE</div>
-              <div className="invoice-meta">#{data.invoiceNumber}</div>
-              <div className="invoice-meta">
-                <span className="meta-label">Issued:</span> {formatDate(data.invoiceDate)}
-              </div>
-              <div className="invoice-meta">
-                <span className="meta-label">Order ID:</span> {data.orderId}
-              </div>
+        {/* 1. Header */}
+        <div className="header">
+          <div className="header-left">
+            <div className="company-name-text">{data.companyDetails.name}</div>
+            <div className="address-line">{data.companyDetails.address}</div>
+            <div className="contact-line">
+              {data.companyDetails.email}
+              {data.companyDetails.gstin && ` | GSTIN: ${data.companyDetails.gstin}`}
             </div>
           </div>
 
-          {/* 2. Billing & Amount */}
-          <div className="billing-wrapper">
-            <div className="bill-to">
-              <div className="section-label">BILL TO</div>
-              <div className="client-name">{data.userName}</div>
-              <div className="client-detail">
-                {data.userEmail}
-              </div>
+          <div className="header-right">
+            <div className="invoice-title">INVOICE</div>
+            <div className="invoice-meta">#{data.invoiceNumber}</div>
+            <div className="invoice-meta">
+              <span className="meta-label">Issued:</span> {formatDate(data.invoiceDate)}
             </div>
-
-            <div className="amount-due-box">
-              <div className="amount-label">Amount Paid</div>
-              <div className="amount-value">{formatCurrency(data.totalAmount)}</div>
+            <div className="invoice-meta">
+              <span className="meta-label">Order ID:</span> {data.orderId}
             </div>
           </div>
-
-          {/* 3. Items Table */}
-          <table className="items-table">
-            <thead>
-              <tr>
-                <th style={{ width: '50%' }}>Description</th>
-                <th className="center" style={{ width: '15%' }}>Qty</th>
-                <th className="right" style={{ width: '15%' }}>Rate</th>
-                <th className="right" style={{ width: '20%' }}>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <div className="item-desc">Campaign Activation - {data.planName}</div>
-                  <div className="item-meta">Campaign: {data.campaignName}</div>
-                  <div className="item-meta">Validity: {data.validityDays} days</div>
-                  <div className="item-meta">Activation: {formatDate(data.activationDate)}</div>
-                  {data.expiryDate && (
-                    <div className="item-meta">Expires: {formatDate(data.expiryDate)}</div>
-                  )}
-                </td>
-                <td className="center">1</td>
-                <td className="right">{formatCurrency(data.amount)}</td>
-                <td className="right">{formatCurrency(data.amount)}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* 4. Summary Section */}
-          <div className="summary-wrapper">
-            <div className="summary-block">
-              <div className="summary-row">
-                <span className="summary-label">Subtotal</span>
-                <span className="summary-value">{formatCurrency(data.amount)}</span>
-              </div>
-
-              {data.gstRate > 0 && (
-                <div className="summary-row">
-                  <span className="summary-label">GST ({data.gstRate}%)</span>
-                  <span className="summary-value">{formatCurrency(data.gstAmount)}</span>
-                </div>
-              )}
-
-              <div className="summary-row total">
-                <span className="summary-label" style={{ fontWeight: 700 }}>TOTAL</span>
-                <span className="summary-total-value">{formatCurrency(data.totalAmount)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 5. Terms & Payment */}
-          <div className="bottom-section">
-            <div className="terms-payment-grid">
-              <div className="terms-column">
-                <div className="section-label" style={{ color: colors.accent }}>Payment Received</div>
-                <div className="terms-text" style={{ color: colors.accent, fontWeight: 500, marginBottom: '16px' }}>
-                  Thank you for your business! This invoice has been fully paid.
-                </div>
-
-                <div className="section-label">Terms & Conditions</div>
-                <div className="terms-text">
-                  This is a computer generated invoice and requires no signature.<br />
-                  Payment ID: {data.paymentId}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 6. Footer */}
-          <div className="footer">
-            <div className="footer-inner">
-              <div>
-                System-generated invoice for {data.companyDetails.name}
-              </div>
-              <div>
-                Powered by <a href="https://phrames.cleffon.com" target="_blank">Phrames</a>
-              </div>
-            </div>
-          </div>
-
         </div>
-      </body>
-    </html>
+
+        {/* 2. Billing & Amount */}
+        <div className="billing-wrapper">
+          <div className="bill-to">
+            <div className="section-label">BILL TO</div>
+            <div className="client-name">{data.userName}</div>
+            <div className="client-detail">
+              {data.userEmail}
+            </div>
+          </div>
+
+          <div className="amount-due-box">
+            <div className="amount-label">Amount Paid</div>
+            <div className="amount-value">{formatCurrency(data.totalAmount)}</div>
+          </div>
+        </div>
+
+        {/* 3. Items Table */}
+        <table className="items-table">
+          <thead>
+            <tr>
+              <th style={{ width: '50%' }}>Description</th>
+              <th className="center" style={{ width: '15%' }}>Qty</th>
+              <th className="right" style={{ width: '15%' }}>Rate</th>
+              <th className="right" style={{ width: '20%' }}>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div className="item-desc">Campaign Activation - {data.planName}</div>
+                <div className="item-meta">Campaign: {data.campaignName}</div>
+                <div className="item-meta">Validity: {data.validityDays} days</div>
+                <div className="item-meta">Activation: {formatDate(data.activationDate)}</div>
+                {data.expiryDate && (
+                  <div className="item-meta">Expires: {formatDate(data.expiryDate)}</div>
+                )}
+              </td>
+              <td className="center">1</td>
+              <td className="right">{formatCurrency(data.amount)}</td>
+              <td className="right">{formatCurrency(data.amount)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* 4. Summary Section */}
+        <div className="summary-wrapper">
+          <div className="summary-block">
+            <div className="summary-row">
+              <span className="summary-label">Subtotal</span>
+              <span className="summary-value">{formatCurrency(data.amount)}</span>
+            </div>
+
+            {data.gstRate > 0 && (
+              <div className="summary-row">
+                <span className="summary-label">GST ({data.gstRate}%)</span>
+                <span className="summary-value">{formatCurrency(data.gstAmount)}</span>
+              </div>
+            )}
+
+            <div className="summary-row total">
+              <span className="summary-label" style={{ fontWeight: 700 }}>TOTAL</span>
+              <span className="summary-total-value">{formatCurrency(data.totalAmount)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 5. Terms & Payment */}
+        <div className="bottom-section">
+          <div className="terms-payment-grid">
+            <div className="terms-column">
+              <div className="section-label" style={{ color: colors.accent }}>Payment Received</div>
+              <div className="terms-text" style={{ color: colors.accent, fontWeight: 500, marginBottom: '16px' }}>
+                Thank you for your business! This invoice has been fully paid.
+              </div>
+
+              <div className="section-label">Terms & Conditions</div>
+              <div className="terms-text">
+                This is a computer generated invoice and requires no signature.<br />
+                Payment ID: {data.paymentId}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 6. Footer */}
+        <div className="invoice-footer">
+          <div className="footer-inner">
+            <div>
+              System-generated invoice for {data.companyDetails.name}
+            </div>
+            <div>
+              Powered by <a href="https://phrames.cleffon.com" target="_blank">Phrames</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
   )
 }
