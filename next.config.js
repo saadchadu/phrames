@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  
+
   // Security and SEO headers
   async headers() {
     return [
@@ -67,7 +67,7 @@ const nextConfig = {
       },
     ]
   },
-  
+
   // Redirects for SEO
   async redirects() {
     return [
@@ -83,7 +83,7 @@ const nextConfig = {
       },
     ]
   },
-  
+
   // Ensure proper handling of environment variables
   env: {
     NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -94,7 +94,7 @@ const nextConfig = {
     NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
-  
+
   // Image optimization settings for better SEO and performance
   images: {
     formats: ['image/webp', 'image/avif'],
@@ -120,16 +120,16 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     unoptimized: false,
   },
-  
+
   // Compression for better performance
   compress: true,
-  
+
   // Generate ETags for caching
   generateEtags: true,
-  
+
   // Power by header removal for security
   poweredByHeader: false,
-  
+
   // Webpack configuration for better compatibility
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -142,21 +142,21 @@ const nextConfig = {
     }
     return config
   },
-  
+
   // Server external packages
-  serverExternalPackages: ['firebase-admin', 'cashfree-pg', '@sparticuz/chromium', 'puppeteer-core'],
-  
+  serverExternalPackages: ['firebase-admin', 'cashfree-pg', '@sparticuz/chromium-min', 'puppeteer-core'],
+
   // Experimental features for better Chromium support
   experimental: {
-    serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+    serverComponentsExternalPackages: ['@sparticuz/chromium-min', 'puppeteer-core'],
     outputFileTracingIncludes: {
       '/api/**/*': ['./node_modules/@sparticuz/chromium/bin/**/*'],
     },
   },
-  
+
   // Turbopack configuration (empty to silence warning)
   turbopack: {},
-  
+
 }
 
 module.exports = nextConfig

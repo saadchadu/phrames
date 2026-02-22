@@ -8,18 +8,20 @@ interface GeneratePDFOptions {
 
 export async function generateInvoicePDF({ paymentId, baseUrl }: GeneratePDFOptions): Promise<Buffer> {
   let browser: Browser | null = null
-  
+
   try {
     // Determine if we're in production (Vercel)
     const isProduction = process.env.NODE_ENV === 'production' && process.env.VERCEL
-    
+
     if (isProduction) {
-      // Use @sparticuz/chromium for Vercel
-      const chromium = await import('@sparticuz/chromium')
-      
-      // Get executable path
-      const executablePath = await chromium.default.executablePath()
-      
+      // Use @sparticuz/chromium-min for Vercel
+      const chromium = await import('@sparticuz/chromium-min')
+
+      // Get executable path using external link
+      const executablePath = await chromium.default.executablePath(
+        'https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar'
+      )
+
       browser = await puppeteer.launch({
         args: [
           ...chromium.default.args,
@@ -49,18 +51,18 @@ export async function generateInvoicePDF({ paymentId, baseUrl }: GeneratePDFOpti
     }
 
     const page = await browser.newPage()
-    
+
     // Navigate to the print page with absolute URL
     const url = `${baseUrl}/invoice/${paymentId}/print`
-    
+
     await page.goto(url, {
       waitUntil: 'networkidle0',
       timeout: 30000,
     })
-    
+
     // Wait for fonts to load
     await page.evaluateHandle('document.fonts.ready')
-    
+
     // Generate PDF
     const pdfBuffer = await page.pdf({
       format: 'A4',
