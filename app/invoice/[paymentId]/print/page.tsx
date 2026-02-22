@@ -3,6 +3,7 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import PaymentInvoiceTemplate from '@/components/pdf/PaymentInvoiceTemplate'
 import type { InvoiceData } from '@/lib/invoice'
+import { COMPANY_DETAILS } from '@/lib/invoice'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -39,8 +40,9 @@ export default async function InvoicePrintPage({
 
     const paymentData = paymentDoc.data()!
 
-    // Check if payment was successful
-    if (paymentData.status !== 'SUCCESS' && paymentData.status !== 'success') {
+    // Check if payment was successful or refunded
+    const validStatuses = ['SUCCESS', 'success', 'REFUNDED', 'refunded', 'Refunded'];
+    if (!validStatuses.includes(paymentData.status)) {
       console.error('[Invoice Print] Payment not successful:', paymentData.status)
       notFound()
     }
@@ -108,11 +110,7 @@ export default async function InvoicePrintPage({
       totalAmount: paymentData.totalAmount || paymentData.amount,
       activationDate: paymentData.completedAt?.toDate() || new Date(),
       expiryDate: paymentData.expiresAt?.toDate() || null,
-      companyDetails: paymentData.companyDetails || {
-        name: 'Phrames',
-        email: 'support@cleffon.com',
-        address: 'Cleffon Design Studio, Second Floor, Center Point Building, Kannur, Kerala, India 670002',
-      }
+      companyDetails: COMPANY_DETAILS
     }
 
     return <PaymentInvoiceTemplate data={invoiceData} />

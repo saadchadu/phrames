@@ -3,6 +3,7 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { getAuth } from 'firebase-admin/auth'
 import { generateInvoicePDF } from '@/lib/pdf/generateInvoicePDF'
+import { COMPANY_DETAILS } from '@/lib/invoice'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -86,7 +87,7 @@ export async function GET(
     // Check if invoice data exists - if not, generate it now
     if (!paymentData.invoiceNumber) {
       // Generate invoice data for old payments
-      const { generateInvoiceNumber, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } = await import('@/lib/invoice')
+      const { generateInvoiceNumber, getPlanDisplayName, getPlanValidityDays } = await import('@/lib/invoice')
 
       const invoiceNumber = await generateInvoiceNumber()
 
