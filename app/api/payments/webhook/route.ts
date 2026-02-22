@@ -140,11 +140,10 @@ export async function POST(request: NextRequest) {
     // Parse webhook payload
     const payload = JSON.parse(rawBody)
 
-    // Log webhook received for debugging with full details
+    // Log webhook received for debugging
     const logMetadata: any = {
       hasSignature: !!signature,
       hasTimestamp: !!timestamp,
-      fullPayload: payload
     }
 
     // Only add fields if they exist (Firestore doesn't allow undefined)
@@ -157,7 +156,7 @@ export async function POST(request: NextRequest) {
       actorId: 'system',
       description: `Webhook received: ${payload.type || 'UNKNOWN'} for order ${payload.data?.order?.order_id || 'UNKNOWN'}`,
       metadata: logMetadata,
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
     })
 
     logWebhookReceived({

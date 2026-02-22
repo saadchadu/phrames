@@ -5,7 +5,7 @@
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug'
 
-export type EventType = 
+export type EventType =
   | 'payment_initiated'
   | 'payment_success'
   | 'payment_failed'
@@ -58,10 +58,15 @@ export function logEvent(
     ...context
   }
 
+  // Skip debug logs in production
+  if (process.env.NODE_ENV === 'production' && level === 'debug') {
+    return logEntry
+  }
+
   // Format for console output
   const prefix = getLogPrefix(level)
   const contextStr = context ? ` | ${JSON.stringify(context)}` : ''
-  
+
   switch (level) {
     case 'error':
       console.error(`${prefix} [${event}] ${message}${contextStr}`)
@@ -280,7 +285,7 @@ export function trackRequest() {
  */
 export function trackError() {
   errorRateTracker.recordError()
-  
+
   if (errorRateTracker.shouldAlert()) {
     logEvent('error', 'api_error', 'High error rate detected', {
       errorRate: errorRateTracker.getErrorRate()

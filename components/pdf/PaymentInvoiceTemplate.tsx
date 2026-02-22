@@ -5,368 +5,241 @@ interface PaymentInvoiceTemplateProps {
 }
 
 export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateProps) {
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }).format(date)
-  }
+  const formatDate = (date: Date) =>
+    new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(date)
 
-  const formatCurrency = (amount: number) => {
-    return `₹${amount.toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`
-  }
+  const formatCurrency = (amount: number) =>
+    `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-  // Design System Colors (Phrames)
   const colors = {
-    primary: '#002400', // Dark Green
-    accent: '#16A34A',  // Success Green
-    text: '#111827',    // Primary Text
-    secondary: '#6B7280', // Secondary Text
-    muted: '#9CA3AF',   // Muted Text
-    border: '#E5E7EB',  // Light Border
-    bgLight: '#f2fff2', // Light Phrames Green
+    primary: '#002400',
+    accent: '#16A34A',
+    text: '#111827',
+    secondary: '#6B7280',
+    muted: '#9CA3AF',
+    border: '#E5E7EB',
+    bgLight: '#f2fff2',
   }
 
   return (
     <div className="invoice-print-wrapper">
       <style dangerouslySetInnerHTML={{
         __html: `
-            @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-            
-            @page {
-              size: A4;
-              margin: 40px 50px;
-            }
-            
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-              -webkit-font-smoothing: antialiased;
-            }
-            
-            /* Hide global site elements for the PDF */
-            nav, header, footer:not(.invoice-footer) {
-              display: none !important;
-            }
-            
-            body {
-              font-family: 'Manrope', sans-serif;
-              font-size: 10pt;
-              line-height: 1.5;
-              color: ${colors.text};
-              background: white !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              width: 100%;
-            }
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
-            .invoice-print-wrapper {
-              background: white;
-              width: 100%;
-              min-height: 100vh;
-            }
-            
-            .page-container {
-              width: 100%;
-              max-width: 100%;
-              min-height: 900px;
-              margin: 0 auto;
-              padding: 0 0 60px 0;
-              position: relative;
-              display: flex;
-              flex-direction: column;
-            }
+        @page { size: A4; margin: 40px 50px; }
 
-            .header {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 50px;
-            }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
-            .header-left {
-              flex: 1;
-              padding-right: 20px;
-            }
+        nav, header, footer:not(.invoice-footer) { display: none !important; }
 
-            .header-right {
-              text-align: right;
-            }
+        body {
+          font-family: 'Manrope', sans-serif;
+          font-size: 10pt;
+          line-height: 1.5;
+          color: ${colors.text};
+          background: white !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100%;
+        }
 
-            .company-logo {
-              height: 28px;
-              width: auto;
-              margin-bottom: 24px;
-              display: block;
-            }
+        .invoice-print-wrapper { background: white; width: 100%; min-height: 100vh; }
 
-            .address-line {
-              font-size: 9pt;
-              color: ${colors.text};
-              margin-bottom: 4px;
-            }
+        .page-container {
+          width: 100%;
+          max-width: 100%;
+          min-height: 900px;
+          margin: 0 auto;
+          padding: 0 0 80px 0;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+        }
 
-            .contact-line {
-              font-size: 8.5pt;
-              color: ${colors.secondary};
-            }
+        /* ── HEADER ── */
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 44px;
+        }
 
-            .invoice-title {
-              font-size: 32pt;
-              font-weight: 800;
-              color: ${colors.primary};
-              line-height: 1;
-              margin-bottom: 12px;
-              letter-spacing: -0.02em;
-            }
+        .header-left { flex: 1; padding-right: 20px; }
 
-            .invoice-meta {
-              font-size: 9.5pt;
-              color: ${colors.text};
-              margin-bottom: 4px;
-            }
+        .header-right { text-align: right; flex-shrink: 0; }
 
-            .meta-label {
-              color: ${colors.secondary};
-              margin-right: 8px;
-            }
+        .company-logo { height: 26px; width: auto; margin-bottom: 16px; display: block; }
 
-            .billing-wrapper {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              margin-bottom: 40px;
-            }
+        .address-line { font-size: 9pt; color: ${colors.text}; line-height: 1.65; }
 
-            .bill-to {
-              flex: 1;
-              border-left: 3px solid ${colors.primary};
-              padding-left: 14px;
-            }
+        .contact-line { font-size: 8.5pt; color: ${colors.secondary}; margin-top: 6px; }
 
-            .section-label {
-              font-size: 8pt;
-              font-weight: 700;
-              color: ${colors.muted};
-              text-transform: uppercase;
-              letter-spacing: 0.1em;
-              margin-bottom: 8px;
-            }
+        .invoice-title {
+          font-size: 34pt;
+          font-weight: 800;
+          color: ${colors.primary};
+          line-height: 1;
+          margin-bottom: 14px;
+          letter-spacing: -0.02em;
+        }
 
-            .client-name {
-              font-size: 11pt;
-              font-weight: 700;
-              color: ${colors.text};
-              margin-bottom: 4px;
-            }
+        .invoice-number { font-size: 10pt; font-weight: 700; color: ${colors.primary}; margin-bottom: 8px; }
 
-            .client-detail {
-              font-size: 9pt;
-              color: ${colors.secondary};
-              line-height: 1.4;
-            }
+        .invoice-meta { font-size: 9pt; color: ${colors.text}; margin-bottom: 3px; }
 
-            .amount-due-box {
-              background: ${colors.bgLight};
-              border: 1px solid #e0f2e0;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-              border-radius: 8px;
-              padding: 16px 24px;
-              text-align: right;
-              min-width: 200px;
-            }
+        .meta-label { color: ${colors.secondary}; margin-right: 6px; }
 
-            .amount-label {
-              font-size: 8pt;
-              font-weight: 700;
-              color: ${colors.secondary};
-              text-transform: uppercase;
-              margin-bottom: 4px;
-              letter-spacing: 0.05em;
-            }
+        /* ── BILLING ── */
+        .billing-wrapper {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 36px;
+          gap: 24px;
+        }
 
-            .amount-value {
-              font-size: 20pt;
-              font-weight: 800;
-              color: ${colors.primary};
-              letter-spacing: -0.02em;
-            }
+        .bill-to {
+          flex: 1;
+          border-left: 3px solid ${colors.primary};
+          padding-left: 14px;
+        }
 
-            .items-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 32px;
-            }
+        .section-label {
+          font-size: 7.5pt;
+          font-weight: 700;
+          color: ${colors.muted};
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          margin-bottom: 8px;
+        }
 
-            .items-table thead {
-              background: ${colors.primary};
-              color: white;
-              display: table-header-group;
-            }
+        .client-name { font-size: 11pt; font-weight: 700; color: ${colors.text}; margin-bottom: 3px; }
 
-            .items-table th {
-              padding: 12px 16px;
-              text-align: left;
-              font-size: 8pt;
-              font-weight: 700;
-              text-transform: uppercase;
-              letter-spacing: 0.08em;
-            }
+        .client-detail { font-size: 9pt; color: ${colors.secondary}; }
 
-            .items-table th.right {
-              text-align: right;
-            }
+        .amount-due-box {
+          background: ${colors.bgLight};
+          border: 1px solid #d1fad1;
+          border-radius: 8px;
+          padding: 14px 22px;
+          text-align: right;
+          min-width: 190px;
+          flex-shrink: 0;
+        }
 
-            .items-table th.center {
-              text-align: center;
-            }
+        .amount-label {
+          font-size: 7.5pt;
+          font-weight: 700;
+          color: ${colors.secondary};
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          margin-bottom: 4px;
+        }
 
-            .items-table tbody tr {
-              border-bottom: 1px solid ${colors.border};
-              page-break-inside: avoid;
-            }
+        .amount-value { font-size: 22pt; font-weight: 800; color: ${colors.primary}; letter-spacing: -0.02em; }
 
-            .items-table td {
-              padding: 16px 12px;
-              font-size: 9.5pt;
-              color: ${colors.text};
-              vertical-align: top;
-            }
+        /* ── TABLE ── */
+        .items-table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
 
-            .items-table td.right {
-              text-align: right;
-              font-variant-numeric: tabular-nums;
-            }
+        .items-table thead { background: ${colors.primary}; color: white; }
 
-            .items-table td.center {
-              text-align: center;
-            }
+        .items-table th {
+          padding: 11px 14px;
+          text-align: left;
+          font-size: 7.5pt;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
 
-            .item-desc {
-              font-weight: 600;
-              color: ${colors.primary};
-              font-size: 10.5pt;
-              margin-bottom: 4px;
-            }
-            
-            .item-meta {
-              font-size: 8.5pt;
-              color: ${colors.secondary};
-              margin-bottom: 2px;
-            }
+        .items-table th.right { text-align: right; }
+        .items-table th.center { text-align: center; }
 
-            .summary-wrapper {
-              margin-bottom: 48px;
-              margin-top: 40px;
-              page-break-inside: avoid;
-            }
+        .items-table tbody tr { border-bottom: 1px solid ${colors.border}; page-break-inside: avoid; }
 
-            .summary-block {
-              width: 320px;
-              margin-left: auto;
-            }
+        .items-table td { padding: 14px 14px; font-size: 9.5pt; color: ${colors.text}; vertical-align: top; }
+        .items-table td.right { text-align: right; font-variant-numeric: tabular-nums; }
+        .items-table td.center { text-align: center; }
 
-            .summary-row {
-              display: flex;
-              justify-content: space-between;
-              padding: 6px 0;
-              font-size: 9.5pt;
-            }
+        .item-desc { font-weight: 600; color: ${colors.primary}; font-size: 10pt; margin-bottom: 5px; }
+        .item-meta  { font-size: 8.5pt; color: ${colors.secondary}; line-height: 1.6; }
 
-            .summary-row.total {
-              margin-top: 10px;
-              padding-top: 10px;
-              border-top: 1px solid ${colors.border};
-            }
+        /* ── TOTAL ROW ── */
+        .total-wrapper { width: 280px; margin-left: auto; margin-top: 0; }
 
-            .summary-label {
-              color: ${colors.secondary};
-            }
+        .total-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          padding: 12px 14px;
+          border-top: 2px solid ${colors.primary};
+          margin-top: 4px;
+        }
 
-            .summary-value {
-              color: ${colors.text};
-              font-weight: 600;
-              font-variant-numeric: tabular-nums;
-            }
+        .total-label { font-size: 9pt; font-weight: 700; color: ${colors.primary}; text-transform: uppercase; letter-spacing: 0.06em; }
 
-            .summary-total-value {
-               font-size: 20pt;
-               font-weight: 800;
-               letter-spacing: -0.02em;
-               color: ${colors.primary};
-               line-height: 1;
-            }
+        .total-value { font-size: 18pt; font-weight: 800; color: ${colors.primary}; letter-spacing: -0.02em; }
 
-            .bottom-section {
-              margin-top: 40px;
-              page-break-inside: avoid;
-            }
+        /* ── BOTTOM ── */
+        .bottom-section { margin-top: 36px; page-break-inside: avoid; }
 
-            .terms-payment-grid {
-              display: grid;
-              grid-template-columns: 1fr auto;
-              gap: 40px;
-              align-items: start;
-            }
+        .payment-received-label {
+          font-size: 7.5pt;
+          font-weight: 700;
+          color: ${colors.accent};
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          margin-bottom: 4px;
+        }
 
-            .terms-column {
-               max-width: 80%; 
-            }
-            
-            .terms-text {
-              font-size: 9pt;
-              color: ${colors.secondary};
-              line-height: 1.5;
-            }
+        .payment-received-text { font-size: 9pt; color: ${colors.accent}; font-weight: 500; margin-bottom: 18px; }
 
-            .invoice-footer {
-              position: fixed;
-              bottom: 0;
-              left: 0;
-              right: 0;
-              padding: 12px 50px;
-              border-top: 1px solid ${colors.border};
-              background: white;
-              width: 100%;
-              page-break-inside: avoid;
-              z-index: 100;
-            }
-            
-            .footer-inner {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              color: ${colors.secondary};
-              font-size: 8.5pt;
-            }
+        .terms-label { font-size: 7.5pt; font-weight: 700; color: ${colors.muted}; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
 
-            .invoice-footer a {
-              color: ${colors.text};
-              text-decoration: none;
-              font-weight: 600;
-            }
-            
-            .invoice-watermark {
-               position: fixed;
-               top: 45%;
-               left: 50%;
-               transform: translate(-50%, -50%) rotate(-30deg);
-               font-size: 120px;
-               font-weight: 800;
-               letter-spacing: 10px;
-               opacity: 0.03;
-               text-transform: uppercase;
-               z-index: 0;
-               pointer-events: none;
-               white-space: nowrap;
-               user-select: none;
-               color: ${colors.primary};
-            }
-          `}} />
+        .terms-text { font-size: 8.5pt; color: ${colors.secondary}; line-height: 1.6; }
+
+        /* ── FOOTER ── */
+        .invoice-footer {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          padding: 10px 50px;
+          border-top: 1px solid ${colors.border};
+          background: white;
+          z-index: 100;
+        }
+
+        .footer-inner {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          color: ${colors.secondary};
+          font-size: 8pt;
+        }
+
+        .footer-inner a { color: ${colors.primary}; text-decoration: none; font-weight: 600; }
+
+        /* ── WATERMARK ── */
+        .invoice-watermark {
+          position: fixed;
+          top: 45%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(-30deg);
+          font-size: 110px;
+          font-weight: 800;
+          letter-spacing: 10px;
+          opacity: 0.035;
+          text-transform: uppercase;
+          z-index: 0;
+          pointer-events: none;
+          white-space: nowrap;
+          user-select: none;
+          color: ${colors.primary};
+        }
+      `}} />
+
       <div className="page-container">
         {/* Watermark */}
         <div className="invoice-watermark">PAID</div>
@@ -375,23 +248,25 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
         <div className="header">
           <div className="header-left">
             <img src="/logos/Logo-black.svg" className="company-logo" alt="Phrames" />
-            <div className="address-line">Cleffon Design Studio</div>
-            <div className="address-line">Second Floor, Center Point Building</div>
-            <div className="address-line">Kannur, Kerala, India 670002</div>
+            <div className="address-line">
+              Cleffon Design Studio<br />
+              Second Floor, Center Point Building<br />
+              Kannur, Kerala, India 670002
+            </div>
             <div className="contact-line">
               {data.companyDetails.email}
-              {data.companyDetails.gstin && ` | GSTIN: ${data.companyDetails.gstin}`}
+              {data.companyDetails.gstin && ` · GSTIN: ${data.companyDetails.gstin}`}
             </div>
           </div>
 
           <div className="header-right">
             <div className="invoice-title">INVOICE</div>
-            <div className="invoice-meta">#{data.invoiceNumber}</div>
+            <div className="invoice-number">#{data.invoiceNumber}</div>
             <div className="invoice-meta">
-              <span className="meta-label">Issued:</span> {formatDate(data.invoiceDate)}
+              <span className="meta-label">Issued:</span>{formatDate(data.invoiceDate)}
             </div>
             <div className="invoice-meta">
-              <span className="meta-label">Order ID:</span> {data.orderId}
+              <span className="meta-label">Order ID:</span>{data.orderId}
             </div>
           </div>
         </div>
@@ -399,16 +274,14 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
         {/* 2. Billing & Amount */}
         <div className="billing-wrapper">
           <div className="bill-to">
-            <div className="section-label">BILL TO</div>
+            <div className="section-label">Bill To</div>
             <div className="client-name">{data.userName}</div>
-            <div className="client-detail">
-              {data.userEmail}
-            </div>
+            <div className="client-detail">{data.userEmail}</div>
           </div>
 
           <div className="amount-due-box">
             <div className="amount-label">Amount Paid</div>
-            <div className="amount-value">{formatCurrency(data.totalAmount)}</div>
+            <div className="amount-value">{formatCurrency(data.amount)}</div>
           </div>
         </div>
 
@@ -416,16 +289,16 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
         <table className="items-table">
           <thead>
             <tr>
-              <th style={{ width: '50%' }}>Description</th>
-              <th className="center" style={{ width: '15%' }}>Qty</th>
-              <th className="right" style={{ width: '15%' }}>Rate</th>
-              <th className="right" style={{ width: '20%' }}>Amount</th>
+              <th style={{ width: '52%' }}>Description</th>
+              <th className="center" style={{ width: '12%' }}>Qty</th>
+              <th className="right" style={{ width: '18%' }}>Rate</th>
+              <th className="right" style={{ width: '18%' }}>Amount</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>
-                <div className="item-desc">Campaign Activation - {data.planName}</div>
+                <div className="item-desc">Campaign Activation — {data.planName}</div>
                 <div className="item-meta">Campaign: {data.campaignName}</div>
                 <div className="item-meta">Validity: {data.validityDays} days</div>
                 <div className="item-meta">Activation: {formatDate(data.activationDate)}</div>
@@ -434,57 +307,39 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
                 )}
               </td>
               <td className="center">1</td>
-              <td className="right">{formatCurrency(data.totalAmount)}</td>
-              <td className="right">{formatCurrency(data.totalAmount)}</td>
+              <td className="right">{formatCurrency(data.amount)}</td>
+              <td className="right">{formatCurrency(data.amount)}</td>
             </tr>
           </tbody>
         </table>
 
-        {/* 4. Summary Section */}
-        <div className="summary-wrapper">
-          <div className="summary-block">
-            <div className="summary-row">
-              <span className="summary-label">Subtotal</span>
-              <span className="summary-value">{formatCurrency(data.totalAmount)}</span>
-            </div>
-
-            <div className="summary-row total">
-              <span className="summary-label" style={{ fontWeight: 700 }}>TOTAL</span>
-              <span className="summary-total-value">{formatCurrency(data.totalAmount)}</span>
-            </div>
+        {/* 4. Total */}
+        <div className="total-wrapper">
+          <div className="total-row">
+            <span className="total-label">Total</span>
+            <span className="total-value">{formatCurrency(data.amount)}</span>
           </div>
         </div>
 
         {/* 5. Terms & Payment */}
         <div className="bottom-section">
-          <div className="terms-payment-grid">
-            <div className="terms-column">
-              <div className="section-label" style={{ color: colors.accent }}>Payment Received</div>
-              <div className="terms-text" style={{ color: colors.accent, fontWeight: 500, marginBottom: '16px' }}>
-                Thank you for your business! This invoice has been fully paid.
-              </div>
+          <div className="payment-received-label">Payment Received</div>
+          <div className="payment-received-text">Thank you for your business. This invoice has been fully paid.</div>
 
-              <div className="section-label">Terms & Conditions</div>
-              <div className="terms-text">
-                This is a computer generated invoice and requires no signature.<br />
-                Payment ID: {data.paymentId}
-              </div>
-            </div>
+          <div className="terms-label">Terms &amp; Conditions</div>
+          <div className="terms-text">
+            This is a computer-generated invoice and requires no signature.<br />
+            Payment ID: {data.paymentId}
           </div>
         </div>
 
         {/* 6. Footer */}
         <div className="invoice-footer">
           <div className="footer-inner">
-            <div>
-              System-generated invoice for {data.companyDetails.name}
-            </div>
-            <div>
-              Powered by <a href="https://phrames.cleffon.com" target="_blank">Phrames</a>
-            </div>
+            <span>System-generated invoice for {data.companyDetails.name}</span>
+            <span>Powered by <a href="https://phrames.cleffon.com" target="_blank" rel="noopener noreferrer">Phrames</a></span>
           </div>
         </div>
-
       </div>
     </div>
   )

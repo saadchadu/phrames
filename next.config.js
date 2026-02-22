@@ -1,90 +1,61 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
+  compress: true,
+  generateEtags: true,
 
-  // Security and SEO headers
+  // ── Security & SEO Headers ──────────────────────────────────────────────
   async headers() {
     return [
       {
         source: '/:path*',
         headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on'
-          },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload'
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()'
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
           {
             key: 'X-Robots-Tag',
-            value: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
-          }
+            value: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+          },
         ],
       },
+      // noindex private routes
       {
         source: '/api/:path*',
-        headers: [
-          {
-            key: 'X-Robots-Tag',
-            value: 'noindex, nofollow'
-          }
-        ],
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
       {
         source: '/dashboard/:path*',
-        headers: [
-          {
-            key: 'X-Robots-Tag',
-            value: 'noindex, nofollow'
-          }
-        ],
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
       {
         source: '/admin/:path*',
-        headers: [
-          {
-            key: 'X-Robots-Tag',
-            value: 'noindex, nofollow'
-          }
-        ],
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+      {
+        source: '/invoice/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
     ]
   },
 
-  // Redirects for SEO
+  // ── SEO Redirects ────────────────────────────────────────────────────────
   async redirects() {
     return [
-      {
-        source: '/home',
-        destination: '/',
-        permanent: true,
-      },
-      {
-        source: '/index',
-        destination: '/',
-        permanent: true,
-      },
+      { source: '/home', destination: '/', permanent: true },
+      { source: '/index', destination: '/', permanent: true },
     ]
   },
 
-  // Ensure proper handling of environment variables
+  // ── Public env passthrough ───────────────────────────────────────────────
   env: {
     NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -95,68 +66,38 @@ const nextConfig = {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   },
 
-  // Image optimization settings for better SEO and performance
+  // ── Image Optimisation ──────────────────────────────────────────────────
   images: {
-    formats: ['image/webp', 'image/avif'],
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-        port: '',
-        pathname: '/v0/b/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-        port: '',
-        pathname: '/**',
-      },
+      { protocol: 'https', hostname: 'firebasestorage.googleapis.com', pathname: '/v0/b/**' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
     ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60,
+    minimumCacheTTL: 3600,
     dangerouslyAllowSVG: false,
-    contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    unoptimized: false,
   },
 
-  // Compression for better performance
-  compress: true,
-
-  // Generate ETags for caching
-  generateEtags: true,
-
-  // Power by header removal for security
-  poweredByHeader: false,
-
-  // Webpack configuration for better compatibility
+  // ── Webpack client-side fallbacks ────────────────────────────────────────
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-      }
+      config.resolve.fallback = { ...config.resolve.fallback, fs: false, net: false, tls: false }
     }
     return config
   },
 
-  // Server external packages
-  serverExternalPackages: ['firebase-admin', 'cashfree-pg', '@sparticuz/chromium-min', 'puppeteer-core'],
+  // ── Server external packages (Node-only libs) ────────────────────────────
+  serverExternalPackages: [
+    'firebase-admin',
+    'cashfree-pg',
+    '@sparticuz/chromium-min',
+    'puppeteer-core',
+  ],
 
-  // Experimental features for better Chromium support
-  experimental: {
-    serverComponentsExternalPackages: ['@sparticuz/chromium-min', 'puppeteer-core'],
-    outputFileTracingIncludes: {
-      '/api/**/*': ['./node_modules/@sparticuz/chromium/bin/**/*'],
-    },
-  },
-
-  // Turbopack configuration (empty to silence warning)
+  // ── Turbopack (silence warning) ──────────────────────────────────────────
   turbopack: {},
-
 }
 
 module.exports = nextConfig

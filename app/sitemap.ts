@@ -3,24 +3,24 @@ import { getPublicActiveCampaigns } from '@/lib/firestore'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://phrames.cleffon.com'
-  
+
   // Fetch all public active campaigns for dynamic URLs
   const campaigns = await getPublicActiveCampaigns()
-  
+
   // Blog posts
   const blogPosts = [
     'how-to-create-viral-photo-frame-campaigns',
     'best-twibbon-alternatives',
     'event-marketing-photo-frames',
   ]
-  
+
   const campaignUrls = campaigns.map((campaign) => ({
     url: `${baseUrl}/campaign/${campaign.slug}`,
     lastModified: campaign.createdAt?.toDate?.() || new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
   }))
-  
+
   const blogUrls = blogPosts.map((slug) => ({
     url: `${baseUrl}/blog/${slug}`,
     lastModified: new Date(),
@@ -64,12 +64,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/dashboard`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.6,
     },
     {
       url: `${baseUrl}/support`,
