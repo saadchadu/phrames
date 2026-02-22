@@ -97,13 +97,11 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
               text-align: right;
             }
 
-            .company-name-text {
-              font-weight: 800;
-              font-size: 20pt;
-              margin-bottom: 8px;
+            .company-logo {
+              height: 28px;
+              width: auto;
+              margin-bottom: 24px;
               display: block;
-              color: ${colors.primary};
-              letter-spacing: -0.02em;
             }
 
             .address-line {
@@ -371,7 +369,7 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
         {/* 1. Header */}
         <div className="header">
           <div className="header-left">
-            <div className="company-name-text">{data.companyDetails.name}</div>
+            <img src="/logos/Logo-black.svg" className="company-logo" alt="Phrames" />
             <div className="address-line">{data.companyDetails.address}</div>
             <div className="contact-line">
               {data.companyDetails.email}
@@ -429,8 +427,8 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
                 )}
               </td>
               <td className="center">1</td>
-              <td className="right">{formatCurrency(data.amount)}</td>
-              <td className="right">{formatCurrency(data.amount)}</td>
+              <td className="right">{formatCurrency(data.totalAmount)}</td>
+              <td className="right">{formatCurrency(data.totalAmount)}</td>
             </tr>
           </tbody>
         </table>
@@ -440,15 +438,8 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
           <div className="summary-block">
             <div className="summary-row">
               <span className="summary-label">Subtotal</span>
-              <span className="summary-value">{formatCurrency(data.amount)}</span>
+              <span className="summary-value">{formatCurrency(data.totalAmount)}</span>
             </div>
-
-            {data.gstRate > 0 && (
-              <div className="summary-row">
-                <span className="summary-label">GST ({data.gstRate}%)</span>
-                <span className="summary-value">{formatCurrency(data.gstAmount)}</span>
-              </div>
-            )}
 
             <div className="summary-row total">
               <span className="summary-label" style={{ fontWeight: 700 }}>TOTAL</span>

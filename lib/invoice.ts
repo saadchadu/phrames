@@ -60,16 +60,12 @@ export async function generateInvoiceNumber(): Promise<string> {
 // Note: Payment gateway already includes GST in the amount
 // This function now treats the amount as the total (including GST)
 export function calculateGST(amount: number, gstRate: number = 0) {
-  // Amount already includes GST from payment gateway
-  // Calculate base amount and GST from total
-  const baseAmount = Math.round((amount / (1 + gstRate / 100)) * 100) / 100
-  const gstAmount = Math.round((amount - baseAmount) * 100) / 100
-
+  // No GST needed as of now. amount already includes the total price.
   return {
-    baseAmount,
-    gstRate,
-    gstAmount,
-    totalAmount: amount // Use the amount as-is (already includes GST)
+    baseAmount: amount,
+    gstRate: 0,
+    gstAmount: 0,
+    totalAmount: amount
   }
 }
 
@@ -99,8 +95,8 @@ export function getPlanValidityDays(planType: string): number {
 
 // Company details
 export const COMPANY_DETAILS = {
-  name: 'Phrames',
-  email: 'support@phrames.cleffon.com',
-  address: 'Cleffon Technologies, India',
+  name: 'Cleffon Design Studio',
+  email: 'support@cleffon.com',
+  address: 'Cleffon Design Studio, Second Floor, Center Point Building, Kannur, Kerala, India 670002',
   gstin: '' // Add GSTIN if available
 }
