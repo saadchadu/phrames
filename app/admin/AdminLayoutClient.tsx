@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   MessageSquare,
+  Tag,
 } from 'lucide-react';
 
 export default function AdminLayoutClient({
@@ -32,7 +33,7 @@ export default function AdminLayoutClient({
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (loading) return;
-      
+
       if (!user) {
         // Not logged in - redirect to login
         router.push('/login?redirect=/admin&error=auth_required');
@@ -43,13 +44,13 @@ export default function AdminLayoutClient({
         // Get the ID token result which includes custom claims
         const idTokenResult = await user.getIdTokenResult();
         const isAdminUser = idTokenResult.claims.isAdmin === true;
-        
+
         if (!isAdminUser) {
           // Not admin - redirect to home
           router.push('/?error=unauthorized');
           return;
         }
-        
+
         setIsAdmin(true);
         setIsChecking(false);
       } catch (error) {
@@ -85,6 +86,7 @@ export default function AdminLayoutClient({
     { name: 'Payments', href: '/admin/payments', icon: CreditCard },
     { name: 'Tickets', href: '/admin/support', icon: MessageSquare },
     { name: 'Logs', href: '/admin/logs', icon: FileText },
+    { name: 'Coupons', href: '/admin/coupons', icon: Tag },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 
@@ -115,9 +117,8 @@ export default function AdminLayoutClient({
 
       {/* Mobile sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-300 ease-in-out lg:hidden ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-300 ease-in-out lg:hidden ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex flex-col h-full">
           {/* Mobile sidebar header */}
@@ -141,11 +142,10 @@ export default function AdminLayoutClient({
                   key={item.name}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    active
+                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${active
                       ? 'bg-emerald-50 text-emerald-600'
                       : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-600'
-                  }`}
+                    }`}
                 >
                   <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                   {item.name}
@@ -168,11 +168,10 @@ export default function AdminLayoutClient({
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    active
+                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${active
                       ? 'bg-emerald-50 text-emerald-600'
                       : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-600'
-                  }`}
+                    }`}
                 >
                   <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
                   {item.name}

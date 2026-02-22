@@ -33,7 +33,7 @@ if (getApps().length === 0) {
 export async function POST(request: NextRequest) {
   const tracker = new PerformanceTracker('payment_initiation')
   trackRequest()
-  
+
   try {
     // Verify Cashfree configuration
     const configCheck = verifyCashfreeConfig()
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1]
-    
+
     // Verify Firebase token
     let userId: string
     let emailVerified: boolean
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       const decodedToken = await getAuth().verifyIdToken(token)
       userId = decodedToken.uid
       emailVerified = decodedToken.email_verified || false
-      
+
       // Require email verification for payments
       if (!emailVerified) {
         trackError()
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { campaignId, planType } = body
+    const { campaignId, planType, couponCode } = body
 
     // Validate inputs
     if (!campaignId || !planType) {
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
         db.collection('settings').doc('plans').get(),
         db.collection('settings').doc('system').get()
       ])
-      
+
       if (!plansDoc.exists) {
         // Fallback to hardcoded prices if Firestore is not configured
         amount = PRICING_PLANS[planType].price
@@ -211,10 +211,10 @@ export async function POST(request: NextRequest) {
         const plansData = plansDoc.data()
         const systemData = systemDoc.exists ? systemDoc.data() : {}
         const offersEnabled = systemData?.offersEnabled ?? false
-        
+
         // Get base price
         const basePrice = plansData?.[planType] ?? PRICING_PLANS[planType].price
-        
+
         // Apply discount if offers are enabled
         if (offersEnabled && plansData?.discounts?.[planType]) {
           const discount = plansData.discounts[planType]
@@ -226,17 +226,72 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       amount = PRICING_PLANS[planType].price
     }
-    
+
+    let originalAmount = amount
+    let finalAmount = amount
+    let discountAmount = 0
+    let appliedCoupon = null
+
+    // Process coupon if provided
+    if (couponCode) {
+      const codeTrimmed = couponCode.toUpperCase().trim()
+      const db = getFirestore()
+      const couponRef = db.collection('coupons').doc(codeTrimmed)
+      const couponSnap = await couponRef.get()
+
+      if (couponSnap.exists) {
+        const coupon = couponSnap.data()
+
+        let isValid = true
+        const now = new Date()
+
+        if (!coupon?.isActive) isValid = false
+        else if (coupon.validFrom && coupon.validFrom.toDate() > now) isValid = false
+        else if (coupon.validUntil && coupon.validUntil.toDate() < now) isValid = false
+        else if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) isValid = false
+        else if (coupon.applicablePlans && coupon.applicablePlans.length > 0 && !coupon.applicablePlans.includes(planType)) isValid = false
+        else if (coupon.minAmount && amount < coupon.minAmount) isValid = false
+
+        if (isValid && coupon?.perUserLimit) {
+          const redemptionSnap = await couponRef.collection('redemptions').doc(userId).get()
+          if (redemptionSnap.exists) {
+            const userRedemption = redemptionSnap.data()
+            if (userRedemption && userRedemption.count >= coupon.perUserLimit) {
+              isValid = false
+            }
+          }
+        }
+
+        if (isValid && coupon) {
+          if (coupon.type === 'flat') {
+            discountAmount = Math.min(coupon.value, amount)
+          } else if (coupon.type === 'percent') {
+            discountAmount = Math.round((amount * coupon.value) / 100)
+            discountAmount = Math.min(discountAmount, amount)
+          }
+          finalAmount = amount - discountAmount
+          appliedCoupon = codeTrimmed
+        }
+      }
+    }
+
+    // Safety check - Cashfree API limit is minimum ₹1 to initiate.
+    if (finalAmount < 1) {
+      finalAmount = 1; // Or handle this differently if you want 100% discount without cashfree.
+    }
+
+    amount = finalAmount // Order amount for Cashfree
+
     const orderId = `order_${Date.now()}_${campaignId.substring(0, 8)}`
 
     // Create Cashfree order
     // For production Cashfree, URLs must be HTTPS
     // In development, we'll use a placeholder HTTPS URL that Cashfree accepts
     const isDevelopment = process.env.NODE_ENV === 'development'
-    const baseUrl = isDevelopment 
+    const baseUrl = isDevelopment
       ? 'https://phrames.cleffon.com' // Use production URL as placeholder for dev testing
       : process.env.NEXT_PUBLIC_APP_URL
-    
+
     const orderRequest: CreateOrderRequest = {
       order_amount: amount,
       order_currency: 'INR',
@@ -256,16 +311,16 @@ export async function POST(request: NextRequest) {
     let cashfreeResponse
     try {
       const { Cashfree: CashfreeSDK, CFEnvironment } = await import('cashfree-pg')
-      const environment = process.env.CASHFREE_ENV === 'PRODUCTION' 
-        ? CFEnvironment.PRODUCTION 
+      const environment = process.env.CASHFREE_ENV === 'PRODUCTION'
+        ? CFEnvironment.PRODUCTION
         : CFEnvironment.SANDBOX
-      
+
       const cashfree = new CashfreeSDK(
         environment,
         process.env.CASHFREE_CLIENT_ID!,
         process.env.CASHFREE_CLIENT_SECRET!
       )
-      
+
       const response = await cashfree.PGCreateOrder(orderRequest)
       cashfreeResponse = response.data
     } catch (error: any) {
@@ -276,30 +331,33 @@ export async function POST(request: NextRequest) {
         userId,
         campaignId,
         statusCode: 500,
-        metadata: { 
-          planType, 
+        metadata: {
+          planType,
           amount,
           errorMessage: error.message,
-          errorResponse: error.response?.data 
+          errorResponse: error.response?.data
         }
       })
       tracker.end(false)
       return NextResponse.json(
-        { 
+        {
           error: 'Failed to create payment order. Please try again.',
-          details: error.response?.data || error.message 
+          details: error.response?.data || error.message
         },
         { status: 500 }
       )
     }
 
     // Store payment record using Firebase Admin
-    const paymentRecord = {
+    const paymentRecord: any = {
       orderId,
       campaignId,
       userId,
       planType,
-      amount,
+      amount: finalAmount, // Store what we actually charge
+      originalAmount,
+      discountAmount,
+      couponCode: appliedCoupon || null,
       currency: 'INR',
       status: 'pending',
       cashfreeOrderId: cashfreeResponse.cf_order_id || orderId,
@@ -313,7 +371,7 @@ export async function POST(request: NextRequest) {
     try {
       const db = getFirestore()
       const paymentRef = await db.collection('payments').add(paymentRecord)
-      
+
       // Also log to admin logs
       await db.collection('logs').add({
         eventType: 'payment_initiated',
@@ -386,7 +444,7 @@ export async function POST(request: NextRequest) {
     })
     tracker.end(false)
     return NextResponse.json(
-      { 
+      {
         error: sanitizeErrorForClient(error),
         message: error.message,
         details: 'Check server logs for more information'

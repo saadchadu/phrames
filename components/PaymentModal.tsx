@@ -52,17 +52,23 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
   const [plans, setPlans] = useState<PricingPlan[]>([])
   const [loadingPlans, setLoadingPlans] = useState(true)
 
+  // Coupon state
+  const [couponCodeInput, setCouponCodeInput] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number; finalAmount: number } | null>(null)
+  const [couponError, setCouponError] = useState('')
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false)
+
   useEffect(() => {
     async function fetchPlans() {
       try {
         const { plans: enabledPlans, allDisabled } = await getEnabledPlans()
-        
+
         if (allDisabled) {
           setError('No payment plans are currently available. Please contact support.')
           setLoadingPlans(false)
           return
         }
-        
+
         const planList: PricingPlan[] = Object.entries(enabledPlans)
           .filter(([_, plan]) => plan.enabled)
           .map(([id, plan]) => ({
@@ -75,7 +81,7 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
             popular: PLAN_DETAILS[id].popular,
             enabled: plan.enabled
           }))
-        
+
         setPlans(planList)
         setLoadingPlans(false)
       } catch (error) {
@@ -83,11 +89,77 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
         setLoadingPlans(false)
       }
     }
-    
+
     if (isOpen) {
       fetchPlans()
+      // reset state on open
+      setSelectedPlan(null)
+      setAppliedCoupon(null)
+      setCouponCodeInput('')
+      setCouponError('')
+      setError('')
     }
   }, [isOpen])
+
+  // Clear coupon if plan changes
+  useEffect(() => {
+    setAppliedCoupon(null)
+    setCouponError('')
+  }, [selectedPlan])
+
+  const handleApplyCoupon = async () => {
+    if (!selectedPlan) {
+      setCouponError('Please select a plan first')
+      return
+    }
+    if (!couponCodeInput.trim()) {
+      setCouponError('Please enter a coupon code')
+      return
+    }
+
+    setIsApplyingCoupon(true)
+    setCouponError('')
+
+    try {
+      const { auth } = await import('@/lib/firebase')
+      const user = auth.currentUser
+      if (!user) throw new Error('Must be logged in to apply coupon')
+      const token = await user.getIdToken()
+
+      const plan = plans.find(p => p.id === selectedPlan)
+      if (!plan) throw new Error('Selected plan not found')
+
+      const response = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          code: couponCodeInput,
+          plan: selectedPlan,
+          amount: plan.price
+        })
+      })
+
+      const data = await response.json()
+      if (data.valid) {
+        setAppliedCoupon({
+          code: data.code,
+          discountAmount: data.discountAmount,
+          finalAmount: data.finalAmount
+        })
+        setCouponError('')
+      } else {
+        setAppliedCoupon(null)
+        setCouponError(data.message || 'Invalid coupon')
+      }
+    } catch (err: any) {
+      setCouponError(err.message || 'Failed to apply coupon')
+    } finally {
+      setIsApplyingCoupon(false)
+    }
+  }
 
   const handleContinue = async () => {
     if (!selectedPlan) return
@@ -109,7 +181,7 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
       }
 
       const token = await user.getIdToken()
-      
+
       const response = await fetch('/api/payments/initiate', {
         method: 'POST',
         headers: {
@@ -119,6 +191,7 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
         body: JSON.stringify({
           campaignId,
           planType: selectedPlan,
+          couponCode: appliedCoupon?.code || undefined
         }),
       })
 
@@ -127,19 +200,19 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
       if (!response.ok) {
         throw new Error(data.error || 'Failed to initiate payment')
       }
-      
+
       if (!data.paymentSessionId) {
         throw new Error('Payment session ID not received from server')
       }
 
       if (data.paymentSessionId) {
-        
+
         // Wait for Cashfree SDK to load
         const waitForCashfree = (): Promise<any> => {
           return new Promise((resolve, reject) => {
             let attempts = 0
             const maxAttempts = 50 // 5 seconds max wait
-            
+
             const checkCashfree = () => {
               if ((window as any).Cashfree) {
                 resolve((window as any).Cashfree)
@@ -150,16 +223,16 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
                 reject(new Error('Cashfree SDK failed to load'))
               }
             }
-            
+
             checkCashfree()
           })
         }
 
         const Cashfree = await waitForCashfree()
-        
+
         // Initialize Cashfree with environment
         const mode = process.env.NEXT_PUBLIC_CASHFREE_ENV === 'PRODUCTION' ? 'production' : 'sandbox'
-        
+
         const cashfree = Cashfree({
           mode: mode
         })
@@ -169,7 +242,7 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
           paymentSessionId: data.paymentSessionId,
           returnUrl: `${window.location.origin}/dashboard?payment=success&campaignId=${campaignId}`
         }
-        
+
         // Call checkout - it will redirect automatically
         await cashfree.checkout(checkoutOptions)
       } else {
@@ -249,76 +322,131 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
                 {!loadingPlans && plans.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     {plans.map((plan) => (
-                    <button
-                      key={plan.id}
-                      onClick={() => setSelectedPlan(plan.id)}
-                      disabled={loading}
-                      className={`relative p-5 rounded-xl border-2 transition-all text-left ${
-                        selectedPlan === plan.id
-                          ? 'border-secondary bg-secondary/5 shadow-md'
-                          : 'border-[#00240020] hover:border-[#00240040] hover:shadow-sm'
-                      } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    >
-                      {/* Popular Badge */}
-                      {plan.popular && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-secondary text-primary shadow-sm">
-                            Popular
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Selected Indicator */}
-                      {selectedPlan === plan.id && (
-                        <div className="absolute top-4 right-4">
-                          <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center">
-                            <CheckIcon className="h-4 w-4 text-primary" />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Plan Details */}
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-lg font-bold text-primary">{plan.name}</h4>
-                          {plan.discount && plan.discount > 0 && (
-                            <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
-                              {plan.discount}% OFF
+                      <button
+                        key={plan.id}
+                        onClick={() => setSelectedPlan(plan.id)}
+                        disabled={loading}
+                        className={`relative p-5 rounded-xl border-2 transition-all text-left ${selectedPlan === plan.id
+                            ? 'border-secondary bg-secondary/5 shadow-md'
+                            : 'border-[#00240020] hover:border-[#00240040] hover:shadow-sm'
+                          } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        {/* Popular Badge */}
+                        {plan.popular && (
+                          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-secondary text-primary shadow-sm">
+                              Popular
                             </span>
-                          )}
-                        </div>
-                        {plan.originalPrice && plan.discount && plan.discount > 0 ? (
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-lg text-gray-400 line-through">₹{plan.originalPrice}</span>
-                            <span className="text-3xl font-bold text-emerald-600">₹{plan.price}</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-3xl font-bold text-primary">₹{plan.price}</span>
                           </div>
                         )}
-                        <p className="text-sm text-primary/60">{plan.days} days of access</p>
-                      </div>
 
-                      {/* Features */}
-                      <div className="mt-4 pt-4 border-t border-[#00240010]">
-                        <ul className="space-y-2 text-sm text-primary/70">
-                          <li className="flex items-center gap-2">
-                            <CheckIcon className="h-4 w-4 text-secondary flex-shrink-0" />
-                            <span>Full campaign access</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckIcon className="h-4 w-4 text-secondary flex-shrink-0" />
-                            <span>Public visibility</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckIcon className="h-4 w-4 text-secondary flex-shrink-0" />
-                            <span>Analytics tracking</span>
-                          </li>
-                        </ul>
-                      </div>
-                    </button>
+                        {/* Selected Indicator */}
+                        {selectedPlan === plan.id && (
+                          <div className="absolute top-4 right-4">
+                            <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center">
+                              <CheckIcon className="h-4 w-4 text-primary" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Plan Details */}
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-lg font-bold text-primary">{plan.name}</h4>
+                            {plan.discount && plan.discount > 0 && (
+                              <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                                {plan.discount}% OFF
+                              </span>
+                            )}
+                          </div>
+                          {plan.originalPrice && plan.discount && plan.discount > 0 ? (
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-lg text-gray-400 line-through">₹{plan.originalPrice}</span>
+                              <span className="text-3xl font-bold text-emerald-600">₹{plan.price}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-3xl font-bold text-primary">₹{plan.price}</span>
+                            </div>
+                          )}
+                          <p className="text-sm text-primary/60">{plan.days} days of access</p>
+                        </div>
+
+                        {/* Features */}
+                        <div className="mt-4 pt-4 border-t border-[#00240010]">
+                          <ul className="space-y-2 text-sm text-primary/70">
+                            <li className="flex items-center gap-2">
+                              <CheckIcon className="h-4 w-4 text-secondary flex-shrink-0" />
+                              <span>Full campaign access</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckIcon className="h-4 w-4 text-secondary flex-shrink-0" />
+                              <span>Public visibility</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckIcon className="h-4 w-4 text-secondary flex-shrink-0" />
+                              <span>Analytics tracking</span>
+                            </li>
+                          </ul>
+                        </div>
+                      </button>
                     ))}
+                  </div>
+                )}
+
+                {/* Coupon Code Section */}
+                {!loadingPlans && plans.length > 0 && selectedPlan && (
+                  <div className="mb-6 p-4 sm:p-5 bg-gray-50 border border-gray-100 rounded-xl">
+                    <h4 className="font-semibold text-primary mb-3 text-sm">Have a coupon code?</h4>
+                    <div className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        placeholder="Enter coupon code"
+                        value={couponCodeInput}
+                        onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
+                        disabled={loading || isApplyingCoupon || !!appliedCoupon}
+                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary/50 text-sm uppercase disabled:bg-gray-100 disabled:text-gray-500"
+                      />
+                      {appliedCoupon ? (
+                        <button
+                          onClick={() => {
+                            setAppliedCoupon(null)
+                            setCouponCodeInput('')
+                          }}
+                          disabled={loading}
+                          className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Remove
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleApplyCoupon}
+                          disabled={loading || isApplyingCoupon || !couponCodeInput.trim()}
+                          className="px-4 py-2 bg-primary text-secondary hover:bg-primary/90 border border-transparent rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[80px]"
+                        >
+                          {isApplyingCoupon ? '...' : 'Apply'}
+                        </button>
+                      )}
+                    </div>
+                    {couponError && <p className="text-red-500 text-xs mt-1 font-medium">{couponError}</p>}
+
+                    {/* Price Breakdown */}
+                    {appliedCoupon && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 space-y-2 text-sm">
+                        <div className="flex justify-between text-gray-600">
+                          <span>Original Price:</span>
+                          <span>₹{plans.find(p => p.id === selectedPlan)?.price}</span>
+                        </div>
+                        <div className="flex justify-between text-emerald-600 font-medium">
+                          <span>Discount ({appliedCoupon.code}):</span>
+                          <span>-₹{appliedCoupon.discountAmount}</span>
+                        </div>
+                        <div className="flex justify-between text-primary font-bold text-base pt-1">
+                          <span>Final Price:</span>
+                          <span>₹{appliedCoupon.finalAmount}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -332,27 +460,27 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
                 {/* Action Buttons */}
                 {!loadingPlans && plans.length > 0 && (
                   <div className="flex flex-col sm:flex-row gap-3 justify-end">
-                  <button
-                    onClick={onClose}
-                    disabled={loading}
-                    className="px-6 py-3 rounded-xl border border-[#00240020] text-primary hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleContinue}
-                    disabled={!selectedPlan || loading}
-                    className="px-6 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-primary font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center gap-2"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-                        <span>Processing...</span>
-                      </>
-                    ) : (
-                      'Continue to Checkout'
-                    )}
-                  </button>
+                    <button
+                      onClick={onClose}
+                      disabled={loading}
+                      className="px-6 py-3 rounded-xl border border-[#00240020] text-primary hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleContinue}
+                      disabled={!selectedPlan || loading}
+                      className="px-6 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-primary font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center gap-2"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                          <span>Processing...</span>
+                        </>
+                      ) : (
+                        'Continue to Checkout'
+                      )}
+                    </button>
                   </div>
                 )}
 

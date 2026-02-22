@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore, Timestamp } from 'firebase-admin/firestore'
+import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore'
 import { verifyCashfreeSignature } from '@/lib/webhookVerification'
 import { calculateExpiryDate } from '@/lib/cashfree'
 import { generateInvoiceNumber, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } from '@/lib/invoice'
@@ -351,6 +351,53 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
         // Company details
         companyDetails: COMPANY_DETAILS
       })
+    }
+
+    // Process Coupon if it was used in this payment
+    if (paymentRecord.couponCode) {
+      try {
+        const couponRef = db.collection('coupons').doc(paymentRecord.couponCode)
+        const redemptionRef = couponRef.collection('redemptions').doc(userId)
+
+        await db.runTransaction(async (transaction) => {
+          const couponDoc = await transaction.get(couponRef)
+
+          if (!couponDoc.exists) return // Should not happen, but safe to check
+
+          const redemptionDoc = await transaction.get(redemptionRef)
+          const currentCount = redemptionDoc.exists && redemptionDoc.data()?.count ? redemptionDoc.data()!.count : 0
+
+          // Update Coupon global used count
+          transaction.update(couponRef, {
+            usedCount: FieldValue.increment(1)
+          })
+
+          // Update User Redemption tracking
+          if (redemptionDoc.exists) {
+            transaction.update(redemptionRef, {
+              count: FieldValue.increment(1),
+              lastRedeemedAt: Timestamp.now(),
+              payments: FieldValue.arrayUnion(orderId)
+            })
+          } else {
+            transaction.set(redemptionRef, {
+              userId,
+              campaignId,
+              paymentId: orderId,
+              discountApplied: paymentRecord.discountAmount || 0,
+              redeemedAt: Timestamp.now(),
+              count: 1,
+              payments: [orderId]
+            })
+          }
+        })
+      } catch (couponError) {
+        logWebhookError({
+          orderId,
+          error: `Error processing coupon redemption: ${formatError(couponError)}`
+        })
+        // NOTE: we don't throw here, we must complete the payment processing!
+      }
     }
 
     // Log successful payment
