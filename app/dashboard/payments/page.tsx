@@ -16,7 +16,6 @@ interface Payment {
   planName: string
   planType: string
   amount: number
-  totalAmount: number
   status: string
   createdAt: Date
   expiresAt: Date | null
@@ -60,7 +59,6 @@ export default function PaymentsPage() {
           planName: data.planName || data.planType || 'Plan',
           planType: data.planType,
           amount: data.baseAmount || data.amount || 0,
-          totalAmount: data.totalAmount || data.amount || 0,
           status: data.status || 'pending',
           createdAt: data.createdAt?.toDate() || new Date(),
           expiresAt: data.expiresAt?.toDate() || null,
@@ -303,7 +301,7 @@ export default function PaymentsPage() {
                     <SortableHeader title="Invoice" sortKey="invoiceNumber" />
                     <SortableHeader title="Campaign" sortKey="campaignName" />
                     <SortableHeader title="Plan" sortKey="planName" />
-                    <SortableHeader title="Amount" sortKey="totalAmount" />
+                    <SortableHeader title="Amount" sortKey="amount" />
                     <SortableHeader title="Status" sortKey="status" />
                     <SortableHeader title="Date" sortKey="createdAt" />
                     <SortableHeader title="Expiry" sortKey="expiresAt" />
@@ -330,7 +328,7 @@ export default function PaymentsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-semibold text-primary">
-                          {formatCurrency(payment.totalAmount)}
+                          {formatCurrency(payment.amount)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -396,7 +394,7 @@ export default function PaymentsPage() {
                     </div>
                     <div>
                       <div className="text-primary/50 text-xs">Amount</div>
-                      <div className="font-semibold text-primary">{formatCurrency(payment.totalAmount)}</div>
+                      <div className="font-semibold text-primary">{formatCurrency(payment.amount)}</div>
                     </div>
                     <div>
                       <div className="text-primary/50 text-xs">Date</div>
