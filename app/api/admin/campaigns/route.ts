@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     }
 
     const snapshot = await query.get();
-    
+
     let campaigns = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -100,6 +100,36 @@ export async function GET(request: NextRequest) {
     campaigns = campaigns.map(campaign => ({
       ...campaign,
       isExpired: campaign.expiresAt ? new Date(campaign.expiresAt) < now : false,
+    }));
+
+    // For inactive paid campaigns, check if they have a pending payment 
+    // (user clicked pay but didn't complete it)
+    const inactivePaidCampaignIds = campaigns
+      .filter((c: any) => !c.isActive && !c.isFreeCampaign)
+      .map((c: any) => c.id);
+
+    const pendingPaymentCampaignIds = new Set<string>();
+
+    if (inactivePaidCampaignIds.length > 0) {
+      // Firestore 'in' query supports up to 30 items; chunk if needed
+      const chunks: string[][] = [];
+      for (let i = 0; i < inactivePaidCampaignIds.length; i += 30) {
+        chunks.push(inactivePaidCampaignIds.slice(i, i + 30));
+      }
+      for (const chunk of chunks) {
+        const pendingSnap = await db.collection('payments')
+          .where('campaignId', 'in', chunk)
+          .where('status', '==', 'pending')
+          .get();
+        pendingSnap.docs.forEach(doc => {
+          pendingPaymentCampaignIds.add(doc.data().campaignId);
+        });
+      }
+    }
+
+    campaigns = campaigns.map((campaign: any) => ({
+      ...campaign,
+      hasPendingPayment: pendingPaymentCampaignIds.has(campaign.id),
     }));
 
     return NextResponse.json({ campaigns });
@@ -166,7 +196,7 @@ export async function PATCH(request: NextRequest) {
         const currentExpiry = toDate(campaignData?.expiresAt) || new Date();
         const daysToAdd = data.days || 30;
         const extendedExpiry = new Date(currentExpiry.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
-        
+
         await campaignRef.update({
           expiresAt: Timestamp.fromDate(extendedExpiry),
         });
@@ -189,7 +219,7 @@ export async function PATCH(request: NextRequest) {
         }
         const customExpiry = new Date(data.expiresAt);
         const oldExpiry = toDate(campaignData?.expiresAt) || new Date();
-        
+
         await campaignRef.update({
           expiresAt: Timestamp.fromDate(customExpiry),
         });
@@ -244,7 +274,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const campaignData = campaignDoc.data();
-    
+
     await campaignRef.delete();
     await logCampaignDeleted(
       adminId,

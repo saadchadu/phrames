@@ -22,6 +22,7 @@ interface Campaign {
   expiresAt?: string;
   isExpired?: boolean;
   imageUrl?: string;
+  hasPendingPayment?: boolean;
 }
 
 export default function AdminCampaignsPage() {
@@ -42,7 +43,7 @@ export default function AdminCampaignsPage() {
       setLoading(true);
       setError(null);
       const params = new URLSearchParams();
-      
+
       // Add all filter parameters
       if (currentFilters.search) params.append('search', currentFilters.search);
       if (currentFilters.status) params.append('status', currentFilters.status);
@@ -52,11 +53,11 @@ export default function AdminCampaignsPage() {
       if (currentFilters.dateTo) params.append('dateTo', currentFilters.dateTo);
 
       const res = await fetch(`/api/admin/campaigns?${params}`);
-      
+
       if (!res.ok) {
         throw new Error(`Failed to fetch campaigns: ${res.statusText}`);
       }
-      
+
       const data = await res.json();
       setCampaigns(data.campaigns || []);
     } catch (error) {
@@ -88,8 +89,8 @@ export default function AdminCampaignsPage() {
       render: (campaign) => (
         <div className="flex items-center gap-3">
           {campaign.imageUrl && (
-            <img 
-              src={campaign.imageUrl} 
+            <img
+              src={campaign.imageUrl}
               alt={campaign.campaignName}
               className="w-12 h-12 rounded object-cover flex-shrink-0"
               onError={(e) => {
@@ -107,11 +108,10 @@ export default function AdminCampaignsPage() {
       sortable: true,
       sortKey: 'isFreeCampaign',
       render: (campaign) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          campaign.isFreeCampaign 
-            ? 'bg-green-100 text-green-800' 
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${campaign.isFreeCampaign
+            ? 'bg-green-100 text-green-800'
             : 'bg-blue-100 text-blue-800'
-        }`}>
+          }`}>
           {campaign.isFreeCampaign ? 'Free' : campaign.planType || 'Paid'}
         </span>
       ),
@@ -122,14 +122,21 @@ export default function AdminCampaignsPage() {
       sortable: true,
       sortKey: 'isActive',
       render: (campaign) => (
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-          campaign.isExpired 
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${campaign.isExpired
             ? 'bg-red-100 text-red-800'
-            : campaign.isActive 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-gray-100 text-gray-800'
-        }`}>
-          {campaign.isExpired ? 'Expired' : campaign.isActive ? 'Active' : 'Inactive'}
+            : campaign.hasPendingPayment
+              ? 'bg-amber-100 text-amber-800'
+              : campaign.isActive
+                ? 'bg-green-100 text-green-800'
+                : 'bg-gray-100 text-gray-800'
+          }`}>
+          {campaign.isExpired
+            ? 'Expired'
+            : campaign.hasPendingPayment
+              ? 'Awaiting Payment'
+              : campaign.isActive
+                ? 'Active'
+                : 'Inactive'}
         </span>
       ),
     },
@@ -149,7 +156,7 @@ export default function AdminCampaignsPage() {
       sortKey: 'expiresAt',
       render: (campaign) => (
         <div className="text-sm text-gray-900">
-          {campaign.expiresAt 
+          {campaign.expiresAt
             ? new Date(campaign.expiresAt).toLocaleDateString()
             : 'Never'
           }
@@ -160,9 +167,9 @@ export default function AdminCampaignsPage() {
       key: 'actions',
       header: 'Actions',
       render: (campaign) => (
-        <CampaignActions 
-          campaign={campaign} 
-          onActionComplete={handleActionComplete} 
+        <CampaignActions
+          campaign={campaign}
+          onActionComplete={handleActionComplete}
         />
       ),
     },
@@ -170,7 +177,7 @@ export default function AdminCampaignsPage() {
 
   return (
     <AdminErrorBoundary>
-      <PageHeader 
+      <PageHeader
         title="Campaign Management"
         description="View and manage all campaigns on the platform"
       >
