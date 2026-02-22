@@ -32,9 +32,12 @@ export async function generateInvoicePDF({ paymentId, baseUrl }: GeneratePDFOpti
           '--single-process',
           '--disable-gpu',
         ],
-        defaultViewport: chromium.default.defaultViewport,
+        defaultViewport: {
+          width: 1280,
+          height: 720,
+        },
         executablePath,
-        headless: chromium.default.headless,
+        headless: true,
       })
     } else {
       // Use local Chromium for development
