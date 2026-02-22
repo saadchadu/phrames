@@ -89,10 +89,12 @@ export async function GET(request: NextRequest) {
       campaigns = campaigns.filter((campaign: any) => {
         const count = campaign.supportersCount ?? 0;
         if (supporters === '0') return count === 0;
-        if (supporters === '1-10') return count >= 1 && count <= 10;
-        if (supporters === '11-50') return count >= 11 && count <= 50;
+        if (supporters === '1-50') return count >= 1 && count <= 50;
         if (supporters === '51-100') return count >= 51 && count <= 100;
-        if (supporters === '100+') return count > 100;
+        if (supporters === '101-500') return count >= 101 && count <= 500;
+        if (supporters === '501-1000') return count >= 501 && count <= 1000;
+        if (supporters === '1001-5000') return count >= 1001 && count <= 5000;
+        if (supporters === '5000+') return count > 5000;
         return true;
       });
     }

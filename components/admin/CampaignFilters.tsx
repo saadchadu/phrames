@@ -193,10 +193,12 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
           >
             <option value="">All Supporters</option>
             <option value="0">0 supporters</option>
-            <option value="1-10">1 – 10</option>
-            <option value="11-50">11 – 50</option>
+            <option value="1-50">1 – 50</option>
             <option value="51-100">51 – 100</option>
-            <option value="100+">100+</option>
+            <option value="101-500">101 – 500</option>
+            <option value="501-1000">501 – 1,000</option>
+            <option value="1001-5000">1,001 – 5,000</option>
+            <option value="5000+">5,000+</option>
           </select>
         </div>
 
@@ -282,7 +284,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
 
             {filters.supporters && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                Supporters: {filters.supporters === '0' ? '0' : filters.supporters === '100+' ? '100+' : filters.supporters}
+                Supporters: {filters.supporters}
                 <button onClick={() => clearFilter('supporters')} className="hover:text-emerald-900">
                   <X className="h-3 w-3" />
                 </button>
