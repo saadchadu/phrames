@@ -7,7 +7,10 @@ import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
 import CampaignCard from '@/components/CampaignCard'
 import PaymentModal from '@/components/PaymentModal'
-import { getUserCampaigns, deleteCampaign, Campaign } from '@/lib/firestore'
+import { getUserCampaigns, deleteCampaign, checkFreeCampaignEligibility, Campaign } from '@/lib/firestore'
+import { useDialog } from '@/hooks/useDialog'
+import AlertDialog from '@/components/ui/AlertDialog'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
 // Prevent static generation for this auth-protected page
 export const dynamic = 'force-dynamic'
@@ -31,6 +34,8 @@ function DashboardContent() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [reactivatingCampaign, setReactivatingCampaign] = useState<Campaign | null>(null)
   const [showSupportModal, setShowSupportModal] = useState(false)
+  const [hasFreeCampaign, setHasFreeCampaign] = useState<boolean | null>(null)
+  const { alertState, showAlert, closeAlert, confirmState, showConfirm, closeConfirm } = useDialog()
 
   useEffect(() => {
     if (user) {
@@ -42,7 +47,7 @@ function DashboardContent() {
     // Check for payment success
     const paymentStatus = searchParams.get('payment')
     const freeCampaign = searchParams.get('freeCampaign')
-    
+
     if (paymentStatus === 'success') {
       toast('Campaign activated successfully!', 'success')
       // Reload campaigns to show updated status
@@ -62,15 +67,21 @@ function DashboardContent() {
     if (!user) {
       return
     }
-    
+
     if (isRefresh) {
       setRefreshing(true)
     } else {
       setLoading(true)
     }
     try {
-      const userCampaigns = await getUserCampaigns(user.uid)
+      const [userCampaigns, isEligible] = await Promise.all([
+        getUserCampaigns(user.uid),
+        checkFreeCampaignEligibility(user.uid)
+      ])
+
       setCampaigns(userCampaigns)
+      setHasFreeCampaign(isEligible)
+
       if (isRefresh) {
         toast('Campaigns refreshed', 'success')
       }
@@ -101,7 +112,15 @@ function DashboardContent() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this campaign? This action cannot be undone.')) {
+    const confirmed = await showConfirm({
+      title: 'Delete Campaign',
+      message: 'Are you sure you want to delete this campaign? This action cannot be undone.',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      type: 'danger',
+    })
+
+    if (!confirmed) {
       return
     }
 
@@ -178,9 +197,19 @@ function DashboardContent() {
           {/* Header */}
           <div className="flex flex-col gap-4 sm:gap-6 mb-8 sm:mb-12">
             <div className="flex flex-col gap-2">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[38px] font-bold text-primary leading-tight">
-                My Campaigns
-              </h1>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-[38px] font-bold text-primary leading-tight">
+                  My Campaigns
+                </h1>
+                {hasFreeCampaign !== null && (
+                  <span className={`inline-flex items-center w-fit px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${hasFreeCampaign
+                    ? 'bg-emerald-100/80 text-emerald-700 border border-emerald-200'
+                    : 'bg-gray-100 text-gray-500 border border-gray-200/60'
+                    }`}>
+                    {hasFreeCampaign ? '1 Free Campaign Available' : 'Free Campaign Used'}
+                  </span>
+                )}
+              </div>
               <p className="text-primary/70 text-sm sm:text-base font-normal leading-normal">
                 Manage your frame campaigns and track their performance
               </p>
@@ -266,6 +295,26 @@ function DashboardContent() {
           )}
         </div>
       </div>
+
+      {/* Dialogs */}
+      <AlertDialog
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+        confirmText={alertState.confirmText}
+      />
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmState.onConfirm || (() => {})}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        type={confirmState.type}
+      />
     </AuthGuard>
   )
 }

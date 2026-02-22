@@ -13,6 +13,8 @@ import { useAuth } from '@/components/AuthProvider'
 import { getCanvasDimensions, getAspectRatioDimensions } from '@/lib/aspect-ratios'
 import useCampaignStats from '@/hooks/useCampaignStats'
 import ClientOnly from '@/components/ClientOnly'
+import { useDialog } from '@/hooks/useDialog'
+import AlertDialog from '@/components/ui/AlertDialog'
 
 // Prevent static generation for this dynamic page
 export const dynamic = 'force-dynamic'
@@ -27,6 +29,7 @@ export default function CampaignPage() {
   const params = useParams()
   const slug = params.slug as string
   const { user } = useAuth()
+  const { alertState, showAlert, closeAlert } = useDialog()
   
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [creatorProfile, setCreatorProfile] = useState<UserProfile | null>(null)
@@ -284,13 +287,21 @@ export default function CampaignPage() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file')
+      showAlert({
+        title: 'Invalid File Type',
+        message: 'Please select an image file',
+        type: 'error',
+      })
       return
     }
 
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      alert('Image size must be less than 10MB')
+      showAlert({
+        title: 'File Too Large',
+        message: 'Image size must be less than 10MB',
+        type: 'error',
+      })
       return
     }
 
@@ -478,7 +489,11 @@ export default function CampaignPage() {
       canvas.toBlob((blob) => {
         if (!blob) {
           console.error('❌ Failed to create blob from canvas')
-          alert('Error generating image. Please try again.')
+          showAlert({
+            title: 'Error',
+            message: 'Error generating image. Please try again.',
+            type: 'error',
+          })
           return
         }
         
@@ -543,7 +558,11 @@ export default function CampaignPage() {
 
     } catch (error) {
       console.error('❌ Error creating combined image:', error)
-      alert('Error generating image. Please try again.')
+      showAlert({
+        title: 'Error',
+        message: 'Error generating image. Please try again.',
+        type: 'error',
+      })
     } finally {
       setProcessing(false)
     }
@@ -975,6 +994,16 @@ export default function CampaignPage() {
           onCropComplete={handleCropComplete}
         />
       )}
+
+      {/* Alert Dialog */}
+      <AlertDialog
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+        confirmText={alertState.confirmText}
+      />
     </div>
   )
 }

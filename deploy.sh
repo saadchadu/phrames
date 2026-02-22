@@ -52,7 +52,7 @@ echo ""
 # Step 5: Git commit and push
 echo "📤 Step 5: Pushing to GitHub..."
 git add .
-git commit -m "Production deployment: All fixes applied"
+git commit -m "Production deployment: Responsive design improvements and optimizations"
 git push origin main
 if [ $? -ne 0 ]; then
     echo "❌ Git push failed"
@@ -67,5 +67,6 @@ echo "Next steps:"
 echo "1. Monitor Vercel deployment: https://vercel.com/dashboard"
 echo "2. Wait for Firestore indexes: https://console.firebase.google.com/project/phrames-app/firestore/indexes"
 echo "3. Test the app: https://phrames.cleffon.com"
+echo "4. Test responsive design on mobile devices"
 echo ""
 echo "Expected completion: 10-15 minutes"
