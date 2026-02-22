@@ -40,7 +40,7 @@ export default function RevenueChart({ data }: RevenueChartProps) {
             width={50}
           />
           <Tooltip
-            formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+            formatter={(value: number | undefined) => [formatCurrency(value ?? 0), 'Revenue']}
             labelFormatter={formatDate}
             contentStyle={{
               backgroundColor: '#fff',
