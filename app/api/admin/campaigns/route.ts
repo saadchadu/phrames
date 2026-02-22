@@ -38,9 +38,9 @@ export async function GET(request: NextRequest) {
       query = query.where('createdBy', '==', userId);
     }
 
-    if (status === 'active') {
-      query = query.where('isActive', '==', true);
-    } else if (status === 'inactive') {
+    // Note: 'active' and 'expired' are filtered client-side after computing isExpired
+    // Only 'inactive' can be safely pre-filtered at Firestore level
+    if (status === 'inactive') {
       query = query.where('isActive', '==', false);
     }
 
@@ -102,14 +102,24 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Check expiry status
+    // Check expiry status — must happen before status filtering because
+    // isExpired is a derived field (expiresAt < now), not stored in Firestore
     const now = new Date();
     campaigns = campaigns.map(campaign => ({
       ...campaign,
       isExpired: campaign.expiresAt ? new Date(campaign.expiresAt) < now : false,
     }));
 
-    // For inactive paid campaigns, check if they have a pending payment 
+    // Apply expired / active status filter AFTER computing isExpired
+    if (status === 'expired') {
+      campaigns = campaigns.filter((c: any) => c.isExpired);
+    } else if (status === 'active') {
+      // "Active" means isActive=true AND not expired
+      campaigns = campaigns.filter((c: any) => c.isActive && !c.isExpired);
+    }
+    // 'inactive' was already filtered at the Firestore level above
+
+    // For inactive paid campaigns, check if they have a pending payment
     // (user clicked pay but didn't complete it)
     const inactivePaidCampaignIds = campaigns
       .filter((c: any) => !c.isActive && !c.isFreeCampaign)
