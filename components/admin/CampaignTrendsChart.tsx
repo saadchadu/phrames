@@ -48,7 +48,8 @@ export default function CampaignTrendsChart({ campaigns }: CampaignTrendsChartPr
   const chartData = generateChartData();
 
   // Format date for display (e.g., "Jan 15")
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: any): string => {
+    if (typeof dateStr !== 'string') return String(dateStr);
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
