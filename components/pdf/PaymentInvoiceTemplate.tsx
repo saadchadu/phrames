@@ -76,7 +76,7 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
               max-width: 100%;
               min-height: 900px;
               margin: 0 auto;
-              padding: 0; 
+              padding: 0 0 60px 0;
               position: relative;
               display: flex;
               flex-direction: column;
@@ -324,11 +324,16 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
             }
 
             .invoice-footer {
-              margin-top: auto;
-              padding-top: 20px;
+              position: fixed;
+              bottom: 0;
+              left: 0;
+              right: 0;
+              padding: 12px 50px;
               border-top: 1px solid ${colors.border};
+              background: white;
               width: 100%;
               page-break-inside: avoid;
+              z-index: 100;
             }
             
             .footer-inner {
