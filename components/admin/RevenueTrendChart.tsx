@@ -8,7 +8,8 @@ interface RevenueTrendChartProps {
 
 export default function RevenueTrendChart({ data }: RevenueTrendChartProps) {
   // Format date for display (e.g., "Jan 15")
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: any): string => {
+    if (typeof dateStr !== 'string') return String(dateStr);
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
@@ -46,7 +47,7 @@ export default function RevenueTrendChart({ data }: RevenueTrendChartProps) {
           width={50}
         />
         <Tooltip
-          formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+          formatter={(value: number | undefined) => [formatCurrency(value ?? 0), 'Revenue']}
           labelFormatter={formatDate}
           contentStyle={{
             backgroundColor: '#fff',

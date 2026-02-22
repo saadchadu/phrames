@@ -8,7 +8,8 @@ interface UserGrowthChartProps {
 
 export default function UserGrowthChart({ data }: UserGrowthChartProps) {
   // Format date for display (e.g., "Jan 15")
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: any): string => {
+    if (typeof dateStr !== 'string') return String(dateStr);
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
@@ -35,7 +36,7 @@ export default function UserGrowthChart({ data }: UserGrowthChartProps) {
             width={40}
           />
           <Tooltip
-            formatter={(value: number) => [value, 'New Users']}
+            formatter={(value: number | undefined) => [value ?? 0, 'New Users']}
             labelFormatter={formatDate}
             contentStyle={{
               backgroundColor: '#fff',
