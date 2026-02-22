@@ -107,7 +107,7 @@ export default async function InvoicePrintPage({
       userName: paymentData.userName || 'User',
       userEmail: paymentData.userEmail || '',
       amount: paymentData.baseAmount || paymentData.amount,
-      totalAmount: paymentData.totalAmount || paymentData.amount,
+      totalAmount: paymentData.baseAmount || paymentData.amount,
       activationDate: paymentData.completedAt?.toDate() || new Date(),
       expiryDate: paymentData.expiresAt?.toDate() || null,
       companyDetails: COMPANY_DETAILS

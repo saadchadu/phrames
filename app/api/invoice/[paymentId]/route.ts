@@ -103,8 +103,8 @@ export async function GET(
       await db.collection('payments').doc(paymentId).update({
         invoiceNumber,
         invoiceDate: paymentData.completedAt || paymentData.createdAt,
-        totalAmount: paymentData.amount || 0,
-        baseAmount: paymentData.amount,
+        totalAmount: paymentData.baseAmount || paymentData.amount || 0,
+        baseAmount: paymentData.baseAmount || paymentData.amount,
         userName: userData?.displayName || userData?.email || 'User',
         userEmail: userData?.email || '',
         campaignName: campaignData?.campaignName || paymentData.metadata?.campaignName || 'Campaign',

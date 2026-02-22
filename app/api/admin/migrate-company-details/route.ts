@@ -50,8 +50,12 @@ export async function POST(request: NextRequest) {
             const batch = db.batch()
 
             chunk.forEach((doc) => {
+                const data = doc.data()
+                const correctAmount = data.baseAmount || data.amount || 0
                 batch.update(doc.ref, {
                     companyDetails: COMPANY_DETAILS,
+                    totalAmount: correctAmount,
+                    baseAmount: correctAmount,
                 })
                 updated++
             })
