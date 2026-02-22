@@ -106,8 +106,11 @@ export default async function InvoicePrintPage({
       validityDays: paymentData.validityDays || 30,
       userName: paymentData.userName || 'User',
       userEmail: paymentData.userEmail || '',
-      amount: paymentData.baseAmount || paymentData.amount,
-      totalAmount: paymentData.baseAmount || paymentData.amount,
+      amount: paymentData.amount || paymentData.baseAmount,
+      totalAmount: paymentData.amount || paymentData.baseAmount,
+      originalAmount: paymentData.originalAmount,
+      discountAmount: paymentData.discountAmount,
+      couponCode: paymentData.couponCode,
       activationDate: paymentData.completedAt?.toDate() || new Date(),
       expiryDate: paymentData.expiresAt?.toDate() || null,
       companyDetails: COMPANY_DETAILS

@@ -2,7 +2,7 @@
 
 import { useState, Fragment, useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { XMarkIcon, CheckIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, CheckIcon, TagIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import { PRICING_PLANS, PlanType } from '@/lib/cashfree'
 import { getEnabledPlans } from '@/lib/feature-toggles'
 
@@ -291,7 +291,8 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
                       Choose Your Plan
                     </Dialog.Title>
                     <p className="mt-2 text-sm sm:text-base text-primary/70">
-                      Activate "{campaignName}" with a subscription plan
+                      Activate "{campaignName}" with a subscription plan.<br />
+                      <span className="text-xs opacity-75 mt-1 block">Note: All plans include the exact same features, only the validity period changes.</span>
                     </p>
                   </div>
                   <button
@@ -327,8 +328,8 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
                         onClick={() => setSelectedPlan(plan.id)}
                         disabled={loading}
                         className={`relative p-5 rounded-xl border-2 transition-all text-left ${selectedPlan === plan.id
-                            ? 'border-secondary bg-secondary/5 shadow-md'
-                            : 'border-[#00240020] hover:border-[#00240040] hover:shadow-sm'
+                          ? 'border-secondary bg-secondary/5 shadow-md'
+                          : 'border-[#00240020] hover:border-[#00240040] hover:shadow-sm'
                           } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                       >
                         {/* Popular Badge */}
@@ -372,23 +373,6 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
                           <p className="text-sm text-primary/60">{plan.days} days of access</p>
                         </div>
 
-                        {/* Features */}
-                        <div className="mt-4 pt-4 border-t border-[#00240010]">
-                          <ul className="space-y-2 text-sm text-primary/70">
-                            <li className="flex items-center gap-2">
-                              <CheckIcon className="h-4 w-4 text-secondary flex-shrink-0" />
-                              <span>Full campaign access</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckIcon className="h-4 w-4 text-secondary flex-shrink-0" />
-                              <span>Public visibility</span>
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckIcon className="h-4 w-4 text-secondary flex-shrink-0" />
-                              <span>Analytics tracking</span>
-                            </li>
-                          </ul>
-                        </div>
                       </button>
                     ))}
                   </div>
@@ -396,53 +380,70 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
 
                 {/* Coupon Code Section */}
                 {!loadingPlans && plans.length > 0 && selectedPlan && (
-                  <div className="mb-6 p-4 sm:p-5 bg-gray-50 border border-gray-100 rounded-xl">
-                    <h4 className="font-semibold text-primary mb-3 text-sm">Have a coupon code?</h4>
-                    <div className="flex gap-2 mb-2">
+                  <div className="mb-6">
+                    <label htmlFor="coupon-input" className="block text-xs font-bold text-gray-400 tracking-wider uppercase mb-2 text-left">
+                      Promo Code
+                    </label>
+                    <div className="relative flex items-center mb-2 group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <TagIcon className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" aria-hidden="true" />
+                      </div>
                       <input
                         type="text"
-                        placeholder="Enter coupon code"
+                        id="coupon-input"
+                        placeholder="ENTER CODE"
                         value={couponCodeInput}
                         onChange={(e) => setCouponCodeInput(e.target.value.toUpperCase())}
                         disabled={loading || isApplyingCoupon || !!appliedCoupon}
-                        className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary/50 text-sm uppercase disabled:bg-gray-100 disabled:text-gray-500"
+                        className="block w-full pl-11 pr-[100px] py-4 border border-gray-200 rounded-xl bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-mono uppercase text-[15px] font-bold shadow-sm disabled:opacity-60 disabled:bg-gray-50"
                       />
-                      {appliedCoupon ? (
-                        <button
-                          onClick={() => {
-                            setAppliedCoupon(null)
-                            setCouponCodeInput('')
-                          }}
-                          disabled={loading}
-                          className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 rounded-lg text-sm font-medium transition-colors"
-                        >
-                          Remove
-                        </button>
-                      ) : (
-                        <button
-                          onClick={handleApplyCoupon}
-                          disabled={loading || isApplyingCoupon || !couponCodeInput.trim()}
-                          className="px-4 py-2 bg-primary text-secondary hover:bg-primary/90 border border-transparent rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[80px]"
-                        >
-                          {isApplyingCoupon ? '...' : 'Apply'}
-                        </button>
-                      )}
+
+                      <div className="absolute right-2 flex items-center">
+                        {appliedCoupon ? (
+                          <button
+                            onClick={() => {
+                              setAppliedCoupon(null)
+                              setCouponCodeInput('')
+                            }}
+                            disabled={loading}
+                            className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 rounded-lg text-xs font-bold transition-all"
+                          >
+                            Remove
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleApplyCoupon}
+                            disabled={loading || isApplyingCoupon || !couponCodeInput.trim()}
+                            className="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed min-w-[70px] flex items-center justify-center shadow-sm"
+                          >
+                            {isApplyingCoupon ? (
+                              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            ) : 'Apply'}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    {couponError && <p className="text-red-500 text-xs mt-1 font-medium">{couponError}</p>}
+
+                    {couponError && (
+                      <p className="text-red-500 text-[13px] mt-2 font-medium text-left flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1">
+                        <ExclamationCircleIcon className="w-4 h-4" />
+                        {couponError}
+                      </p>
+                    )}
 
                     {/* Price Breakdown */}
                     {appliedCoupon && (
-                      <div className="mt-4 pt-4 border-t border-gray-200 space-y-2 text-sm">
-                        <div className="flex justify-between text-gray-600">
-                          <span>Original Price:</span>
-                          <span>₹{plans.find(p => p.id === selectedPlan)?.price}</span>
+                      <div className="mt-5 p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl space-y-3 text-sm animate-in fade-in slide-in-from-top-2">
+                        <div className="flex justify-between text-gray-600 font-medium">
+                          <span>Original Price</span>
+                          <span className="line-through text-gray-400">₹{plans.find(p => p.id === selectedPlan)?.price}</span>
                         </div>
-                        <div className="flex justify-between text-emerald-600 font-medium">
-                          <span>Discount ({appliedCoupon.code}):</span>
+                        <div className="flex justify-between text-emerald-600 font-bold">
+                          <span className="flex items-center gap-1.5">Discount ({appliedCoupon.code})</span>
                           <span>-₹{appliedCoupon.discountAmount}</span>
                         </div>
-                        <div className="flex justify-between text-primary font-bold text-base pt-1">
-                          <span>Final Price:</span>
+                        <div className="flex justify-between text-gray-900 font-bold text-lg pt-3 border-t border-emerald-200/50">
+                          <span>Total to Pay</span>
                           <span>₹{appliedCoupon.finalAmount}</span>
                         </div>
                       </div>

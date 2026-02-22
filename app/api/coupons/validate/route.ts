@@ -36,12 +36,24 @@ export async function POST(request: NextRequest) {
         }
 
         const now = new Date();
-        if (coupon.validFrom && coupon.validFrom.toDate() > now) {
-            return NextResponse.json({ valid: false, message: 'Coupon is not yet valid' }, { status: 200 });
+        if (coupon.validFrom) {
+            const fromDate = typeof coupon.validFrom.toDate === 'function' ? coupon.validFrom.toDate() : new Date(coupon.validFrom);
+            // Allow for global timezone span (starts at earliest timezone UTC+14)
+            fromDate.setUTCHours(0, 0, 0, 0);
+            fromDate.setHours(fromDate.getHours() - 14);
+            if (fromDate > now) {
+                return NextResponse.json({ valid: false, message: 'Coupon is not yet valid' }, { status: 200 });
+            }
         }
 
-        if (coupon.validUntil && coupon.validUntil.toDate() < now) {
-            return NextResponse.json({ valid: false, message: 'Coupon has expired' }, { status: 200 });
+        if (coupon.validUntil) {
+            const untilDate = typeof coupon.validUntil.toDate === 'function' ? coupon.validUntil.toDate() : new Date(coupon.validUntil);
+            // Allow for global timezone span (expires at latest timezone UTC-14)
+            untilDate.setUTCHours(23, 59, 59, 999);
+            untilDate.setHours(untilDate.getHours() + 14);
+            if (untilDate < now) {
+                return NextResponse.json({ valid: false, message: 'Coupon has expired' }, { status: 200 });
+            }
         }
 
         if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {

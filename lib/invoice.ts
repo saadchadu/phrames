@@ -15,6 +15,9 @@ export interface InvoiceData {
   totalAmount: number
   activationDate: Date
   expiryDate: Date | null
+  couponCode?: string
+  originalAmount?: number
+  discountAmount?: number
   companyDetails: {
     name: string
     email: string

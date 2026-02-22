@@ -246,8 +246,8 @@ export async function POST(request: NextRequest) {
         const now = new Date()
 
         if (!coupon?.isActive) isValid = false
-        else if (coupon.validFrom && coupon.validFrom.toDate() > now) isValid = false
-        else if (coupon.validUntil && coupon.validUntil.toDate() < now) isValid = false
+        else if (coupon.validFrom && (() => { const d = typeof coupon.validFrom.toDate === 'function' ? coupon.validFrom.toDate() : new Date(coupon.validFrom); d.setUTCHours(0, 0, 0, 0); d.setHours(d.getHours() - 14); return d > now })()) isValid = false
+        else if (coupon.validUntil && (() => { const d = typeof coupon.validUntil.toDate === 'function' ? coupon.validUntil.toDate() : new Date(coupon.validUntil); d.setUTCHours(23, 59, 59, 999); d.setHours(d.getHours() + 14); return d < now })()) isValid = false
         else if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) isValid = false
         else if (coupon.applicablePlans && coupon.applicablePlans.length > 0 && !coupon.applicablePlans.includes(planType)) isValid = false
         else if (coupon.minAmount && amount < coupon.minAmount) isValid = false

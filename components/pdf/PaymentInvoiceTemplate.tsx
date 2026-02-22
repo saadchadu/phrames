@@ -307,14 +307,26 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
                 )}
               </td>
               <td className="center">1</td>
-              <td className="right">{formatCurrency(data.amount)}</td>
-              <td className="right">{formatCurrency(data.amount)}</td>
+              <td className="right">{formatCurrency(data.originalAmount || data.amount)}</td>
+              <td className="right">{formatCurrency(data.originalAmount || data.amount)}</td>
             </tr>
           </tbody>
         </table>
 
         {/* 4. Total */}
         <div className="total-wrapper">
+          {data.originalAmount && data.discountAmount ? (
+            <>
+              <div className="total-row" style={{ borderTop: '1px solid #E5E7EB', marginBottom: '8px' }}>
+                <span className="total-label" style={{ color: '#6B7280', fontSize: '8pt' }}>Subtotal</span>
+                <span className="total-value" style={{ color: '#6B7280', fontSize: '11pt' }}>{formatCurrency(data.originalAmount)}</span>
+              </div>
+              <div className="total-row" style={{ borderTop: 'none', marginBottom: '8px' }}>
+                <span className="total-label" style={{ color: '#16A34A', fontSize: '8pt' }}>Discount ({data.couponCode})</span>
+                <span className="total-value" style={{ color: '#16A34A', fontSize: '11pt' }}>-{formatCurrency(data.discountAmount)}</span>
+              </div>
+            </>
+          ) : null}
           <div className="total-row">
             <span className="total-label">Total</span>
             <span className="total-value">{formatCurrency(data.amount)}</span>
