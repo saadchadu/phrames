@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { collection, query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import Link from 'next/link'
-import { Download, Eye, Calendar, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { Download, Eye, Calendar, CreditCard, CheckCircle, XCircle, Clock, ArrowUpDown } from 'lucide-react'
 import { toast } from '@/components/ui/toaster'
 import InvoiceDownloadToast from '@/components/pdf/InvoiceDownloadToast'
 
@@ -30,6 +30,7 @@ export default function PaymentsPage() {
   const [filter, setFilter] = useState<'all' | 'SUCCESS' | 'FAILED'>('all')
   const [downloading, setDownloading] = useState<string | null>(null)
   const [showToast, setShowToast] = useState(false)
+  const [sortConfig, setSortConfig] = useState<{ key: keyof Payment; direction: 'asc' | 'desc' } | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -149,6 +150,53 @@ export default function PaymentsPage() {
     return payment.status.toUpperCase() === filter
   })
 
+  const sortedPayments = [...filteredPayments].sort((a, b) => {
+    if (!sortConfig) return 0
+
+    const { key, direction } = sortConfig
+    const modifier = direction === 'asc' ? 1 : -1
+
+    if (key === 'createdAt' || key === 'expiresAt') {
+      const aVal = a[key]?.getTime() || 0
+      const bVal = b[key]?.getTime() || 0
+      return (aVal - bVal) * modifier
+    }
+
+    const aVal = a[key] ?? ''
+    const bVal = b[key] ?? ''
+
+    if (aVal < bVal) return -1 * modifier
+    if (aVal > bVal) return 1 * modifier
+    return 0
+  })
+
+  const handleSort = (key: keyof Payment) => {
+    let direction: 'asc' | 'desc' = 'asc'
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc'
+    }
+    setSortConfig({ key, direction })
+  }
+
+  const SortIndicator = ({ sortKey }: { sortKey: keyof Payment }) => {
+    if (sortConfig?.key !== sortKey) {
+      return <ArrowUpDown className="w-3.5 h-3.5 opacity-30 group-hover:opacity-100 transition-opacity" />
+    }
+    return <ArrowUpDown className={`w-3.5 h-3.5 text-secondary transition-transform ${sortConfig.direction === 'desc' ? 'rotate-180' : ''}`} />
+  }
+
+  const SortableHeader = ({ title, sortKey }: { title: string, sortKey: keyof Payment }) => (
+    <th
+      onClick={() => handleSort(sortKey)}
+      className="px-6 py-4 text-left text-xs font-semibold text-primary/70 uppercase tracking-wider cursor-pointer hover:bg-[#00240008] transition-colors group select-none"
+    >
+      <div className="flex items-center gap-1.5">
+        {title}
+        <SortIndicator sortKey={sortKey} />
+      </div>
+    </th>
+  )
+
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-IN', {
       day: '2-digit',
@@ -252,34 +300,20 @@ export default function PaymentsPage() {
               <table className="min-w-full divide-y divide-gray-100">
                 <thead className="bg-[#f2fff2]">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-primary/70 uppercase tracking-wider">
-                      Invoice
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-primary/70 uppercase tracking-wider">
-                      Campaign
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-primary/70 uppercase tracking-wider">
-                      Plan
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-primary/70 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-primary/70 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-primary/70 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-primary/70 uppercase tracking-wider">
-                      Expiry
-                    </th>
+                    <SortableHeader title="Invoice" sortKey="invoiceNumber" />
+                    <SortableHeader title="Campaign" sortKey="campaignName" />
+                    <SortableHeader title="Plan" sortKey="planName" />
+                    <SortableHeader title="Amount" sortKey="totalAmount" />
+                    <SortableHeader title="Status" sortKey="status" />
+                    <SortableHeader title="Date" sortKey="createdAt" />
+                    <SortableHeader title="Expiry" sortKey="expiresAt" />
                     <th className="px-6 py-4 text-right text-xs font-semibold text-primary/70 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-100">
-                  {filteredPayments.map((payment) => (
+                  {sortedPayments.map((payment) => (
                     <tr key={payment.id} className="hover:bg-[#f2fff210] transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-semibold text-primary">
@@ -343,7 +377,7 @@ export default function PaymentsPage() {
 
             {/* Mobile Cards */}
             <div className="md:hidden divide-y divide-gray-100">
-              {filteredPayments.map((payment) => (
+              {sortedPayments.map((payment) => (
                 <div key={payment.id} className="p-4 hover:bg-[#f2fff210] transition-colors">
                   <div className="flex items-start justify-between mb-3">
                     <div>
