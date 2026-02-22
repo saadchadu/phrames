@@ -1,4 +1,5 @@
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
+import type { Browser } from 'puppeteer-core'
 
 interface GeneratePDFOptions {
   paymentId: string
@@ -6,7 +7,7 @@ interface GeneratePDFOptions {
 }
 
 export async function generateInvoicePDF({ paymentId, baseUrl }: GeneratePDFOptions): Promise<Buffer> {
-  let browser = null
+  let browser: Browser | null = null
   
   try {
     // Determine if we're in production (Vercel)
@@ -16,7 +17,7 @@ export async function generateInvoicePDF({ paymentId, baseUrl }: GeneratePDFOpti
       // Use @sparticuz/chromium for Vercel
       const chromium = await import('@sparticuz/chromium')
       
-      // Set Chromium path for Vercel
+      // Get executable path
       const executablePath = await chromium.default.executablePath()
       
       browser = await puppeteer.launch({
@@ -25,15 +26,20 @@ export async function generateInvoicePDF({ paymentId, baseUrl }: GeneratePDFOpti
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
           '--disable-gpu',
         ],
-        defaultViewport: { width: 1280, height: 720 },
+        defaultViewport: chromium.default.defaultViewport,
         executablePath,
-        headless: true,
+        headless: chromium.default.headless,
       })
     } else {
       // Use local Chromium for development
-      browser = await puppeteer.launch({
+      const puppeteerFull = await import('puppeteer')
+      browser = await puppeteerFull.default.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       })

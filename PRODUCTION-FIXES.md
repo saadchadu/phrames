@@ -33,16 +33,34 @@ https://console.firebase.google.com/project/phrames-app/firestore/indexes
 The input directory "/var/task/node_modules/@sparticuz/chromium/bin" does not exist
 ```
 
+**Root Cause:**
+The `@sparticuz/chromium` package was having issues locating its binary files on Vercel's serverless environment.
+
 **Fix Applied:**
-Updated `lib/pdf/generateInvoicePDF.ts` with:
-- Proper Chromium args for Vercel
-- Additional stability flags
-- Better error handling
+
+1. **Switched to `puppeteer-core`** for production
+   - More reliable on Vercel
+   - Better compatibility with @sparticuz/chromium
+   - Separate dev/prod paths
+
+2. **Updated `lib/pdf/generateInvoicePDF.ts`:**
+   - Import `puppeteer-core` instead of `puppeteer`
+   - Use chromium.default.defaultViewport and chromium.default.headless
+   - Added more stability flags for Vercel
+   - Proper type definitions
+
+3. **Increased Vercel Function Limits** in `vercel.json`:
+   - Memory: 3008 MB (max for Pro plan)
+   - Timeout: 60 seconds
+   - Specific to invoice API route
+
+4. **Added `puppeteer-core` to dependencies** in `package.json`
 
 **Changes:**
-- Added `--disable-dev-shm-usage` flag
-- Added `--disable-gpu` flag
-- Improved executable path handling
+- Import from `puppeteer-core` for better tree-shaking
+- Use chromium defaults for viewport and headless mode
+- Added `--single-process` flag for Vercel
+- Increased function memory and timeout
 
 ---
 

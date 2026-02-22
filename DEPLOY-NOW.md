@@ -3,12 +3,23 @@
 ## Critical Fixes Applied
 
 ✅ **Firestore Indexes** - Added missing composite indexes  
-✅ **PDF Generation** - Fixed Chromium configuration for Vercel  
+✅ **PDF Generation** - Switched to puppeteer-core with proper Chromium config  
+✅ **Vercel Config** - Increased memory and timeout for PDF function  
 ✅ **Next.js Config** - Added experimental packages support  
 
 ---
 
-## Step 1: Deploy Firestore Indexes (5-10 min)
+## Step 1: Install Dependencies
+
+```bash
+npm install
+```
+
+This ensures `puppeteer-core` is properly installed.
+
+---
+
+## Step 2: Deploy Firestore Indexes (5-10 min)
 
 ```bash
 firebase deploy --only firestore:indexes
@@ -21,11 +32,11 @@ Wait until status shows "Enabled" (not "Building")
 
 ---
 
-## Step 2: Push Code to GitHub
+## Step 3: Push Code to GitHub
 
 ```bash
 git add .
-git commit -m "Fix: Production issues - Firestore indexes and PDF generation"
+git commit -m "Fix: PDF generation with puppeteer-core and increased Vercel limits"
 git push origin main
 ```
 
