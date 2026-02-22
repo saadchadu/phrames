@@ -151,6 +151,17 @@ export default function Navbar() {
                 >
                   Create Campaign
                 </Link>
+                <Link
+                  href="/dashboard/payments"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-3 rounded-lg text-base font-medium transition-colors ${
+                    pathname.startsWith('/dashboard/payments')
+                      ? 'bg-secondary/10 text-secondary'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Payments
+                </Link>
                 {isAdmin && (
                   <Link
                     href="/admin"

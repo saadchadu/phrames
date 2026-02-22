@@ -3,6 +3,7 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 import { verifyCashfreeSignature } from '@/lib/webhookVerification'
 import { calculateExpiryDate } from '@/lib/cashfree'
+import { generateInvoiceNumber, calculateGST, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } from '@/lib/invoice'
 import {
   PerformanceTracker,
   logWebhookReceived,
@@ -303,6 +304,23 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
     // Calculate expiry date
     const expiryDate = calculateExpiryDate(planType as 'free' | 'week' | 'month' | '3month' | '6month' | 'year')
 
+    // Generate invoice number
+    const invoiceNumber = await generateInvoiceNumber()
+    
+    // Calculate GST
+    const gstCalculation = calculateGST(amount, 18)
+    
+    // Get user details for invoice
+    const userDoc = await db.collection('users').doc(userId).get()
+    const userData = userDoc.data()
+    const userName = userData?.displayName || userData?.email || 'User'
+    const userEmail = userData?.email || paymentRecord.metadata?.userEmail || ''
+    
+    // Get campaign details
+    const campaignDoc = await db.collection('campaigns').doc(campaignId).get()
+    const campaignData = campaignDoc.data()
+    const campaignName = campaignData?.campaignName || paymentRecord.metadata?.campaignName || 'Campaign'
+
     // Update campaign with payment details
     const campaignRef = db.collection('campaigns').doc(campaignId)
     await campaignRef.update({
@@ -316,15 +334,31 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
       lastPaymentAt: Timestamp.now()
     })
 
-    // Update payment record with complete webhook data
+    // Update payment record with complete webhook data and invoice details
     if (paymentRecord.id) {
       const paymentRef = db.collection('payments').doc(paymentRecord.id)
       await paymentRef.update({
-        status: 'success',
+        status: 'SUCCESS',
         cashfreePaymentId: paymentId,
         completedAt: Timestamp.now(),
         webhookData: data,
-        webhookReceivedAt: Timestamp.now()
+        webhookReceivedAt: Timestamp.now(),
+        // Invoice details
+        invoiceNumber,
+        invoiceDate: Timestamp.now(),
+        gstRate: 18,
+        gstAmount: gstCalculation.gstAmount,
+        totalAmount: gstCalculation.totalAmount,
+        baseAmount: amount,
+        expiresAt: expiryDate ? Timestamp.fromDate(expiryDate) : null,
+        // User details for invoice
+        userName,
+        userEmail,
+        campaignName,
+        planName: getPlanDisplayName(planType),
+        validityDays: getPlanValidityDays(planType),
+        // Company details
+        companyDetails: COMPANY_DETAILS
       })
     }
 

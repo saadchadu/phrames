@@ -1,6 +1,8 @@
 # Phrames - Photo Frame Campaign Platform
 
-A complete, production-ready web application for creating and sharing custom photo frame campaigns. Built with Next.js 14, Firebase, and TailwindCSS.
+A complete, production-ready web application for creating and sharing custom photo frame campaigns. Built with Next.js 16, React 19, Firebase, and TailwindCSS.
+
+> **Latest Update (Feb 2026)**: All dependencies updated to latest stable versions. See [UPGRADE-GUIDE.md](UPGRADE-GUIDE.md) for details.
 
 ## 🚀 Features
 
@@ -17,13 +19,15 @@ A complete, production-ready web application for creating and sharing custom pho
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router)
+- **React**: React 19
 - **Authentication**: Firebase Auth
 - **Database**: Firebase Firestore
 - **Storage**: Firebase Storage
-- **Styling**: TailwindCSS
-- **Icons**: Heroicons
-- **Language**: TypeScript
+- **Styling**: TailwindCSS 3.4
+- **UI Components**: Radix UI, Headless UI 2.0
+- **Icons**: Heroicons, Lucide React
+- **Language**: TypeScript 5.2
 - **Deployment**: Vercel/Firebase Hosting compatible
 
 ## 📁 Project Structure
