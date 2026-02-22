@@ -47,16 +47,9 @@ export default async function InvoicePrintPage({
 
     // If invoice data doesn't exist, generate it now
     if (!paymentData.invoiceNumber) {
-      const { generateInvoiceNumber, calculateGST, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } = await import('@/lib/invoice')
+      const { generateInvoiceNumber, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } = await import('@/lib/invoice')
 
       const invoiceNumber = await generateInvoiceNumber()
-
-      // Get GST rate from settings
-      const settingsDoc = await db.collection('settings').doc('system').get()
-      const sysSettings = settingsDoc.data() || {}
-      const gstRate = sysSettings.gstPercentage !== undefined ? Number(sysSettings.gstPercentage) : 0
-
-      const gstCalc = calculateGST(paymentData.amount || 0, gstRate)
 
       // Get user details
       let userName = 'User'
@@ -84,9 +77,7 @@ export default async function InvoicePrintPage({
       await db.collection('payments').doc(paymentId).update({
         invoiceNumber,
         invoiceDate: paymentData.completedAt || paymentData.createdAt,
-        gstRate: gstRate,
-        gstAmount: gstCalc.gstAmount,
-        totalAmount: gstCalc.totalAmount,
+        totalAmount: paymentData.amount || 0,
         baseAmount: paymentData.amount,
         userName,
         userEmail,
@@ -114,8 +105,6 @@ export default async function InvoicePrintPage({
       userName: paymentData.userName || 'User',
       userEmail: paymentData.userEmail || '',
       amount: paymentData.baseAmount || paymentData.amount,
-      gstRate: paymentData.gstRate !== undefined ? paymentData.gstRate : 0,
-      gstAmount: paymentData.gstAmount || 0,
       totalAmount: paymentData.totalAmount || paymentData.amount,
       activationDate: paymentData.completedAt?.toDate() || new Date(),
       expiryDate: paymentData.expiresAt?.toDate() || null,

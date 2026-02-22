@@ -85,16 +85,9 @@ export async function GET(
     // Check if invoice data exists - if not, generate it now
     if (!paymentData.invoiceNumber) {
       // Generate invoice data for old payments
-      const { generateInvoiceNumber, calculateGST, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } = await import('@/lib/invoice')
+      const { generateInvoiceNumber, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } = await import('@/lib/invoice')
 
       const invoiceNumber = await generateInvoiceNumber()
-
-      // Get GST rate from settings
-      const settingsDoc = await db.collection('settings').doc('system').get()
-      const sysSettings = settingsDoc.data() || {}
-      const gstRate = sysSettings.gstPercentage !== undefined ? Number(sysSettings.gstPercentage) : 0
-
-      const gstCalc = calculateGST(paymentData.amount || 0, gstRate)
 
       // Get user details
       const userDoc = await db.collection('users').doc(paymentData.userId).get()
@@ -108,9 +101,7 @@ export async function GET(
       await db.collection('payments').doc(paymentId).update({
         invoiceNumber,
         invoiceDate: paymentData.completedAt || paymentData.createdAt,
-        gstRate: gstRate,
-        gstAmount: gstCalc.gstAmount,
-        totalAmount: gstCalc.totalAmount,
+        totalAmount: paymentData.amount || 0,
         baseAmount: paymentData.amount,
         userName: userData?.displayName || userData?.email || 'User',
         userEmail: userData?.email || '',

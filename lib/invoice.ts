@@ -12,8 +12,6 @@ export interface InvoiceData {
   userName: string
   userEmail: string
   amount: number
-  gstRate: number
-  gstAmount: number
   totalAmount: number
   activationDate: Date
   expiryDate: Date | null
@@ -56,18 +54,7 @@ export async function generateInvoiceNumber(): Promise<string> {
   }
 }
 
-// Calculate GST breakdown
-// Note: Payment gateway already includes GST in the amount
-// This function now treats the amount as the total (including GST)
-export function calculateGST(amount: number, gstRate: number = 0) {
-  // No GST needed as of now. amount already includes the total price.
-  return {
-    baseAmount: amount,
-    gstRate: 0,
-    gstAmount: 0,
-    totalAmount: amount
-  }
-}
+
 
 // Get plan display name
 export function getPlanDisplayName(planType: string): string {
@@ -98,5 +85,4 @@ export const COMPANY_DETAILS = {
   name: 'Cleffon Design Studio',
   email: 'support@cleffon.com',
   address: 'Cleffon Design Studio, Second Floor, Center Point Building, Kannur, Kerala, India 670002',
-  gstin: '' // Add GSTIN if available
 }

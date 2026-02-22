@@ -183,21 +183,6 @@ export default function AdminSettingsPage() {
                 />
                 <span className="ml-2 text-sm text-gray-700">Enable Special Offers/Discounts</span>
               </label>
-              <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Billing Tax (GST) Percentage</span>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={settings?.system?.gstPercentage !== undefined ? settings?.system?.gstPercentage : 0}
-                    onChange={(e) => handleSave('system', { gstPercentage: Number(e.target.value) })}
-                    className="w-20 px-3 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-emerald-500 focus:border-emerald-500"
-                    disabled={saving}
-                  />
-                  <span className="text-sm text-gray-500">%</span>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -262,6 +247,6 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       </PageHeader>
-    </AdminErrorBoundary>
+    </AdminErrorBoundary >
   );
 }

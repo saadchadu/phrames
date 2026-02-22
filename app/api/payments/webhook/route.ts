@@ -3,7 +3,7 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 import { verifyCashfreeSignature } from '@/lib/webhookVerification'
 import { calculateExpiryDate } from '@/lib/cashfree'
-import { generateInvoiceNumber, calculateGST, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } from '@/lib/invoice'
+import { generateInvoiceNumber, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } from '@/lib/invoice'
 import {
   PerformanceTracker,
   logWebhookReceived,
@@ -306,15 +306,7 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
     // Generate invoice number
     const invoiceNumber = await generateInvoiceNumber()
 
-    // Get GST rate from settings
-    const settingsDoc = await db.collection('settings').doc('system').get()
-    const sysSettings = settingsDoc.data() || {}
-    const gstRate = sysSettings.gstPercentage !== undefined ? Number(sysSettings.gstPercentage) : 0
-
-    // Calculate GST
-    const gstCalculation = calculateGST(amount, gstRate)
-
-    // Get user details for invoice (reuse userData from above)
+    // User details for invoice (reuse userData from above)
     const userName = userData?.displayName || userData?.email || 'User'
     const userEmail = userData?.email || paymentRecord.metadata?.userEmail || ''
 
@@ -348,9 +340,7 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
         // Invoice details
         invoiceNumber,
         invoiceDate: Timestamp.now(),
-        gstRate: gstRate,
-        gstAmount: gstCalculation.gstAmount,
-        totalAmount: gstCalculation.totalAmount,
+        totalAmount: amount,
         baseAmount: amount,
         expiresAt: expiryDate ? Timestamp.fromDate(expiryDate) : null,
         // User details for invoice
