@@ -85,15 +85,6 @@ function CampaignCard({ campaign, onActionComplete }: { campaign: Campaign; onAc
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-
-        {/* Status dot only */}
-        <div className="absolute top-2 right-2">
-          <span className={`inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white ${campaign.isExpired ? 'bg-red-500'
-            : campaign.hasPendingPayment ? 'bg-amber-400'
-              : campaign.isActive ? 'bg-green-500'
-                : 'bg-gray-400'
-            }`} />
-        </div>
       </div>
 
       {/* Info */}
