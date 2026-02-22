@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { DollarSign, TrendingUp, ChevronDown, ChevronUp, Copy } from 'lucide-react';
+import { DollarSign, TrendingUp, ChevronDown, ChevronUp, Copy, Download } from 'lucide-react';
 import PaymentFilters from '@/components/admin/PaymentFilters';
 import RevenueByPlanChart from '@/components/admin/RevenueByPlanChart';
 import RevenueTrendChart from '@/components/admin/RevenueTrendChart';
@@ -22,6 +22,7 @@ function PaymentsContent() {
   const [refundModalOpen, setRefundModalOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<{ id: string; amount: number } | null>(null);
   const [refundingPayment, setRefundingPayment] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   const toggleRow = useCallback((id: string) => {
@@ -42,11 +43,11 @@ function PaymentsContent() {
       setError(null);
       const params = new URLSearchParams(searchParams.toString());
       const res = await fetch(`/api/admin/payments?${params.toString()}`);
-      
+
       if (!res.ok) {
         throw new Error(`Failed to fetch payments: ${res.statusText}`);
       }
-      
+
       const json = await res.json();
       setData(json);
     } catch (error) {
@@ -77,7 +78,7 @@ function PaymentsContent() {
 
     try {
       setRefundingPayment(true);
-      
+
       const { auth } = await import('@/lib/firebase');
       const user = auth.currentUser;
       if (!user) {
@@ -113,6 +114,48 @@ function PaymentsContent() {
       setRefundingPayment(false);
     }
   }, [selectedPayment, closeRefundModal, fetchPayments]);
+
+  const handleDownloadInvoice = async (payment: any) => {
+    try {
+      setDownloadingInvoice(payment.id);
+
+      const { auth } = await import('@/lib/firebase');
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('You must be logged in');
+      }
+
+      const token = await user.getIdToken();
+
+      const response = await fetch(`/api/invoice/${payment.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to download invoice');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${payment.invoiceNumber || payment.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast('Invoice downloaded successfully', 'success');
+    } catch (error: any) {
+      console.error('Error downloading invoice:', error);
+      toast(error.message || 'Failed to download invoice', 'error');
+    } finally {
+      setDownloadingInvoice(null);
+    }
+  };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -192,12 +235,11 @@ function PaymentsContent() {
       header: 'Status',
       sortable: true,
       render: (payment) => (
-        <span className={`px-2 py-1 text-xs rounded-full ${
-          payment.status === 'SUCCESS' || payment.status === 'success' ? 'bg-green-100 text-green-800' : 
-          payment.status === 'refunded' ? 'bg-purple-100 text-purple-800' :
-          payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-red-100 text-red-800'
-        }`}>
+        <span className={`px-2 py-1 text-xs rounded-full ${payment.status === 'SUCCESS' || payment.status === 'success' ? 'bg-green-100 text-green-800' :
+            payment.status === 'refunded' ? 'bg-purple-100 text-purple-800' :
+              payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+          }`}>
           {payment.status}
         </span>
       ),
@@ -222,15 +264,29 @@ function PaymentsContent() {
       key: 'actions',
       header: 'Actions',
       render: (payment) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {(payment.status === 'SUCCESS' || payment.status === 'success') && (
-            <button
-              onClick={() => openRefundModal(payment.id, payment.amount)}
-              disabled={refundingPayment}
-              className="text-red-600 hover:text-red-800 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
-            >
-              Refund
-            </button>
+            <>
+              <button
+                onClick={() => handleDownloadInvoice(payment)}
+                disabled={downloadingInvoice === payment.id}
+                className="text-emerald-600 hover:text-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 text-xs font-medium transition-colors"
+                title="Download Invoice"
+              >
+                {downloadingInvoice === payment.id ? (
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-emerald-600"></div>
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+              </button>
+              <button
+                onClick={() => openRefundModal(payment.id, payment.amount)}
+                disabled={refundingPayment}
+                className="text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+              >
+                Refund
+              </button>
+            </>
           )}
         </div>
       ),
@@ -270,7 +326,7 @@ function PaymentsContent() {
           </div>
         </div>
       </div>
-      
+
       {payment.webhookData && (
         <div>
           <h4 className="font-semibold text-sm text-gray-700 mb-2">Webhook Data:</h4>
@@ -279,7 +335,7 @@ function PaymentsContent() {
           </pre>
         </div>
       )}
-      
+
       {!payment.webhookData && (
         <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
           <p className="text-sm text-yellow-800">
@@ -292,7 +348,7 @@ function PaymentsContent() {
 
   if (loading) {
     return (
-      <PageHeader 
+      <PageHeader
         title="Payments & Revenue"
         description="View payment transactions and revenue analytics"
       >
@@ -314,7 +370,7 @@ function PaymentsContent() {
 
   if (error) {
     return (
-      <PageHeader 
+      <PageHeader
         title="Payments & Revenue"
         description="View payment transactions and revenue analytics"
       >
@@ -332,75 +388,75 @@ function PaymentsContent() {
         amount={selectedPayment?.amount || 0}
         isLoading={refundingPayment}
       />
-      
-      <PageHeader 
+
+      <PageHeader
         title="Payments & Revenue"
         description="View payment transactions and revenue analytics"
       >
         <div className="text-gray-900">
-      <PaymentFilters />
+          <PaymentFilters />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
-          <div className="flex items-center">
-            <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
-            <div className="ml-3 sm:ml-4">
-              <p className="text-xs sm:text-sm text-gray-500">Total Revenue</p>
-              <p className="text-xl sm:text-2xl font-bold">₹0</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm text-gray-500">Total Revenue</p>
+                  <p className="text-xl sm:text-2xl font-bold">₹0</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm text-gray-500">Successful Payments</p>
+                  <p className="text-xl sm:text-2xl font-bold">0</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm text-gray-500">Failed Payments</p>
+                  <p className="text-xl sm:text-2xl font-bold">0</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Analytics Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <h2 className="text-base sm:text-lg font-semibold mb-4 text-gray-900">Revenue by Plan Type</h2>
+              <RevenueByPlanChart data={{}} />
+            </div>
+            <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <h2 className="text-base sm:text-lg font-semibold mb-4 text-gray-900">Revenue Trend (Last 30 Days)</h2>
+              <RevenueTrendChart data={[]} />
             </div>
           </div>
         </div>
-        <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
-          <div className="flex items-center">
-            <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-            <div className="ml-3 sm:ml-4">
-              <p className="text-xs sm:text-sm text-gray-500">Successful Payments</p>
-              <p className="text-xl sm:text-2xl font-bold">0</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
-          <div className="flex items-center">
-            <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
-            <div className="ml-3 sm:ml-4">
-              <p className="text-xs sm:text-sm text-gray-500">Failed Payments</p>
-              <p className="text-xl sm:text-2xl font-bold">0</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Analytics Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
-          <h2 className="text-base sm:text-lg font-semibold mb-4 text-gray-900">Revenue by Plan Type</h2>
-          <RevenueByPlanChart data={{}} />
+        <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Payment Transactions</h2>
+          </div>
+          <ExpandableDataTable
+            columns={columns}
+            data={(data?.payments || []).filter((payment: any) =>
+              !['b2c6f3SIoWx4nL2phwVx', 'rmwLGEzN88TyWwJ5tWHf'].includes(payment.id)
+            )}
+            keyExtractor={(payment) => payment.id}
+            emptyMessage="No payments found"
+            isLoading={loading}
+            defaultSort={{ key: 'createdAt', direction: 'desc' }}
+            expandableContent={renderExpandableContent}
+            expandedRows={expandedRows}
+            onToggleRow={toggleRow}
+          />
         </div>
-        <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
-          <h2 className="text-base sm:text-lg font-semibold mb-4 text-gray-900">Revenue Trend (Last 30 Days)</h2>
-          <RevenueTrendChart data={[]} />
-        </div>
-      </div>
-      </div>
-
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Payment Transactions</h2>
-        </div>
-        <ExpandableDataTable
-          columns={columns}
-          data={(data?.payments || []).filter((payment: any) => 
-            !['b2c6f3SIoWx4nL2phwVx', 'rmwLGEzN88TyWwJ5tWHf'].includes(payment.id)
-          )}
-          keyExtractor={(payment) => payment.id}
-          emptyMessage="No payments found"
-          isLoading={loading}
-          defaultSort={{ key: 'createdAt', direction: 'desc' }}
-          expandableContent={renderExpandableContent}
-          expandedRows={expandedRows}
-          onToggleRow={toggleRow}
-        />
-      </div>
       </PageHeader>
     </>
   );
