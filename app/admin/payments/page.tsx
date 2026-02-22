@@ -236,9 +236,9 @@ function PaymentsContent() {
       sortable: true,
       render: (payment) => (
         <span className={`px-2 py-1 text-xs rounded-full ${payment.status === 'SUCCESS' || payment.status === 'success' ? 'bg-green-100 text-green-800' :
-            payment.status === 'refunded' ? 'bg-purple-100 text-purple-800' :
-              payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-red-100 text-red-800'
+          payment.status === 'refunded' ? 'bg-purple-100 text-purple-800' :
+            payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+              'bg-red-100 text-red-800'
           }`}>
           {payment.status}
         </span>
@@ -265,28 +265,28 @@ function PaymentsContent() {
       header: 'Actions',
       render: (payment) => (
         <div className="flex items-center gap-3">
-          {(payment.status === 'SUCCESS' || payment.status === 'success') && (
-            <>
-              <button
-                onClick={() => handleDownloadInvoice(payment)}
-                disabled={downloadingInvoice === payment.id}
-                className="text-emerald-600 hover:text-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 text-xs font-medium transition-colors"
-                title="Download Invoice"
-              >
-                {downloadingInvoice === payment.id ? (
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-emerald-600"></div>
-                ) : (
-                  <Download className="h-3.5 w-3.5" />
-                )}
-              </button>
-              <button
-                onClick={() => openRefundModal(payment.id, payment.amount)}
-                disabled={refundingPayment}
-                className="text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium transition-colors"
-              >
-                Refund
-              </button>
-            </>
+          {['success', 'refunded'].includes((payment.status || '').toLowerCase()) && (
+            <button
+              onClick={() => handleDownloadInvoice(payment)}
+              disabled={downloadingInvoice === payment.id}
+              className="text-emerald-600 hover:text-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 text-xs font-medium transition-colors"
+              title="Download Invoice"
+            >
+              {downloadingInvoice === payment.id ? (
+                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-emerald-600"></div>
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+            </button>
+          )}
+          {['success'].includes((payment.status || '').toLowerCase()) && (
+            <button
+              onClick={() => openRefundModal(payment.id, payment.amount)}
+              disabled={refundingPayment}
+              className="text-red-500 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium transition-colors"
+            >
+              Refund
+            </button>
           )}
         </div>
       ),

@@ -74,8 +74,9 @@ export async function GET(
       )
     }
 
-    // Check if payment was successful
-    if (paymentData.status !== 'SUCCESS' && paymentData.status !== 'success') {
+    // Check if payment was successful or refunded
+    const validStatuses = ['SUCCESS', 'success', 'REFUNDED', 'refunded', 'Refunded'];
+    if (!validStatuses.includes(paymentData.status)) {
       return NextResponse.json(
         { error: 'Invoice not available for unsuccessful payments' },
         { status: 400 }
