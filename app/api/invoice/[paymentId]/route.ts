@@ -123,8 +123,6 @@ export async function GET(
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
                     process.env.NEXT_PUBLIC_SITE_URL || 
                     `https://${request.headers.get('host')}`
-    
-    console.log('Using base URL for PDF generation:', baseUrl)
 
     // Generate PDF using Puppeteer
     const pdfBuffer = await generateInvoicePDF({

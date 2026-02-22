@@ -279,26 +279,25 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
 
     const { campaignId, planType, amount, userId } = paymentRecord
 
-    // Check if user is blocked
+    // Check if user is blocked and get user details
     const userDoc = await db.collection('users').doc(userId).get()
-    if (userDoc.exists) {
-      const userData = userDoc.data()
-      if (userData?.isBlocked === true) {
-        logWebhookError({
-          orderId,
-          error: 'User is blocked, cannot activate campaign',
-          metadata: { userId, campaignId }
+    const userData = userDoc.data()
+    
+    if (userDoc.exists && userData?.isBlocked === true) {
+      logWebhookError({
+        orderId,
+        error: 'User is blocked, cannot activate campaign',
+        metadata: { userId, campaignId }
+      })
+      // Update payment record to failed
+      if (paymentRecord.id) {
+        const paymentRef = db.collection('payments').doc(paymentRecord.id)
+        await paymentRef.update({
+          status: 'failed',
+          completedAt: Timestamp.now()
         })
-        // Update payment record to failed
-        if (paymentRecord.id) {
-          const paymentRef = db.collection('payments').doc(paymentRecord.id)
-          await paymentRef.update({
-            status: 'failed',
-            completedAt: Timestamp.now()
-          })
-        }
-        return
       }
+      return
     }
 
     // Calculate expiry date
@@ -310,9 +309,7 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
     // Calculate GST
     const gstCalculation = calculateGST(amount, 18)
     
-    // Get user details for invoice
-    const userDoc = await db.collection('users').doc(userId).get()
-    const userData = userDoc.data()
+    // Get user details for invoice (reuse userData from above)
     const userName = userData?.displayName || userData?.email || 'User'
     const userEmail = userData?.email || paymentRecord.metadata?.userEmail || ''
     

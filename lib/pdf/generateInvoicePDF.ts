@@ -34,16 +34,11 @@ export async function generateInvoicePDF({ paymentId, baseUrl }: GeneratePDFOpti
     
     // Navigate to the print page with absolute URL
     const url = `${baseUrl}/invoice/${paymentId}/print`
-    console.log('Generating PDF from URL:', url)
     
     await page.goto(url, {
       waitUntil: 'networkidle0',
       timeout: 30000,
     })
-    
-    // Log page title to verify correct page loaded
-    const pageTitle = await page.title()
-    console.log('Page loaded with title:', pageTitle)
     
     // Wait for fonts to load
     await page.evaluateHandle('document.fonts.ready')

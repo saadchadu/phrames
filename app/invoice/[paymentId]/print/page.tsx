@@ -28,8 +28,6 @@ export default async function InvoicePrintPage({
 }) {
   try {
     const { paymentId } = await params
-    
-    console.log('[Invoice Print] Accessing print page for payment:', paymentId)
 
     // Get payment record
     const paymentDoc = await db.collection('payments').doc(paymentId).get()
@@ -40,8 +38,6 @@ export default async function InvoicePrintPage({
     }
 
     const paymentData = paymentDoc.data()!
-    console.log('[Invoice Print] Payment status:', paymentData.status)
-    console.log('[Invoice Print] Has invoice number:', !!paymentData.invoiceNumber)
 
     // Check if payment was successful
     if (paymentData.status !== 'SUCCESS' && paymentData.status !== 'success') {
@@ -51,8 +47,6 @@ export default async function InvoicePrintPage({
 
     // If invoice data doesn't exist, generate it now
     if (!paymentData.invoiceNumber) {
-      console.log('[Invoice Print] Invoice number missing, generating now...')
-      
       const { generateInvoiceNumber, calculateGST, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } = await import('@/lib/invoice')
       
       const invoiceNumber = await generateInvoiceNumber()
@@ -99,8 +93,6 @@ export default async function InvoicePrintPage({
       // Refresh payment data
       const updatedDoc = await db.collection('payments').doc(paymentId).get()
       Object.assign(paymentData, updatedDoc.data())
-      
-      console.log('[Invoice Print] Invoice data generated:', invoiceNumber)
     }
 
     // Prepare invoice data
@@ -128,7 +120,6 @@ export default async function InvoicePrintPage({
       }
     }
 
-    console.log('[Invoice Print] Rendering invoice template')
     return <PaymentInvoiceTemplate data={invoiceData} />
   } catch (error) {
     console.error('[Invoice Print] Error rendering invoice:', error)
