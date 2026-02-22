@@ -149,6 +149,9 @@ const nextConfig = {
   // Experimental features for better Chromium support
   experimental: {
     serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
+    outputFileTracingIncludes: {
+      '/api/**/*': ['./node_modules/@sparticuz/chromium/bin/**/*'],
+    },
   },
   
   // Turbopack configuration (empty to silence warning)
