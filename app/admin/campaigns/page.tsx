@@ -38,8 +38,8 @@ function VisibilityBadge({ visibility }: { visibility?: string }) {
   return (
     <span
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${isPublic
-          ? 'bg-blue-100 text-blue-700'
-          : 'bg-purple-100 text-purple-700'
+        ? 'bg-blue-100 text-blue-700'
+        : 'bg-purple-100 text-purple-700'
         }`}
     >
       {isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
@@ -94,9 +94,9 @@ function CampaignCard({ campaign, onActionComplete }: { campaign: Campaign; onAc
         {/* Status dot */}
         <div className="absolute top-2 right-2">
           <span className={`inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white ${campaign.isExpired ? 'bg-red-500'
-              : campaign.hasPendingPayment ? 'bg-amber-400'
-                : campaign.isActive ? 'bg-green-500'
-                  : 'bg-gray-400'
+            : campaign.hasPendingPayment ? 'bg-amber-400'
+              : campaign.isActive ? 'bg-green-500'
+                : 'bg-gray-400'
             }`} />
         </div>
       </div>
@@ -208,7 +208,7 @@ export default function AdminCampaignsPage() {
 
   function handleActionComplete() { fetchCampaigns(); }
 
-  // ── Table columns ──────────────────────────────────────────────────────────
+  // ── Table columns (original) ─────────────────────────────────────────────
   const columns: Column<Campaign>[] = [
     {
       key: 'campaign',
@@ -216,29 +216,8 @@ export default function AdminCampaignsPage() {
       sortable: true,
       sortKey: 'campaignName',
       render: (campaign) => (
-        <div className="flex items-center gap-3">
-          {(campaign.frameURL || campaign.imageUrl) && (
-            <img
-              src={campaign.frameURL || campaign.imageUrl}
-              alt={campaign.campaignName}
-              className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-gray-100"
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-          )}
-          <div>
-            <div className="text-sm font-medium text-gray-900">{campaign.campaignName}</div>
-            {campaign.createdByEmail && (
-              <div className="text-xs text-gray-500 truncate max-w-[180px]">{campaign.createdByEmail}</div>
-            )}
-          </div>
-        </div>
+        <div className="text-sm font-medium text-gray-900">{campaign.campaignName}</div>
       ),
-    },
-    {
-      key: 'visibility',
-      header: 'Visibility',
-      sortable: false,
-      render: (campaign) => <VisibilityBadge visibility={campaign.visibility} />,
     },
     {
       key: 'type',
@@ -258,18 +237,6 @@ export default function AdminCampaignsPage() {
       sortable: true,
       sortKey: 'isActive',
       render: (campaign) => <StatusBadge campaign={campaign} />,
-    },
-    {
-      key: 'supporters',
-      header: 'Users',
-      sortable: true,
-      sortKey: 'supportersCount',
-      render: (campaign) => (
-        <span className="text-sm text-gray-700 flex items-center gap-1">
-          <Users className="h-3.5 w-3.5 text-gray-400" />
-          {campaign.supportersCount ?? 0}
-        </span>
-      ),
     },
     {
       key: 'campaignId',
@@ -296,6 +263,7 @@ export default function AdminCampaignsPage() {
         <CampaignActions campaign={campaign} onActionComplete={handleActionComplete} />
       ),
     },
+
   ];
 
   return (
@@ -317,8 +285,8 @@ export default function AdminCampaignsPage() {
             <button
               onClick={() => setViewMode('table')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'table'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
             >
               <List className="h-4 w-4" />
@@ -327,8 +295,8 @@ export default function AdminCampaignsPage() {
             <button
               onClick={() => setViewMode('grid')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'grid'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
             >
               <LayoutGrid className="h-4 w-4" />
