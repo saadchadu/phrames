@@ -67,7 +67,7 @@ export default function RevenueByPlanChart({ data }: RevenueByPlanChartProps) {
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: number) => formatCurrency(value)}
+          formatter={(value: number | undefined) => formatCurrency(value ?? 0)}
           contentStyle={{
             backgroundColor: '#fff',
             border: '1px solid #e5e7eb',
