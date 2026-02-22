@@ -110,8 +110,8 @@ export default async function InvoicePrintPage({
       expiryDate: paymentData.expiresAt?.toDate() || null,
       companyDetails: paymentData.companyDetails || {
         name: 'Phrames',
-        email: 'support@phrames.cleffon.com',
-        address: 'Cleffon Technologies, India',
+        email: 'support@cleffon.com',
+        address: 'Cleffon Design Studio, Second Floor, Center Point Building, Kannur, Kerala, India 670002',
       }
     }
 

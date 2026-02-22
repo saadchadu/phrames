@@ -47,8 +47,8 @@ export default function ContactPage() {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-primary mb-2">Email Support</h3>
-                  <a 
-                    href="mailto:support@cleffon.com" 
+                  <a
+                    href="mailto:support@cleffon.com"
                     className="text-secondary hover:underline"
                   >
                     support@cleffon.com
@@ -70,12 +70,16 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-primary mb-2">Business Name</h3>
-                  <p className="text-primary/80">Cleffon</p>
+                  <p className="text-primary/80">Cleffon Design Studio</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-primary mb-2">Address</h3>
+                  <p className="text-primary/80">Second Floor, Center Point Building,<br />Kannur, Kerala, India 670002</p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-primary mb-2">Website</h3>
-                  <a 
-                    href="https://cleffon.com" 
+                  <a
+                    href="https://cleffon.com"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-secondary hover:underline"
