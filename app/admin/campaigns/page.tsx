@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense, useCallback } from 'react';
-import { LayoutGrid, List, Globe, Lock, Users, Calendar, ExternalLink } from 'lucide-react';
+import { LayoutGrid, List, Globe, Lock, Users, Calendar } from 'lucide-react';
 import CampaignFilters, { CampaignFilterValues } from '@/components/admin/CampaignFilters';
 import CampaignActions from '@/components/admin/CampaignActions';
 import AdminErrorBoundary, { ErrorDisplay } from '@/components/admin/AdminErrorBoundary';
@@ -105,9 +105,6 @@ function CampaignCard({ campaign, onActionComplete }: { campaign: Campaign; onAc
       <div className="p-3 flex flex-col gap-2 flex-1">
         <div>
           <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight">{campaign.campaignName}</h3>
-          {campaign.createdByEmail && (
-            <p className="text-xs text-gray-500 mt-0.5 truncate">{campaign.createdByEmail}</p>
-          )}
         </div>
 
         {/* Badges row */}
@@ -133,21 +130,9 @@ function CampaignCard({ campaign, onActionComplete }: { campaign: Campaign; onAc
           )}
         </div>
 
-        {/* Campaign ID */}
-        <p className="text-xs text-gray-400 font-mono truncate">{campaign.id}</p>
 
-        {/* Actions row */}
-        <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
+        <div className="mt-auto pt-2 border-t border-gray-100">
           <CampaignActions campaign={campaign} onActionComplete={onActionComplete} />
-          <a
-            href={`/campaign/${campaign.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-gray-700 transition-colors ml-auto"
-            title="Open campaign"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
         </div>
       </div>
     </div>
