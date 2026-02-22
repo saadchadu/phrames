@@ -48,7 +48,7 @@ export default function PlanDistributionChart({ data }: PlanDistributionChartPro
             width={40}
           />
           <Tooltip
-            formatter={(value: number) => [value, 'Plans Sold']}
+            formatter={(value: number | undefined) => [value ?? 0, 'Plans Sold']}
             contentStyle={{
               backgroundColor: '#fff',
               border: '1px solid #e5e7eb',
