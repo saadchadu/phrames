@@ -37,9 +37,9 @@ function VisibilityBadge({ visibility }: { visibility?: string }) {
   const isPublic = (visibility || '').toLowerCase() === 'public';
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${isPublic
-        ? 'bg-blue-100 text-blue-700'
-        : 'bg-purple-100 text-purple-700'
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${isPublic
+          ? 'bg-gray-100 text-gray-700'
+          : 'bg-gray-100 text-gray-500'
         }`}
     >
       {isPublic ? <Globe className="h-3 w-3" /> : <Lock className="h-3 w-3" />}

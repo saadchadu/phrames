@@ -154,8 +154,8 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
             className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900"
           >
             <option value="">All Visibility</option>
-            <option value="public">🌐 Public</option>
-            <option value="unlisted">🔒 Unlisted</option>
+            <option value="public">Public</option>
+            <option value="unlisted">Unlisted</option>
           </select>
         </div>
       </div>
