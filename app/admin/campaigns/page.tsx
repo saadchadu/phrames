@@ -86,12 +86,7 @@ function CampaignCard({ campaign, onActionComplete }: { campaign: Campaign; onAc
           </svg>
         </div>
 
-        {/* Overlay badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1">
-          <VisibilityBadge visibility={campaign.visibility} />
-        </div>
-
-        {/* Status dot */}
+        {/* Status dot only */}
         <div className="absolute top-2 right-2">
           <span className={`inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white ${campaign.isExpired ? 'bg-red-500'
             : campaign.hasPendingPayment ? 'bg-amber-400'
@@ -131,8 +126,9 @@ function CampaignCard({ campaign, onActionComplete }: { campaign: Campaign; onAc
         </div>
 
 
-        <div className="mt-auto pt-2 border-t border-gray-100">
+        <div className="mt-auto pt-2 border-t border-gray-100 flex items-center justify-between">
           <CampaignActions campaign={campaign} onActionComplete={onActionComplete} />
+          <VisibilityBadge visibility={campaign.visibility} />
         </div>
       </div>
     </div>
