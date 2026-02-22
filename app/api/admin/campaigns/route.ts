@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const status = searchParams.get('status');
     const paymentType = searchParams.get('paymentType');
+    const visibility = searchParams.get('visibility');
     const userId = searchParams.get('userId');
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
@@ -47,6 +48,12 @@ export async function GET(request: NextRequest) {
       query = query.where('isFreeCampaign', '==', true);
     } else if (paymentType === 'paid') {
       query = query.where('isFreeCampaign', '==', false);
+    }
+
+    if (visibility === 'public') {
+      query = query.where('visibility', '==', 'Public');
+    } else if (visibility === 'unlisted') {
+      query = query.where('visibility', '==', 'Unlisted');
     }
 
     const snapshot = await query.get();

@@ -8,6 +8,7 @@ export interface CampaignFilterValues {
   search: string;
   status: string;
   paymentType: string;
+  visibility: string;
   userId: string;
   dateFrom: string;
   dateTo: string;
@@ -26,6 +27,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
     search: searchParams.get('search') || '',
     status: searchParams.get('status') || '',
     paymentType: searchParams.get('paymentType') || '',
+    visibility: searchParams.get('visibility') || '',
     userId: searchParams.get('userId') || '',
     dateFrom: searchParams.get('dateFrom') || '',
     dateTo: searchParams.get('dateTo') || '',
@@ -47,7 +49,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
   // Update URL params and notify parent when filters change
   useEffect(() => {
     const params = new URLSearchParams();
-    
+
     Object.entries(filters).forEach(([key, value]) => {
       if (value) {
         params.set(key, value);
@@ -79,6 +81,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
       search: '',
       status: '',
       paymentType: '',
+      visibility: '',
       userId: '',
       dateFrom: '',
       dateTo: '',
@@ -90,7 +93,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
       {/* Main Filter Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {/* Search Input */}
         <div className="lg:col-span-2 relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -140,6 +143,19 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
             <option value="">All Types</option>
             <option value="free">Free</option>
             <option value="paid">Paid</option>
+          </select>
+        </div>
+
+        {/* Visibility Filter */}
+        <div>
+          <select
+            value={filters.visibility}
+            onChange={(e) => updateFilter('visibility', e.target.value)}
+            className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900"
+          >
+            <option value="">All Visibility</option>
+            <option value="public">🌐 Public</option>
+            <option value="unlisted">🔒 Unlisted</option>
           </select>
         </div>
       </div>
@@ -199,7 +215,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium text-gray-500">Active Filters:</span>
-            
+
             {filters.search && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                 Search: {filters.search}
@@ -208,7 +224,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
                 </button>
               </span>
             )}
-            
+
             {filters.status && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                 Status: {filters.status}
@@ -217,7 +233,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
                 </button>
               </span>
             )}
-            
+
             {filters.paymentType && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                 Type: {filters.paymentType}
@@ -226,7 +242,16 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
                 </button>
               </span>
             )}
-            
+
+            {filters.visibility && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                Visibility: {filters.visibility}
+                <button onClick={() => clearFilter('visibility')} className="hover:text-purple-900">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
             {filters.userId && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                 User: {filters.userId}
@@ -235,7 +260,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
                 </button>
               </span>
             )}
-            
+
             {filters.dateFrom && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                 From: {new Date(filters.dateFrom).toLocaleDateString()}
@@ -244,7 +269,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
                 </button>
               </span>
             )}
-            
+
             {filters.dateTo && (
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                 To: {new Date(filters.dateTo).toLocaleDateString()}
