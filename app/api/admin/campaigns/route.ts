@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const paymentType = searchParams.get('paymentType');
     const visibility = searchParams.get('visibility');
+    const supporters = searchParams.get('supporters');
     const userId = searchParams.get('userId');
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
@@ -80,6 +81,19 @@ export async function GET(request: NextRequest) {
           campaign.id.toLowerCase().includes(searchLower) ||
           data.createdBy?.toLowerCase().includes(searchLower)
         );
+      });
+    }
+
+    // Apply supporters range filter (client-side — Firestore range can't combine with other where clauses)
+    if (supporters) {
+      campaigns = campaigns.filter((campaign: any) => {
+        const count = campaign.supportersCount ?? 0;
+        if (supporters === '0') return count === 0;
+        if (supporters === '1-10') return count >= 1 && count <= 10;
+        if (supporters === '11-50') return count >= 11 && count <= 50;
+        if (supporters === '51-100') return count >= 51 && count <= 100;
+        if (supporters === '100+') return count > 100;
+        return true;
       });
     }
 

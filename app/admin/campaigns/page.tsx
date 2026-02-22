@@ -66,8 +66,8 @@ function CampaignCard({ campaign, onActionComplete }: { campaign: Campaign; onAc
 
   return (
     <div className={`bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col transition-shadow duration-200 ${campaign.isExpired
-        ? 'opacity-50 grayscale border-gray-200'
-        : 'border-gray-200 hover:shadow-md'
+      ? 'opacity-50 grayscale border-gray-200'
+      : 'border-gray-200 hover:shadow-md'
       }`}>
       {/* Image */}
       <div className="relative aspect-square bg-gray-50 overflow-hidden">
@@ -148,6 +148,7 @@ export default function AdminCampaignsPage() {
     status: '',
     paymentType: '',
     visibility: '',
+    supporters: '',
     userId: '',
     dateFrom: '',
     dateTo: '',
@@ -163,6 +164,7 @@ export default function AdminCampaignsPage() {
       if (currentFilters.status) params.append('status', currentFilters.status);
       if (currentFilters.paymentType) params.append('paymentType', currentFilters.paymentType);
       if (currentFilters.visibility) params.append('visibility', currentFilters.visibility);
+      if (currentFilters.supporters) params.append('supporters', currentFilters.supporters);
       if (currentFilters.userId) params.append('userId', currentFilters.userId);
       if (currentFilters.dateFrom) params.append('dateFrom', currentFilters.dateFrom);
       if (currentFilters.dateTo) params.append('dateTo', currentFilters.dateTo);
@@ -182,7 +184,7 @@ export default function AdminCampaignsPage() {
     fetchCampaigns();
   }, [
     currentFilters.search, currentFilters.status, currentFilters.paymentType,
-    currentFilters.visibility, currentFilters.userId, currentFilters.dateFrom, currentFilters.dateTo,
+    currentFilters.visibility, currentFilters.supporters, currentFilters.userId, currentFilters.dateFrom, currentFilters.dateTo,
   ]);
 
   const handleFilterChange = useCallback((filters: CampaignFilterValues) => {

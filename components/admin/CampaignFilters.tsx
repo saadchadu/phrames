@@ -9,6 +9,7 @@ export interface CampaignFilterValues {
   status: string;
   paymentType: string;
   visibility: string;
+  supporters: string;
   userId: string;
   dateFrom: string;
   dateTo: string;
@@ -28,6 +29,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
     status: searchParams.get('status') || '',
     paymentType: searchParams.get('paymentType') || '',
     visibility: searchParams.get('visibility') || '',
+    supporters: searchParams.get('supporters') || '',
     userId: searchParams.get('userId') || '',
     dateFrom: searchParams.get('dateFrom') || '',
     dateTo: searchParams.get('dateTo') || '',
@@ -82,6 +84,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
       status: '',
       paymentType: '',
       visibility: '',
+      supporters: '',
       userId: '',
       dateFrom: '',
       dateTo: '',
@@ -161,7 +164,7 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
       </div>
 
       {/* Advanced Filters Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
         {/* User ID Filter */}
         <div className="relative">
           <input
@@ -179,6 +182,22 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
               <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
             </button>
           )}
+        </div>
+
+        {/* Supporters Filter */}
+        <div>
+          <select
+            value={filters.supporters}
+            onChange={(e) => updateFilter('supporters', e.target.value)}
+            className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-gray-900"
+          >
+            <option value="">All Supporters</option>
+            <option value="0">0 supporters</option>
+            <option value="1-10">1 – 10</option>
+            <option value="11-50">11 – 50</option>
+            <option value="51-100">51 – 100</option>
+            <option value="100+">100+</option>
+          </select>
         </div>
 
         {/* Date From Filter */}
@@ -256,6 +275,15 @@ export default function CampaignFilters({ onFilterChange }: CampaignFiltersProps
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                 User: {filters.userId}
                 <button onClick={() => clearFilter('userId')} className="hover:text-emerald-900">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {filters.supporters && (
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                Supporters: {filters.supporters === '0' ? '0' : filters.supporters === '100+' ? '100+' : filters.supporters}
+                <button onClick={() => clearFilter('supporters')} className="hover:text-emerald-900">
                   <X className="h-3 w-3" />
                 </button>
               </span>
