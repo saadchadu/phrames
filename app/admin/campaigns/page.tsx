@@ -328,7 +328,7 @@ export default function AdminCampaignsPage() {
         {viewMode === 'grid' && (
           <>
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {Array.from({ length: 10 }).map((_, i) => (
                   <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
                     <div className="aspect-square bg-gray-100" />
@@ -342,7 +342,7 @@ export default function AdminCampaignsPage() {
             ) : campaigns.length === 0 ? (
               <div className="text-center py-16 text-gray-500">No campaigns found</div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {campaigns.map((campaign) => (
                   <CampaignCard
                     key={campaign.id}
