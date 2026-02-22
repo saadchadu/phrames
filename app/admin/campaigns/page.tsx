@@ -65,7 +65,10 @@ function CampaignCard({ campaign, onActionComplete }: { campaign: Campaign; onAc
   const isActive = campaign.isActive && !campaign.isExpired;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow duration-200">
+    <div className={`bg-white rounded-xl border shadow-sm overflow-hidden flex flex-col transition-shadow duration-200 ${campaign.isExpired
+        ? 'opacity-50 grayscale border-gray-200'
+        : 'border-gray-200 hover:shadow-md'
+      }`}>
       {/* Image */}
       <div className="relative aspect-square bg-gray-50 overflow-hidden">
         {imageUrl ? (
@@ -85,6 +88,14 @@ function CampaignCard({ campaign, onActionComplete }: { campaign: Campaign; onAc
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
+        {/* Expired overlay ribbon */}
+        {campaign.isExpired && (
+          <div className="absolute inset-0 flex items-end justify-center pb-3 pointer-events-none">
+            <span className="bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+              Expired
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Info */}
@@ -315,13 +326,15 @@ export default function AdminCampaignsPage() {
               <div className="text-center py-16 text-gray-500">No campaigns found</div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {campaigns.map((campaign) => (
-                  <CampaignCard
-                    key={campaign.id}
-                    campaign={campaign}
-                    onActionComplete={handleActionComplete}
-                  />
-                ))}
+                {[...campaigns]
+                  .sort((a, b) => (a.isExpired ? 1 : 0) - (b.isExpired ? 1 : 0))
+                  .map((campaign) => (
+                    <CampaignCard
+                      key={campaign.id}
+                      campaign={campaign}
+                      onActionComplete={handleActionComplete}
+                    />
+                  ))}
               </div>
             )}
           </>
