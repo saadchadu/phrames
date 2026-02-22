@@ -48,10 +48,16 @@ export default async function InvoicePrintPage({
     // If invoice data doesn't exist, generate it now
     if (!paymentData.invoiceNumber) {
       const { generateInvoiceNumber, calculateGST, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } = await import('@/lib/invoice')
-      
+
       const invoiceNumber = await generateInvoiceNumber()
-      const gstCalc = calculateGST(paymentData.amount || 0, 18)
-      
+
+      // Get GST rate from settings
+      const settingsDoc = await db.collection('settings').doc('system').get()
+      const sysSettings = settingsDoc.data() || {}
+      const gstRate = sysSettings.gstPercentage !== undefined ? Number(sysSettings.gstPercentage) : 0
+
+      const gstCalc = calculateGST(paymentData.amount || 0, gstRate)
+
       // Get user details
       let userName = 'User'
       let userEmail = ''
@@ -63,7 +69,7 @@ export default async function InvoicePrintPage({
       } catch (error) {
         console.error('[Invoice Print] Error fetching user:', error)
       }
-      
+
       // Get campaign details
       let campaignName = 'Campaign'
       try {
@@ -73,12 +79,12 @@ export default async function InvoicePrintPage({
       } catch (error) {
         console.error('[Invoice Print] Error fetching campaign:', error)
       }
-      
+
       // Update payment with invoice data
       await db.collection('payments').doc(paymentId).update({
         invoiceNumber,
         invoiceDate: paymentData.completedAt || paymentData.createdAt,
-        gstRate: 18,
+        gstRate: gstRate,
         gstAmount: gstCalc.gstAmount,
         totalAmount: gstCalc.totalAmount,
         baseAmount: paymentData.amount,
@@ -89,7 +95,7 @@ export default async function InvoicePrintPage({
         validityDays: getPlanValidityDays(paymentData.planType),
         companyDetails: COMPANY_DETAILS
       })
-      
+
       // Refresh payment data
       const updatedDoc = await db.collection('payments').doc(paymentId).get()
       Object.assign(paymentData, updatedDoc.data())
@@ -108,7 +114,7 @@ export default async function InvoicePrintPage({
       userName: paymentData.userName || 'User',
       userEmail: paymentData.userEmail || '',
       amount: paymentData.baseAmount || paymentData.amount,
-      gstRate: paymentData.gstRate || paymentData.gstPercentage || 18,
+      gstRate: paymentData.gstRate !== undefined ? paymentData.gstRate : 0,
       gstAmount: paymentData.gstAmount || 0,
       totalAmount: paymentData.totalAmount || paymentData.amount,
       activationDate: paymentData.completedAt?.toDate() || new Date(),

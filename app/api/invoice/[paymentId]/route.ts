@@ -39,7 +39,7 @@ export async function GET(
     }
 
     const token = authHeader.split('Bearer ')[1]
-    
+
     // Verify Firebase token
     let userId: string
     let isAdmin = false
@@ -56,7 +56,7 @@ export async function GET(
 
     // Get payment record
     const paymentDoc = await db.collection('payments').doc(paymentId).get()
-    
+
     if (!paymentDoc.exists) {
       return NextResponse.json(
         { error: 'Payment not found' },
@@ -86,23 +86,29 @@ export async function GET(
     if (!paymentData.invoiceNumber) {
       // Generate invoice data for old payments
       const { generateInvoiceNumber, calculateGST, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } = await import('@/lib/invoice')
-      
+
       const invoiceNumber = await generateInvoiceNumber()
-      const gstCalc = calculateGST(paymentData.amount || 0, 18)
-      
+
+      // Get GST rate from settings
+      const settingsDoc = await db.collection('settings').doc('system').get()
+      const sysSettings = settingsDoc.data() || {}
+      const gstRate = sysSettings.gstPercentage !== undefined ? Number(sysSettings.gstPercentage) : 0
+
+      const gstCalc = calculateGST(paymentData.amount || 0, gstRate)
+
       // Get user details
       const userDoc = await db.collection('users').doc(paymentData.userId).get()
       const userData = userDoc.data()
-      
+
       // Get campaign details
       const campaignDoc = await db.collection('campaigns').doc(paymentData.campaignId).get()
       const campaignData = campaignDoc.data()
-      
+
       // Update payment with invoice data
       await db.collection('payments').doc(paymentId).update({
         invoiceNumber,
         invoiceDate: paymentData.completedAt || paymentData.createdAt,
-        gstRate: 18,
+        gstRate: gstRate,
         gstAmount: gstCalc.gstAmount,
         totalAmount: gstCalc.totalAmount,
         baseAmount: paymentData.amount,
@@ -113,16 +119,16 @@ export async function GET(
         validityDays: getPlanValidityDays(paymentData.planType),
         companyDetails: COMPANY_DETAILS
       })
-      
+
       // Refresh payment data
       const updatedDoc = await db.collection('payments').doc(paymentId).get()
       Object.assign(paymentData, updatedDoc.data())
     }
 
     // Get base URL - prioritize NEXT_PUBLIC_APP_URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                    process.env.NEXT_PUBLIC_SITE_URL || 
-                    `https://${request.headers.get('host')}`
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      `https://${request.headers.get('host')}`
 
     // Generate PDF using Puppeteer
     const pdfBuffer = await generateInvoicePDF({
@@ -143,8 +149,8 @@ export async function GET(
     console.error('Error generating invoice:', error)
     console.error('Error stack:', error.stack)
     return NextResponse.json(
-      { 
-        error: 'Failed to generate invoice', 
+      {
+        error: 'Failed to generate invoice',
         details: error.message,
         stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },

@@ -16,10 +16,10 @@ let listeners: ((toasts: Toast[]) => void)[] = []
 export function toast(message: string, type: 'success' | 'error' | 'info' = 'info') {
   const id = Math.random().toString(36).substr(2, 9)
   const newToast = { id, message, type }
-  
+
   toasts = [...toasts, newToast]
   listeners.forEach(listener => listener(toasts))
-  
+
   setTimeout(() => {
     toasts = toasts.filter(t => t.id !== id)
     listeners.forEach(listener => listener(toasts))
@@ -37,50 +37,58 @@ export function Toaster() {
   useEffect(() => {
     const listener = (newToasts: Toast[]) => setCurrentToasts(newToasts)
     listeners.push(listener)
-    
+
     return () => {
       listeners = listeners.filter(l => l !== listener)
     }
   }, [])
 
   return (
-    <div className="fixed top-4 right-4 left-4 sm:left-auto z-[9999] space-y-3 sm:w-96 max-w-full pointer-events-none">
+    <div className="fixed bottom-6 right-6 sm:left-auto z-[9999] space-y-3 sm:w-96 max-w-full pointer-events-none flex flex-col items-end">
       {currentToasts.map((toast) => (
         <div
           key={toast.id}
           className={cn(
-            "flex items-start gap-3 p-4 rounded-xl border shadow-2xl bg-white animate-slide-in-right pointer-events-auto",
-            toast.type === 'success' && 'border-green-200 bg-green-50',
-            toast.type === 'error' && 'border-red-200 bg-red-50',
-            toast.type === 'info' && 'border-blue-200 bg-blue-50'
+            "flex items-center gap-4 p-5 rounded-2xl shadow-2xl bg-primary text-white border border-white/10 backdrop-blur-md w-full min-w-[320px] pointer-events-auto transition-all animate-slideIn relative overflow-hidden"
           )}
         >
-          <div className="flex-shrink-0">
+          <div className={cn(
+            "relative flex items-center justify-center w-12 h-12 rounded-full border shrink-0",
+            toast.type === 'success' && 'bg-secondary/10 border-secondary/20',
+            toast.type === 'error' && 'bg-red-500/10 border-red-500/20',
+            toast.type === 'info' && 'bg-blue-500/10 border-blue-500/20'
+          )}>
             {toast.type === 'success' && (
-              <CheckCircleIcon className="h-5 w-5 text-green-500" />
+              <CheckCircleIcon className="h-5 w-5 text-secondary" />
             )}
             {toast.type === 'error' && (
-              <XCircleIcon className="h-5 w-5 text-red-500" />
+              <XCircleIcon className="h-5 w-5 text-red-400" />
             )}
             {toast.type === 'info' && (
-              <InformationCircleIcon className="h-5 w-5 text-blue-500" />
+              <InformationCircleIcon className="h-5 w-5 text-blue-400" />
             )}
+            <div className={cn(
+              "absolute inset-0 rounded-full border-2 animate-ping",
+              toast.type === 'success' && 'border-secondary/30',
+              toast.type === 'error' && 'border-red-500/30',
+              toast.type === 'info' && 'border-blue-500/30'
+            )}></div>
           </div>
-          
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-900">
+
+          <div className="flex-1 min-w-0 pr-6">
+            <p className="text-sm font-semibold leading-tight text-white mb-1">
               {toast.type === 'success' && 'Success'}
               {toast.type === 'error' && 'Error'}
-              {toast.type === 'info' && 'Info'}
+              {toast.type === 'info' && 'Information'}
             </p>
-            <p className="text-sm text-gray-600 mt-1 break-words">
+            <p className="text-xs text-white/60 font-medium break-words">
               {toast.message}
             </p>
           </div>
-          
+
           <button
             onClick={() => removeToast(toast.id)}
-            className="flex-shrink-0 p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 active:scale-95 transition-all"
+            className="absolute top-4 right-4 p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 active:scale-95 transition-all"
             aria-label="Close notification"
           >
             <XMarkIcon className="h-4 w-4" />

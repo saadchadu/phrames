@@ -51,23 +51,23 @@ async function getPaymentByOrderId(orderId: string): Promise<PaymentRecord | nul
       .where('orderId', '==', orderId)
       .limit(1)
       .get()
-    
+
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0]
       return { id: doc.id, ...doc.data() } as PaymentRecord
     }
-    
+
     // If not found, try to find by cashfreeOrderId
     querySnapshot = await db.collection('payments')
       .where('cashfreeOrderId', '==', orderId)
       .limit(1)
       .get()
-    
+
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0]
       return { id: doc.id, ...doc.data() } as PaymentRecord
     }
-    
+
     return null
   } catch (error) {
     console.error('Error getting payment by order ID:', error)
@@ -78,15 +78,15 @@ async function getPaymentByOrderId(orderId: string): Promise<PaymentRecord | nul
 export async function POST(request: NextRequest) {
   const tracker = new PerformanceTracker('webhook_processing')
   trackRequest()
-  
+
   try {
     // Get webhook headers
     const signature = request.headers.get('x-webhook-signature')
     const timestamp = request.headers.get('x-webhook-timestamp')
-    
+
     // Get raw body for signature verification
     const rawBody = await request.text()
-    
+
     // Verify signature (in production)
     if (process.env.CASHFREE_ENV === 'PRODUCTION') {
       if (!signature || !timestamp) {
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         logWebhookError({
           error: 'Missing webhook signature or timestamp'
         })
-        
+
         // Create admin log for webhook failure
         await db.collection('logs').add({
           eventType: 'webhook_failure',
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
           },
           createdAt: Timestamp.now()
         })
-        
+
         tracker.end(false)
         return NextResponse.json({ error: 'Invalid webhook' }, { status: 400 })
       }
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
         logWebhookError({
           error: 'Invalid webhook signature'
         })
-        
+
         // Create admin log for webhook failure
         await db.collection('logs').add({
           eventType: 'webhook_failure',
@@ -131,27 +131,27 @@ export async function POST(request: NextRequest) {
           },
           createdAt: Timestamp.now()
         })
-        
+
         tracker.end(false)
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
     }
-    
+
     // Parse webhook payload
     const payload = JSON.parse(rawBody)
-    
+
     // Log webhook received for debugging with full details
     const logMetadata: any = {
       hasSignature: !!signature,
       hasTimestamp: !!timestamp,
       fullPayload: payload
     }
-    
+
     // Only add fields if they exist (Firestore doesn't allow undefined)
     if (payload.type) logMetadata.webhookType = payload.type
     if (payload.data?.order?.order_id) logMetadata.orderId = payload.data.order.order_id
     if (payload.data?.payment?.payment_status) logMetadata.paymentStatus = payload.data.payment.payment_status
-    
+
     await db.collection('logs').add({
       eventType: 'webhook_received',
       actorId: 'system',
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
       metadata: logMetadata,
       createdAt: Timestamp.now()
     })
-    
+
     logWebhookReceived({
       type: payload.type,
       orderId: payload.data?.order?.order_id
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
     logWebhookError({
       error: `Webhook processing error: ${errorMessage}`
     })
-    
+
     // Create admin log for webhook failure
     try {
       const logMetadata: any = {
@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
         error: errorMessage
       }
       if (error?.stack) logMetadata.stack = error.stack
-      
+
       await db.collection('logs').add({
         eventType: 'webhook_failure',
         actorId: 'system',
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     } catch (logError) {
       console.error('Failed to create admin log:', logError)
     }
-    
+
     tracker.end(false)
     // Return 200 OK even on error to prevent retries
     return NextResponse.json({ success: true })
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
 
 async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
   const startTime = Date.now()
-  
+
   try {
     const orderId = data.order?.order_id
     const paymentId = data.payment?.cf_payment_id
@@ -248,10 +248,10 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
 
     // Get payment record
     const paymentRecord = await getPaymentByOrderId(orderId)
-    
+
     if (!paymentRecord) {
       const errorMsg = `Payment record not found for order ${orderId}`
-      
+
       logWebhookError({
         orderId,
         error: errorMsg,
@@ -282,7 +282,7 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
     // Check if user is blocked and get user details
     const userDoc = await db.collection('users').doc(userId).get()
     const userData = userDoc.data()
-    
+
     if (userDoc.exists && userData?.isBlocked === true) {
       logWebhookError({
         orderId,
@@ -305,14 +305,19 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
 
     // Generate invoice number
     const invoiceNumber = await generateInvoiceNumber()
-    
+
+    // Get GST rate from settings
+    const settingsDoc = await db.collection('settings').doc('system').get()
+    const sysSettings = settingsDoc.data() || {}
+    const gstRate = sysSettings.gstPercentage !== undefined ? Number(sysSettings.gstPercentage) : 0
+
     // Calculate GST
-    const gstCalculation = calculateGST(amount, 18)
-    
+    const gstCalculation = calculateGST(amount, gstRate)
+
     // Get user details for invoice (reuse userData from above)
     const userName = userData?.displayName || userData?.email || 'User'
     const userEmail = userData?.email || paymentRecord.metadata?.userEmail || ''
-    
+
     // Get campaign details
     const campaignDoc = await db.collection('campaigns').doc(campaignId).get()
     const campaignData = campaignDoc.data()
@@ -343,7 +348,7 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
         // Invoice details
         invoiceNumber,
         invoiceDate: Timestamp.now(),
-        gstRate: 18,
+        gstRate: gstRate,
         gstAmount: gstCalculation.gstAmount,
         totalAmount: gstCalculation.totalAmount,
         baseAmount: amount,
@@ -375,7 +380,7 @@ async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
       planType,
       expiresAt: expiryDate ? expiryDate.toISOString() : 'never'
     })
-    
+
     // Create admin log for successful payment
     await db.collection('logs').add({
       eventType: 'payment_success',
@@ -420,7 +425,7 @@ async function handlePaymentFailed(data: any) {
         error: 'No order ID in webhook payload for failed payment',
         metadata: { data }
       })
-      
+
       // Create admin log
       await db.collection('logs').add({
         eventType: 'webhook_failure',
@@ -432,7 +437,7 @@ async function handlePaymentFailed(data: any) {
         },
         createdAt: Timestamp.now()
       })
-      
+
       return
     }
 
@@ -444,7 +449,7 @@ async function handlePaymentFailed(data: any) {
         error: 'Payment record not found for failed payment',
         metadata: { orderId }
       })
-      
+
       // Create admin log
       await db.collection('logs').add({
         eventType: 'webhook_failure',
@@ -457,7 +462,7 @@ async function handlePaymentFailed(data: any) {
         },
         createdAt: Timestamp.now()
       })
-      
+
       return
     }
 
@@ -477,7 +482,7 @@ async function handlePaymentFailed(data: any) {
       orderId,
       error: 'Payment failed at gateway'
     })
-    
+
     // Create admin log for payment failure
     await db.collection('logs').add({
       eventType: 'payment_failure',
@@ -502,7 +507,7 @@ async function handlePaymentFailed(data: any) {
       error: `Error handling payment failure: ${errorMessage}`,
       metadata: { data }
     })
-    
+
     // Create admin log for webhook processing error
     try {
       await db.collection('logs').add({
@@ -519,7 +524,7 @@ async function handlePaymentFailed(data: any) {
     } catch (logError) {
       console.error('Failed to create admin log:', logError)
     }
-    
+
     throw error
   }
 }
@@ -549,7 +554,7 @@ async function handlePaymentRefund(data: any) {
 
     // Get payment record
     const paymentRecord = await getPaymentByOrderId(orderId)
-    
+
     if (!paymentRecord) {
       const errorMsg = `Payment record not found for refund order ${orderId}`
       logWebhookError({
@@ -617,7 +622,7 @@ async function handlePaymentRefund(data: any) {
       error: `Error handling payment refund: ${errorMessage}`,
       metadata: { data }
     })
-    
+
     try {
       await db.collection('logs').add({
         eventType: 'webhook_failure',
@@ -633,7 +638,7 @@ async function handlePaymentRefund(data: any) {
     } catch (logError) {
       console.error('Failed to create admin log:', logError)
     }
-    
+
     throw error
   }
 }

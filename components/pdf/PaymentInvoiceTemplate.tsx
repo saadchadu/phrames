@@ -296,10 +296,12 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
                 </td>
                 <td>{formatCurrency(data.amount)}</td>
               </tr>
-              <tr className="table-subtotal">
-                <td>GST ({data.gstRate}%)</td>
-                <td>{formatCurrency(data.gstAmount)}</td>
-              </tr>
+              {data.gstRate > 0 && (
+                <tr className="table-subtotal">
+                  <td>GST ({data.gstRate}%)</td>
+                  <td>{formatCurrency(data.gstAmount)}</td>
+                </tr>
+              )}
               <tr className="table-total">
                 <td>Total Amount</td>
                 <td>{formatCurrency(data.totalAmount)}</td>

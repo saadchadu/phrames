@@ -29,24 +29,24 @@ export interface InvoiceData {
 export async function generateInvoiceNumber(): Promise<string> {
   const db = getFirestore()
   const counterRef = db.collection('settings').doc('invoiceCounter')
-  
+
   try {
     // Use transaction to ensure atomic increment
     const invoiceNumber = await db.runTransaction(async (transaction) => {
       const counterDoc = await transaction.get(counterRef)
-      
+
       let nextNumber = 1
       if (counterDoc.exists) {
         nextNumber = (counterDoc.data()?.lastInvoiceNumber || 0) + 1
       }
-      
+
       // Update counter
       transaction.set(counterRef, { lastInvoiceNumber: nextNumber }, { merge: true })
-      
+
       // Format: PHR-000001 (6 digits, zero-padded)
       return `PHR-${String(nextNumber).padStart(6, '0')}`
     })
-    
+
     return invoiceNumber
   } catch (error) {
     console.error('Error generating invoice number:', error)
@@ -59,12 +59,12 @@ export async function generateInvoiceNumber(): Promise<string> {
 // Calculate GST breakdown
 // Note: Payment gateway already includes GST in the amount
 // This function now treats the amount as the total (including GST)
-export function calculateGST(amount: number, gstRate: number = 18) {
+export function calculateGST(amount: number, gstRate: number = 0) {
   // Amount already includes GST from payment gateway
   // Calculate base amount and GST from total
   const baseAmount = Math.round((amount / (1 + gstRate / 100)) * 100) / 100
   const gstAmount = Math.round((amount - baseAmount) * 100) / 100
-  
+
   return {
     baseAmount,
     gstRate,

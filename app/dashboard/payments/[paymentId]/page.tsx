@@ -18,6 +18,7 @@ interface PaymentDetail {
   planName: string
   planType: string
   amount: number
+  gstRate?: number
   gstAmount: number
   totalAmount: number
   status: string
@@ -35,7 +36,7 @@ export default function PaymentDetailPage() {
   const params = useParams()
   const router = useRouter()
   const paymentId = params.paymentId as string
-  
+
   const [payment, setPayment] = useState<PaymentDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
@@ -53,7 +54,7 @@ export default function PaymentDetailPage() {
     try {
       setLoading(true)
       const paymentDoc = await getDoc(doc(db, 'payments', paymentId))
-      
+
       if (!paymentDoc.exists()) {
         toast('Payment not found', 'error')
         router.push('/dashboard/payments')
@@ -61,7 +62,7 @@ export default function PaymentDetailPage() {
       }
 
       const data = paymentDoc.data()
-      
+
       // Verify ownership
       if (data.userId !== user.uid) {
         toast('Access denied', 'error')
@@ -77,6 +78,7 @@ export default function PaymentDetailPage() {
         planName: data.planName || data.planType || 'Plan',
         planType: data.planType,
         amount: data.baseAmount || data.amount || 0,
+        gstRate: data.gstRate !== undefined ? data.gstRate : 0,
         gstAmount: data.gstAmount || 0,
         totalAmount: data.totalAmount || data.amount || 0,
         status: data.status || 'pending',
@@ -102,7 +104,7 @@ export default function PaymentDetailPage() {
     try {
       setDownloading(true)
       setShowToast(true)
-      
+
       const token = await user?.getIdToken()
       if (!token) {
         toast('Authentication required', 'error')
@@ -304,10 +306,12 @@ export default function PaymentDetailPage() {
                   <span>Base Amount</span>
                   <span className="font-semibold">{formatCurrency(payment.amount)}</span>
                 </div>
-                <div className="flex justify-between text-primary/70">
-                  <span>GST (18%)</span>
-                  <span className="font-semibold">{formatCurrency(payment.gstAmount)}</span>
-                </div>
+                {payment.gstAmount > 0 && (
+                  <div className="flex justify-between text-primary/70">
+                    <span>GST ({payment.gstRate || 0}%)</span>
+                    <span className="font-semibold">{formatCurrency(payment.gstAmount)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-lg font-bold text-primary border-t border-gray-100 pt-2">
                   <span>Total Amount</span>
                   <span>{formatCurrency(payment.totalAmount)}</span>
@@ -331,12 +335,11 @@ export default function PaymentDetailPage() {
                 <div className="text-sm text-primary/70">{formatDate(payment.createdAt)}</div>
               </div>
             </div>
-            
+
             {payment.completedAt && (
               <div className="flex items-start gap-3">
-                <div className={`w-2 h-2 rounded-full mt-2 ${
-                  payment.status.toUpperCase() === 'SUCCESS' ? 'bg-secondary' : 'bg-red-600'
-                }`}></div>
+                <div className={`w-2 h-2 rounded-full mt-2 ${payment.status.toUpperCase() === 'SUCCESS' ? 'bg-secondary' : 'bg-red-600'
+                  }`}></div>
                 <div className="flex-1">
                   <div className="text-sm font-semibold text-primary">
                     Payment {payment.status.toUpperCase() === 'SUCCESS' ? 'Completed' : 'Failed'}
