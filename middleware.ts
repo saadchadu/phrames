@@ -4,34 +4,67 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const response = NextResponse.next()
 
-  // ── Content-Security-Policy ──────────────────────────────────────────────
-  const csp = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.cashfree.com https://accounts.google.com https://www.gstatic.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
-    "font-src 'self' https://fonts.gstatic.com",
-    "img-src 'self' data: blob: https://firebasestorage.googleapis.com https://lh3.googleusercontent.com https://www.gstatic.com",
-    "connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com wss://*.firebaseio.com https://sandbox.cashfree.com https://api.cashfree.com",
-    "frame-src 'self' https://accounts.google.com https://sdk.cashfree.com",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "upgrade-insecure-requests",
-  ].join('; ')
+  // Security Headers
+  const securityHeaders = {
+    // Content Security Policy
+    'Content-Security-Policy': [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.cashfree.com https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com https://www.gstatic.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https: http:",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "connect-src 'self' https://firebasestorage.googleapis.com https://firestore.googleapis.com https://*.googleapis.com https://sdk.cashfree.com https://www.google-analytics.com https://api.cashfree.com",
+      "frame-src 'self' https://www.google.com https://sdk.cashfree.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "upgrade-insecure-requests"
+    ].join('; '),
+    
+    // Strict Transport Security
+    'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+    
+    // Prevent clickjacking
+    'X-Frame-Options': 'DENY',
+    
+    // Prevent MIME type sniffing
+    'X-Content-Type-Options': 'nosniff',
+    
+    // XSS Protection
+    'X-XSS-Protection': '1; mode=block',
+    
+    // Referrer Policy
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    
+    // Permissions Policy
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    
+    // Remove X-Powered-By
+    'X-DNS-Prefetch-Control': 'on',
+  }
 
-  response.headers.set('Content-Security-Policy', csp)
-  response.headers.set('X-DNS-Prefetch-Control', 'on')
-  response.headers.set('X-Frame-Options', 'SAMEORIGIN')
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('X-XSS-Protection', '1; mode=block')
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  // Apply security headers
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value)
+  })
+
+  // Rate limiting headers (informational)
+  response.headers.set('X-RateLimit-Limit', '100')
+  response.headers.set('X-RateLimit-Remaining', '99')
 
   return response
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|icons/|logos/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|icons|images|examples).*)',
   ],
 }

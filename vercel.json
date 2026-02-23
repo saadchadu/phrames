@@ -1,44 +1,86 @@
 {
-  "functions": {
-    "app/api/invoice/[paymentId]/route.ts": {
-      "maxDuration": 60,
-      "memory": 1024
-    }
-  },
   "headers": [
     {
-      "source": "/api/image-proxy",
+      "source": "/(.*)",
       "headers": [
         {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
         },
         {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, OPTIONS"
+          "key": "X-Frame-Options",
+          "value": "DENY"
         },
         {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type"
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
         }
       ]
     },
     {
-      "source": "/api/payments/(.*)",
+      "source": "/images/(.*)",
       "headers": [
         {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/icons/(.*)",
+      "headers": [
         {
-          "key": "Access-Control-Allow-Methods",
-          "value": "POST, OPTIONS"
-        },
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/_next/static/(.*)",
+      "headers": [
         {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, x-webhook-signature, x-webhook-timestamp"
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, must-revalidate"
         }
       ]
     }
-  ]
+  ],
+  "rewrites": [
+    {
+      "source": "/healthz",
+      "destination": "/api/admin/health"
+    }
+  ],
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
+    "app/api/payments/webhook/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "app/api/invoice/[paymentId]/route.ts": {
+      "maxDuration": 60,
+      "memory": 3008
+    }
+  },
+  "crons": []
 }
