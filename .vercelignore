@@ -1,10 +1,15 @@
-# Development and documentation files
+# Development files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Scripts
+scripts/
+
+# Documentation
 *.md
 !README.md
-!PRODUCTION_READY.md
-
-# Scripts (not needed in production)
-scripts/
 
 # Test files
 **/*.test.ts
@@ -12,24 +17,5 @@ scripts/
 **/*.spec.ts
 **/*.spec.tsx
 
-# Local env files
-.env.local
-.env
-
-# Git
-.git/
-.gitignore
-
-# IDE
-.vscode/
-.idea/
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# OS
-.DS_Store
-Thumbs.db
+# Development configs
+tsconfig.scripts.json

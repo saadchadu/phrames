@@ -5,6 +5,8 @@ import { Tag, Plus, Check, X, AlertCircle, Edit2, Activity, Eye, Trash2 } from '
 import AdminErrorBoundary from '@/components/admin/AdminErrorBoundary';
 import PageHeader from '@/components/admin/PageHeader';
 import { useAuth } from '@/components/AuthProvider';
+import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal';
+import AlertDialog from '@/components/ui/AlertDialog';
 
 interface Coupon {
     code: string;
@@ -29,6 +31,8 @@ export default function AdminCouponsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [viewingRedemptions, setViewingRedemptions] = useState<{ code: string, data: any[], loading: boolean } | null>(null);
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; code: string; isDeleting: boolean }>({ isOpen: false, code: '', isDeleting: false });
+    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; message: string; type: 'success' | 'error' }>({ isOpen: false, title: '', message: '', type: 'success' });
 
     // Form state
     const [formData, setFormData] = useState({
@@ -74,20 +78,23 @@ export default function AdminCouponsPage() {
             if (!res.ok) throw new Error('Failed to update status');
             fetchCoupons();
         } catch (err: any) {
-            alert(err.message);
+            setAlertDialog({ isOpen: true, title: 'Error', message: err.message || 'Failed to update coupon status', type: 'error' });
         }
     };
 
-    const handleDelete = async (code: string) => {
-        if (!confirm(`Are you sure you want to delete coupon ${code}?`)) return;
+    const handleDelete = async () => {
+        setDeleteModal(prev => ({ ...prev, isDeleting: true }));
         try {
-            const res = await fetch(`/api/admin/coupons/${code}`, {
+            const res = await fetch(`/api/admin/coupons/${deleteModal.code}`, {
                 method: 'DELETE'
             });
             if (!res.ok) throw new Error('Failed to delete coupon');
+            setDeleteModal({ isOpen: false, code: '', isDeleting: false });
             fetchCoupons();
+            setAlertDialog({ isOpen: true, title: 'Success', message: 'Coupon deleted successfully', type: 'success' });
         } catch (err: any) {
-            alert(err.message);
+            setDeleteModal(prev => ({ ...prev, isDeleting: false }));
+            setAlertDialog({ isOpen: true, title: 'Error', message: err.message || 'Failed to delete coupon', type: 'error' });
         }
     };
 
@@ -102,7 +109,7 @@ export default function AdminCouponsPage() {
                 throw new Error(data.error || 'Failed to fetch usages');
             }
         } catch (err: any) {
-            alert(err.message);
+            setAlertDialog({ isOpen: true, title: 'Error', message: err.message || 'Failed to fetch coupon usages', type: 'error' });
             setViewingRedemptions(null);
         }
     };
@@ -160,8 +167,9 @@ export default function AdminCouponsPage() {
                 code: '', type: 'flat', value: '', applicablePlans: [], usageLimit: '', perUserLimit: '1', validFrom: '', validUntil: '', isActive: true
             });
             fetchCoupons();
+            setAlertDialog({ isOpen: true, title: 'Success', message: `Coupon ${isEditing ? 'updated' : 'created'} successfully`, type: 'success' });
         } catch (err: any) {
-            alert(err.message);
+            setAlertDialog({ isOpen: true, title: 'Error', message: err.message || `Failed to ${isEditing ? 'update' : 'create'} coupon`, type: 'error' });
         } finally {
             setSubmitting(false);
         }
@@ -279,7 +287,7 @@ export default function AdminCouponsPage() {
                                                     </button>
                                                     <div className="w-px h-4 bg-gray-200 mx-1"></div>
                                                     <button
-                                                        onClick={() => handleDelete(coupon.code)}
+                                                        onClick={() => setDeleteModal({ isOpen: true, code: coupon.code, isDeleting: false })}
                                                         title="Delete"
                                                         className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                                     >
@@ -494,6 +502,26 @@ export default function AdminCouponsPage() {
                         </div>
                     </div>
                 )}
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, code: '', isDeleting: false })}
+                onConfirm={handleDelete}
+                title="Delete Coupon"
+                message={`Are you sure you want to delete coupon ${deleteModal.code}? This action cannot be undone.`}
+                confirmText="Delete"
+                isLoading={deleteModal.isDeleting}
+            />
+
+            {/* Alert Dialog */}
+            <AlertDialog
+                isOpen={alertDialog.isOpen}
+                onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+                title={alertDialog.title}
+                message={alertDialog.message}
+                type={alertDialog.type}
+            />
             </PageHeader>
         </AdminErrorBoundary>
     );

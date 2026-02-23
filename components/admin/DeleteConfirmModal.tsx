@@ -49,30 +49,30 @@ export default function DeleteConfirmModal({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-8 text-left align-middle shadow-xl transition-all">
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                      <AlertTriangle className="h-6 w-6 text-red-600" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100">
+                      <AlertTriangle className="h-7 w-7 text-yellow-600" />
                     </div>
                   </div>
                   <div className="flex-1">
                     <Dialog.Title
                       as="h3"
-                      className="text-lg font-semibold leading-6 text-gray-900"
+                      className="text-xl font-semibold leading-6 text-gray-900"
                     >
                       {title}
                     </Dialog.Title>
                     <div className="mt-2">
-                      <p className="text-sm text-gray-500">{message}</p>
+                      <p className="text-sm text-gray-600">{message}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 flex gap-3 justify-end">
+                <div className="mt-8 flex gap-3 justify-end">
                   <button
                     type="button"
-                    className="inline-flex justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 disabled:opacity-50"
+                    className="inline-flex justify-center rounded-xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 transition-all active:scale-95 disabled:opacity-50 min-w-[100px]"
                     onClick={onClose}
                     disabled={isLoading}
                   >
@@ -80,7 +80,7 @@ export default function DeleteConfirmModal({
                   </button>
                   <button
                     type="button"
-                    className="inline-flex justify-center rounded-lg border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex justify-center rounded-xl border border-transparent bg-red-600 px-6 py-3 text-sm font-semibold text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px]"
                     onClick={onConfirm}
                     disabled={isLoading}
                   >
