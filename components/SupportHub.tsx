@@ -632,6 +632,7 @@ export default function SupportHub({
   };
 
   return (
+    <>
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child
@@ -667,5 +668,25 @@ export default function SupportHub({
         </div>
       </Dialog>
     </Transition>
+
+    {/* Dialogs */}
+    <AlertDialog
+      isOpen={alertState.isOpen}
+      onClose={closeAlert}
+      title={alertState.title}
+      message={alertState.message}
+      type={alertState.type}
+    />
+    <ConfirmDialog
+      isOpen={confirmState.isOpen}
+      onClose={closeConfirm}
+      onConfirm={confirmState.onConfirm || (() => {})}
+      title={confirmState.title}
+      message={confirmState.message}
+      confirmText={confirmState.confirmText}
+      cancelText={confirmState.cancelText}
+      type={confirmState.type}
+    />
+    </>
   );
 }

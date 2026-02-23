@@ -10,6 +10,8 @@ import { uploadImage, validateFrameImage } from '@/lib/storage'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { isCampaignCreationEnabled } from '@/lib/feature-toggles'
+import { useDialog } from '@/hooks/useDialog'
+import AlertDialog from '@/components/ui/AlertDialog'
 
 // Prevent static generation for this auth-protected page
 export const dynamic = 'force-dynamic'
@@ -17,6 +19,7 @@ export const dynamic = 'force-dynamic'
 export default function CreateCampaignPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const { alertState, showAlert, closeAlert } = useDialog()
   
   const [formData, setFormData] = useState({
     campaignName: '',
@@ -166,7 +169,11 @@ export default function CreateCampaignPage() {
       
       // If user is blocked, show a more prominent error
       if (errorMessage.includes('blocked')) {
-        alert('Your account has been blocked. Please contact support for assistance.')
+        showAlert({
+          title: 'Account Blocked',
+          message: 'Your account has been blocked. Please contact support for assistance.',
+          type: 'error',
+        })
       }
     }
   }
@@ -469,6 +476,14 @@ export default function CreateCampaignPage() {
           </form>
         </div>
       </div>
+
+      <AlertDialog
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+      />
     </AuthGuard>
   )
 }
