@@ -43,9 +43,11 @@ export default function Home() {
         const trending = await getTrendingCampaigns(8)
         setTrendingCampaigns(trending)
         
-        // Also fetch all public campaigns for search functionality
-        const allCampaigns = await getPublicActiveCampaigns()
-        setCampaigns(allCampaigns)
+        // Defer loading all campaigns for search until user actually searches
+        if (searchQuery.trim()) {
+          const allCampaigns = await getPublicActiveCampaigns()
+          setCampaigns(allCampaigns)
+        }
       } catch (error) {
         console.error('Failed to fetch campaigns:', error)
         toast('Failed to load campaigns. Please refresh the page.', 'error')
@@ -57,7 +59,7 @@ export default function Home() {
     }
     
     fetchCampaigns()
-  }, [mounted])
+  }, [mounted, searchQuery])
 
   // Filter campaigns based on search query
   const filteredCampaigns = useMemo(() => {
@@ -250,7 +252,8 @@ export default function Home() {
                   height={490}
                   className="w-full h-auto rounded-2xl"
                   priority
-                  quality={85}
+                  quality={75}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 450px"
                   placeholder="blur"
                   blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
                 />

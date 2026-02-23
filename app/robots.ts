@@ -6,12 +6,13 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/dashboard/', '/admin/', '/invoice/', '/_next/'],
+        disallow: ['/api/', '/admin/', '/dashboard/'],
       },
       {
         userAgent: 'Googlebot',
         allow: '/',
-        disallow: ['/api/', '/dashboard/', '/admin/', '/invoice/', '/_next/'],
+        disallow: ['/api/', '/admin/', '/dashboard/'],
+        crawlDelay: 0,
       },
     ],
     sitemap: 'https://phrames.cleffon.com/sitemap.xml',
