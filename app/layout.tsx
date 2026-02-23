@@ -131,8 +131,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
         <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://sdk.cashfree.com" />
+        <link rel="dns-prefetch" href="https://sdk.cashfree.com" />
         {/* Cashfree Payment Gateway SDK v3 */}
         <script src="https://sdk.cashfree.com/js/v3/cashfree.js" defer></script>
       </head>

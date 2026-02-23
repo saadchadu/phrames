@@ -3,6 +3,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font optimization */
+@font-face {
+  font-family: 'Mona Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Mona Sans');
+}
+
 @layer base {
   :root {
     --background: 140 100% 98%;

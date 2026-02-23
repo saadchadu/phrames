@@ -245,11 +245,14 @@ export default function Home() {
               <div className="w-full max-w-sm lg:max-w-md relative">
                 <Image
                   src="/images/Hero.png"
-                  alt="Phrames Hero"
+                  alt="Phrames Hero - Create viral photo frame campaigns"
                   width={450}
                   height={490}
                   className="w-full h-auto rounded-2xl"
                   priority
+                  quality={85}
+                  placeholder="blur"
+                  blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
                 />
               </div>
             </div>
@@ -442,11 +445,12 @@ export default function Home() {
             <div className="w-full lg:w-1/2 order-first lg:order-last">
               <Image
                 src="/images/Strip.png"
-                alt="CTA Visual"
+                alt="Campaign visual examples showing photo frames in action"
                 width={720}
                 height={455}
                 className="w-full h-auto"
-                priority
+                loading="lazy"
+                quality={80}
               />
             </div>
           </div>
