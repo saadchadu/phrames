@@ -219,6 +219,7 @@ export default function SignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
+                autoComplete="name"
                 className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
             </div>
@@ -235,6 +236,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="email"
                 className="w-full px-4 py-3 sm:py-3.5 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
               />
             </div>
@@ -252,6 +254,7 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoComplete="new-password"
                   className="w-full px-4 py-3 sm:py-3.5 pr-12 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
                 />
                 <button
@@ -282,6 +285,7 @@ export default function SignupPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  autoComplete="new-password"
                   className="w-full px-4 py-3 sm:py-3.5 pr-12 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
                 />
                 <button
