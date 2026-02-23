@@ -65,28 +65,24 @@ export default function AlertDialog({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                <div className="flex items-start gap-4">
-                  <div className={`flex-shrink-0 ${colorMap[type]}`}>
-                    <Icon className="h-6 w-6" aria-hidden="true" />
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-8 text-left align-middle shadow-xl transition-all">
+                <div className="flex flex-col items-center text-center">
+                  <div className={`flex-shrink-0 ${colorMap[type]} mb-4`}>
+                    <Icon className="h-12 w-12" aria-hidden="true" />
                   </div>
-                  <div className="flex-1">
-                    <Dialog.Title
-                      as="h3"
-                      className="text-lg font-medium leading-6 text-gray-900"
-                    >
-                      {title}
-                    </Dialog.Title>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">{message}</p>
-                    </div>
-                  </div>
+                  <Dialog.Title
+                    as="h3"
+                    className="text-xl font-semibold leading-6 text-gray-900 mb-2"
+                  >
+                    {title}
+                  </Dialog.Title>
+                  <p className="text-sm text-gray-600 mb-6">{message}</p>
                 </div>
 
-                <div className="mt-6 flex justify-end">
+                <div className="flex justify-center">
                   <button
                     type="button"
-                    className="inline-flex justify-center rounded-md border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    className="inline-flex justify-center rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 transition-all active:scale-95 min-w-[120px]"
                     onClick={onClose}
                   >
                     {confirmText}

@@ -10,6 +10,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from '@/components/ui/toaster';
 import { auth } from '@/lib/firebase';
+import { useDialog } from '@/hooks/useDialog';
+import AlertDialog from '@/components/ui/AlertDialog';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 interface Ticket {
   id: string;
@@ -48,6 +51,7 @@ export default function SupportHub({
 }: SupportHubProps) {
   const [view, setView] = useState<View>('list');
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const { alertState, showAlert, closeAlert, confirmState, showConfirm, closeConfirm } = useDialog();
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -160,7 +164,15 @@ export default function SupportHub({
   };
 
   const handleCancelTicket = async (ticketId: string) => {
-    if (!confirm('Are you sure you want to cancel this ticket?')) {
+    const confirmed = await showConfirm({
+      title: 'Cancel Ticket',
+      message: 'Are you sure you want to cancel this ticket?',
+      confirmText: 'Cancel Ticket',
+      cancelText: 'Keep Ticket',
+      type: 'warning',
+    });
+
+    if (!confirmed) {
       return;
     }
 
