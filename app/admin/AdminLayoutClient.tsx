@@ -65,17 +65,43 @@ export default function AdminLayoutClient({
 
   // Fetch pending tickets count
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin || !user) return;
 
     const fetchPendingTickets = async () => {
       try {
-        const res = await fetch('/api/admin/support?status=open,in_progress');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && Array.isArray(data.tickets)) {
-            setPendingTicketsCount(data.tickets.length);
+        const token = await user.getIdToken();
+        
+        // Fetch open tickets
+        const openRes = await fetch('/api/admin/support?status=open', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        // Fetch in-progress tickets
+        const inProgressRes = await fetch('/api/admin/support?status=in_progress', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        let count = 0;
+        
+        if (openRes.ok) {
+          const openData = await openRes.json();
+          if (openData.tickets && Array.isArray(openData.tickets)) {
+            count += openData.tickets.length;
           }
         }
+        
+        if (inProgressRes.ok) {
+          const inProgressData = await inProgressRes.json();
+          if (inProgressData.tickets && Array.isArray(inProgressData.tickets)) {
+            count += inProgressData.tickets.length;
+          }
+        }
+
+        setPendingTicketsCount(count);
       } catch (error) {
         console.error('Error fetching pending tickets:', error);
       }
@@ -86,7 +112,7 @@ export default function AdminLayoutClient({
     // Refresh count every 30 seconds
     const interval = setInterval(fetchPendingTickets, 30000);
     return () => clearInterval(interval);
-  }, [isAdmin]);
+  }, [isAdmin, user]);
 
   // Show loading state while checking
   if (isChecking || loading) {
