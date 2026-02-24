@@ -71,37 +71,21 @@ export default function AdminLayoutClient({
       try {
         const token = await user.getIdToken();
         
-        // Fetch open tickets
-        const openRes = await fetch('/api/admin/support?status=open', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        // Fetch in-progress tickets
-        const inProgressRes = await fetch('/api/admin/support?status=in_progress', {
+        const res = await fetch('/api/admin/support/count', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
-        let count = 0;
-        
-        if (openRes.ok) {
-          const openData = await openRes.json();
-          if (openData.tickets && Array.isArray(openData.tickets)) {
-            count += openData.tickets.length;
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && typeof data.count === 'number') {
+            setPendingTicketsCount(data.count);
+            console.log('Pending tickets count:', data.count, data.breakdown);
           }
+        } else {
+          console.error('Failed to fetch ticket count:', res.status, await res.text());
         }
-        
-        if (inProgressRes.ok) {
-          const inProgressData = await inProgressRes.json();
-          if (inProgressData.tickets && Array.isArray(inProgressData.tickets)) {
-            count += inProgressData.tickets.length;
-          }
-        }
-
-        setPendingTicketsCount(count);
       } catch (error) {
         console.error('Error fetching pending tickets:', error);
       }
