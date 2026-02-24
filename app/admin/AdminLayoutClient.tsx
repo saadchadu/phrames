@@ -74,14 +74,15 @@ export default function AdminLayoutClient({
         const res = await fetch('/api/admin/support/count', {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          cache: 'no-store' // Prevent caching
         });
 
         if (res.ok) {
           const data = await res.json();
           if (data.success && typeof data.count === 'number') {
             setPendingTicketsCount(data.count);
-            console.log('Pending tickets count:', data.count, data.breakdown);
+            console.log('Pending tickets count updated:', data.count, data.breakdown);
           }
         } else {
           console.error('Failed to fetch ticket count:', res.status, await res.text());
@@ -91,12 +92,38 @@ export default function AdminLayoutClient({
       }
     };
 
+    // Initial fetch
     fetchPendingTickets();
     
-    // Refresh count every 30 seconds
-    const interval = setInterval(fetchPendingTickets, 30000);
+    // Refresh count every 10 seconds (faster updates)
+    const interval = setInterval(fetchPendingTickets, 10000);
     return () => clearInterval(interval);
   }, [isAdmin, user]);
+
+  // Refresh count when pathname changes (e.g., when leaving support page)
+  useEffect(() => {
+    if (!isAdmin || !user) return;
+    
+    const fetchPendingTickets = async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch('/api/admin/support/count', {
+          headers: { 'Authorization': `Bearer ${token}` },
+          cache: 'no-store'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && typeof data.count === 'number') {
+            setPendingTicketsCount(data.count);
+          }
+        }
+      } catch (error) {
+        console.error('Error refreshing ticket count:', error);
+      }
+    };
+
+    fetchPendingTickets();
+  }, [pathname, isAdmin, user]);
 
   // Show loading state while checking
   if (isChecking || loading) {
