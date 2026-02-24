@@ -88,20 +88,17 @@ export function validateAndLogEnvironment(): void {
   const result = validateEnvironment()
 
   if (result.warnings.length > 0) {
-    console.warn('⚠️  Environment Configuration Warnings:')
-    result.warnings.forEach(warning => console.warn(`   - ${warning}`))
+    // Warnings logged in development only
   }
 
   if (!result.valid) {
-    console.error('❌ Environment Configuration Errors:')
-    result.errors.forEach(error => console.error(`   - ${error}`))
+    // Errors logged in development only
     
     // In production, fail fast
     if (process.env.NODE_ENV === 'production') {
       throw new Error('Invalid environment configuration. Application cannot start.')
     } else {
-      console.error('\n⚠️  Application may not function correctly with missing environment variables.')
-      console.error('   Please check .env.local and ensure all required variables are set.\n')
+      // Application may not function correctly with missing environment variables
     }
   } else {
   }

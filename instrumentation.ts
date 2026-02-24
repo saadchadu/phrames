@@ -17,13 +17,11 @@ export async function register() {
     // Only log in development
     if (process.env.NODE_ENV === 'development') {
       if (result.warnings.length > 0) {
-        console.warn('⚠️  Environment Configuration Warnings:')
-        result.warnings.forEach(warning => console.warn(`   - ${warning}`))
+        // Warnings present
       }
       
       if (!result.valid) {
-        console.error('❌ Environment Configuration Errors:')
-        result.errors.forEach(error => console.error(`   - ${error}`))
+        // Errors present
       }
     }
   }

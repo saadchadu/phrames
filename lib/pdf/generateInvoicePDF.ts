@@ -77,7 +77,6 @@ export async function generateInvoicePDF({ paymentId, baseUrl }: GeneratePDFOpti
 
     return Buffer.from(pdfBuffer)
   } catch (error) {
-    console.error('Error generating PDF:', error)
     throw new Error('Failed to generate PDF')
   } finally {
     if (browser) {

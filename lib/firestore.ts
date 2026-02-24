@@ -47,7 +47,15 @@ export interface User {
   uid: string
   email: string
   displayName?: string
+  username?: string // Unique, lowercase, 3-20 chars
+  bio?: string
+  profileImageUrl?: string // Custom uploaded image
+  googlePhotoURL?: string // Google profile photo (stored on signup)
+  location?: string
+  website?: string
+  isVerified?: boolean
   freeCampaignUsed: boolean // Default: false, set to true after first campaign
+  createdAt?: any
 }
 
 // Campaign CRUD operations

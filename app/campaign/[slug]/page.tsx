@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import { getCampaignBySlug, incrementCampaignVisit, incrementCampaignDownload, Campaign } from '@/lib/firestore'
 import { addSupporter, hasUserSupported, getSessionId } from '@/lib/supporters'
 import { getUserProfile, UserProfile } from '@/lib/auth'
@@ -607,7 +608,10 @@ export default function CampaignPage() {
                 <h1 className="text-lg sm:text-xl lg:text-[22px] font-semibold text-primary mb-2">{campaign.campaignName}</h1>
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   {creatorProfile && (
-                    <div className="flex items-center gap-2">
+                    <Link 
+                      href={creatorProfile.username ? `/user/${creatorProfile.username}` : '#'}
+                      className={`flex items-center gap-2 ${creatorProfile.username ? 'hover:opacity-70 transition-opacity' : ''}`}
+                    >
                       {creatorProfile.photoURL || creatorProfile.avatarURL ? (
                         <img
                           src={
@@ -626,7 +630,7 @@ export default function CampaignPage() {
                         </div>
                       )}
                       <span className="text-primary/70">{creatorProfile.displayName || 'Anonymous'}</span>
-                    </div>
+                    </Link>
                   )}
                 </div>
               </div>
@@ -811,7 +815,10 @@ export default function CampaignPage() {
                   {/* Creator Info */}
                   <div className="flex items-center gap-3 text-sm sm:text-base">
                     {creatorProfile && (
-                      <>
+                      <Link 
+                        href={creatorProfile.username ? `/user/${creatorProfile.username}` : '#'}
+                        className={`flex items-center gap-3 ${creatorProfile.username ? 'hover:opacity-70 transition-opacity' : ''}`}
+                      >
                         {creatorProfile.photoURL || creatorProfile.avatarURL ? (
                           <img
                             src={
@@ -841,7 +848,7 @@ export default function CampaignPage() {
                             </p>
                           )}
                         </div>
-                      </>
+                      </Link>
                     )}
                   </div>
                 </div>

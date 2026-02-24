@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink, Trash2, Shield, RefreshCw, Ban, CheckCircle } from 'lucide-react';
+import { ExternalLink, Trash2, Shield, RefreshCw, Ban, CheckCircle, User as UserIcon } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import { toast } from '@/components/ui/toaster';
 
@@ -174,15 +174,28 @@ export default function UserActions({ user, onActionComplete }: UserActionsProps
           </button>
         )}
 
-        {/* View User Campaigns Link */}
-        <a
-          href={`/admin/campaigns?userId=${user.id}`}
-          className="text-purple-600 hover:text-purple-900 transition-colors"
-          title="View user campaigns"
-          aria-label="View user campaigns"
-        >
-          <ExternalLink className="h-4 w-4" />
-        </a>
+        {/* View User Profile Link */}
+        {user.username ? (
+          <a
+            href={`/user/${user.username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-600 hover:text-indigo-900 transition-colors"
+            title="View user profile"
+            aria-label="View user profile"
+          >
+            <UserIcon className="h-4 w-4" />
+          </a>
+        ) : (
+          <button
+            disabled
+            className="text-gray-300 cursor-not-allowed"
+            title="User has no username set"
+            aria-label="User has no username set"
+          >
+            <UserIcon className="h-4 w-4" />
+          </button>
+        )}
 
         {/* Delete Button - Hidden for protected users */}
         {!isProtectedUser && (

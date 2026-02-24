@@ -90,7 +90,6 @@ export const hasUserSupported = async (campaignId: string, userId?: string, sess
     
     return false
   } catch (error) {
-    console.error('Error checking supporter status:', error)
     return false // Assume not supported on error to allow support
   }
 }
@@ -182,7 +181,6 @@ export const addSupporter = async (
     
     return result
   } catch (error: any) {
-    console.error('Error adding supporter:', error)
     return { success: false, error: error.message }
   }
 }
@@ -217,7 +215,6 @@ export const getCampaignSupporterStats = async (campaignId: string): Promise<Sup
       registeredSupporters
     }
   } catch (error) {
-    console.error('Error getting supporter stats:', error)
     return {
       totalSupporters: 0,
       totalDownloads: 0,
@@ -257,7 +254,6 @@ export const recalculateSupportersCount = async (campaignId: string): Promise<{ 
       return { success: true, oldCount, newCount: actualCount }
     })
   } catch (error: any) {
-    console.error('Error recalculating supporters count:', error)
     return { success: false, error: error.message }
   }
 }
@@ -281,7 +277,6 @@ export const getCampaignSupporters = async (campaignId: string, limit: number = 
     
     return supporters.slice(0, limit)
   } catch (error) {
-    console.error('Error getting campaign supporters:', error)
     return []
   }
 }
@@ -337,7 +332,6 @@ export const fixAllCampaignsSupportersCount = async (): Promise<{ success: boole
     
     return { success: true, fixed, errors }
   } catch (error: any) {
-    console.error('Error fixing all campaigns supporters count:', error)
     return { success: false, fixed: 0, errors: [error.message] }
   }
 }
@@ -388,7 +382,6 @@ export const cleanupOrphanedSupporters = async (): Promise<{ success: boolean; c
     
     return { success: true, cleaned, errors }
   } catch (error: any) {
-    console.error('Error cleaning orphaned supporters:', error)
     return { success: false, cleaned: 0, errors: [error.message] }
   }
 }

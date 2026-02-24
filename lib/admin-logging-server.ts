@@ -54,7 +54,6 @@ export async function createLog(
 
     return docRef.id;
   } catch (error) {
-    console.error('Failed to create log entry:', error);
     throw new Error('Failed to create log entry');
   }
 }

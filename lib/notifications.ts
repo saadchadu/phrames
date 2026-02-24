@@ -46,7 +46,6 @@ export const createNotification = async (
     const docRef = await addDoc(collection(db, 'notifications'), notificationData)
     return docRef.id
   } catch (error: any) {
-    console.error('Error creating notification:', error)
     return null
   }
 }
@@ -74,7 +73,6 @@ export const getUserNotifications = async (userId: string): Promise<DashboardNot
     
     return notifications
   } catch (error) {
-    console.error('Error getting notifications:', error)
     return []
   }
 }
@@ -93,7 +91,6 @@ export const getUnreadNotificationsCount = async (userId: string): Promise<numbe
     const querySnapshot = await getDocs(q)
     return querySnapshot.size
   } catch (error) {
-    console.error('Error getting unread count:', error)
     return 0
   }
 }
@@ -109,7 +106,6 @@ export const markNotificationAsRead = async (notificationId: string): Promise<bo
     })
     return true
   } catch (error) {
-    console.error('Error marking notification as read:', error)
     return false
   }
 }
@@ -133,7 +129,6 @@ export const markAllNotificationsAsRead = async (userId: string): Promise<boolea
     await Promise.all(updatePromises)
     return true
   } catch (error) {
-    console.error('Error marking all notifications as read:', error)
     return false
   }
 }
@@ -146,7 +141,6 @@ export const deleteNotification = async (notificationId: string): Promise<boolea
     await deleteDoc(doc(db, 'notifications', notificationId))
     return true
   } catch (error) {
-    console.error('Error deleting notification:', error)
     return false
   }
 }
@@ -245,7 +239,6 @@ export const removeCampaignDeletionWarnings = async (
     await Promise.all(deletePromises)
     return true
   } catch (error) {
-    console.error('Error removing deletion warnings:', error)
     return false
   }
 }
@@ -267,7 +260,6 @@ export const cleanupExpiredNotifications = async (): Promise<number> => {
     await Promise.all(deletePromises)
     return querySnapshot.size
   } catch (error) {
-    console.error('Error cleaning up expired notifications:', error)
     return 0
   }
 }

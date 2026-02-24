@@ -45,7 +45,9 @@ export async function GET(request: NextRequest) {
         !imageUrl.startsWith('https://lh3.googleusercontent.com/') &&
         !imageUrl.startsWith('https://lh4.googleusercontent.com/') &&
         !imageUrl.startsWith('https://lh5.googleusercontent.com/') &&
-        !imageUrl.startsWith('https://lh6.googleusercontent.com/')) {
+        !imageUrl.startsWith('https://lh6.googleusercontent.com/') &&
+        !imageUrl.startsWith('https://lh1.googleusercontent.com/') &&
+        !imageUrl.startsWith('https://lh2.googleusercontent.com/')) {
       return NextResponse.json({ error: 'Invalid image URL' }, { status: 400 })
     }
 
@@ -54,6 +56,8 @@ export async function GET(request: NextRequest) {
       const url = new URL(imageUrl)
       const allowedHosts = [
         'firebasestorage.googleapis.com',
+        'lh1.googleusercontent.com',
+        'lh2.googleusercontent.com',
         'lh3.googleusercontent.com',
         'lh4.googleusercontent.com', 
         'lh5.googleusercontent.com',

@@ -43,12 +43,49 @@ service firebase.storage {
       allow delete: if isAuthenticated() && isOwner(userId);
     }
     
-    // User profile images (if you add this feature later)
-    match /users/{userId}/profile/{fileName} {
+    // User profile images
+    match /users/{userId}/profile/{allPaths=**} {
+      // Anyone can read profile images (for public profiles)
       allow read: if true;
+      
+      // Only the user can upload to their own profile folder
       allow create, update: if isAuthenticated() && 
                               isOwner(userId) && 
                               isValidImageSize();
+      
+      // Only the user can delete their own profile images
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Profile images (simplified path: profile-images/{userId}.webp)
+    match /profile-images/{fileName} {
+      // Anyone can read profile images (public profiles)
+      allow read: if true;
+      
+      // Extract userId from filename (format: {userId}.webp)
+      // Only the user can upload/update their own profile image
+      // Max 1MB file size for profile images
+      allow create, update: if isAuthenticated() && 
+                              isImage() &&
+                              request.resource.size < 1 * 1024 * 1024 &&
+                              fileName.matches('^' + request.auth.uid + '\\.webp$');
+      
+      // Only the user can delete their own profile image
+      allow delete: if isAuthenticated() && 
+                      fileName.matches('^' + request.auth.uid + '\\.webp$');
+    }
+    
+    // User campaign images
+    match /users/{userId}/campaigns/{allPaths=**} {
+      // Anyone can read campaign images
+      allow read: if true;
+      
+      // Only the user can upload to their own campaigns folder
+      allow create, update: if isAuthenticated() && 
+                              isOwner(userId) && 
+                              isValidImageSize();
+      
+      // Only the user can delete their own campaign images
       allow delete: if isAuthenticated() && isOwner(userId);
     }
     

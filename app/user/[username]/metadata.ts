@@ -1,57 +1,80 @@
 import { Metadata } from 'next'
-import { getUserByUsername } from '@/lib/auth'
-import { getUserCampaigns } from '@/lib/firestore'
+import { adminDb } from '@/lib/firebase-admin'
 
-export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
+interface Props {
+  params: { username: string }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username } = params
+
   try {
-    const { username } = await params
-    const user = await getUserByUsername(username)
-    
-    if (!user) {
+    // Fetch user profile
+    const usersRef = adminDb.collection('users')
+    const snapshot = await usersRef.where('username', '==', username.toLowerCase()).limit(1).get()
+
+    if (snapshot.empty) {
       return {
         title: 'User Not Found | Phrames',
-        description: 'The user profile you are looking for does not exist.',
+        description: 'This user profile does not exist on Phrames.',
       }
     }
 
-    const campaigns = await getUserCampaigns(user.uid)
-    const publicCampaigns = campaigns.filter(c => c.visibility === 'Public')
-    const totalDownloads = user.totalDownloads || 0
+    const userData = snapshot.docs[0].data()
+    const displayName = userData.displayName || username
+    const bio = userData.bio || `View campaigns created by ${displayName} on Phrames.`
+    const profileImage = userData.profileImageUrl
 
-    const title = `${user.displayName || username} (@${username}) | Phrames`
-    const description = user.bio 
-      ? `${user.bio} - ${publicCampaigns.length} campaigns, ${totalDownloads} downloads`
-      : `View ${user.displayName || username}'s profile on Phrames. ${publicCampaigns.length} campaigns, ${totalDownloads} downloads.`
+    // Fetch user's first campaign for og:image fallback
+    let campaignImage = null
+    try {
+      const campaignsRef = adminDb.collection('campaigns')
+      const campaignsSnapshot = await campaignsRef
+        .where('createdBy', '==', snapshot.docs[0].id)
+        .where('visibility', '==', 'Public')
+        .where('isActive', '==', true)
+        .limit(1)
+        .get()
+
+      if (!campaignsSnapshot.empty) {
+        campaignImage = campaignsSnapshot.docs[0].data().frameURL
+      }
+    } catch (error) {
+      console.error('Error fetching campaign image:', error)
+    }
+
+    const ogImage = profileImage || campaignImage || 'https://phrames.cleffon.com/og-image.png'
 
     return {
-      title,
-      description,
+      title: `${displayName} (@${username}) | Phrames`,
+      description: bio,
       openGraph: {
-        title,
-        description,
-        type: 'profile',
+        title: `${displayName} (@${username}) | Phrames`,
+        description: bio,
         url: `https://phrames.cleffon.com/user/${username}`,
-        images: user.avatarURL || user.photoURL ? [
+        siteName: 'Phrames',
+        images: [
           {
-            url: user.avatarURL || user.photoURL || '',
-            width: 400,
-            height: 400,
-            alt: `${user.displayName || username}'s profile picture`,
-          }
-        ] : [],
+            url: ogImage,
+            width: 1200,
+            height: 630,
+            alt: `${displayName}'s profile on Phrames`,
+          },
+        ],
+        type: 'profile',
       },
       twitter: {
-        card: 'summary',
-        title,
-        description,
-        images: user.avatarURL || user.photoURL ? [user.avatarURL || user.photoURL || ''] : [],
+        card: 'summary_large_image',
+        title: `${displayName} (@${username}) | Phrames`,
+        description: bio,
+        images: [ogImage],
       },
     }
   } catch (error) {
     console.error('Error generating metadata:', error)
     return {
-      title: 'User Profile | Phrames',
-      description: 'View creator profiles and campaigns on Phrames',
+      title: `@${username} | Phrames`,
+      description: 'View this creator\'s campaigns on Phrames.',
     }
   }
 }

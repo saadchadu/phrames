@@ -202,6 +202,9 @@ export const createUserProfile = async (user: User, customDisplayName?: string, 
     // Check if user should be admin
     const isAdmin = email ? ADMIN_EMAILS.includes(email.toLowerCase()) : false
 
+    // Store Google photo URL separately from custom profile image
+    const googlePhotoURL = user.photoURL || customPhotoURL || ''
+
     try {
       await setDoc(userRef, {
         uid,
@@ -209,12 +212,15 @@ export const createUserProfile = async (user: User, customDisplayName?: string, 
         username: username.toLowerCase(),
         displayName: customDisplayName || user.displayName || email?.split('@')[0] || 'User',
         bio: '',
-        photoURL: customPhotoURL || user.photoURL || '',
-        avatarURL: customPhotoURL || user.photoURL || '',
+        googlePhotoURL, // Store Google photo URL
+        profileImageUrl: null, // No custom image initially
+        photoURL: googlePhotoURL, // Keep for backward compatibility
+        avatarURL: googlePhotoURL, // Keep for backward compatibility
         totalDownloads: 0,
         totalVisits: 0,
         createdAt,
         joinedAt: createdAt,
+        freeCampaignUsed: false,
         ...(isAdmin && { isAdmin: true })
       })
 
@@ -242,6 +248,15 @@ export const createUserProfile = async (user: User, customDisplayName?: string, 
     const userData = userSnap.data()
     const email = user.email
     const isAdmin = email ? ADMIN_EMAILS.includes(email.toLowerCase()) : false
+    
+    // Update googlePhotoURL if it changed and no custom image is set
+    if (user.photoURL && !userData.profileImageUrl) {
+      try {
+        await setDoc(userRef, { googlePhotoURL: user.photoURL }, { merge: true })
+      } catch (error) {
+        // Silently fail
+      }
+    }
     
     if (isAdmin && !userData.isAdmin) {
       try {

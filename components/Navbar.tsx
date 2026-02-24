@@ -141,6 +141,17 @@ export default function Navbar() {
                   Dashboard
                 </Link>
                 <Link
+                  href="/dashboard/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-3 rounded-lg text-base font-medium transition-colors ${
+                    pathname === '/dashboard/profile'
+                      ? 'bg-secondary/10 text-secondary'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Profile
+                </Link>
+                <Link
                   href="/create"
                   onClick={() => setMobileMenuOpen(false)}
                   className={`block px-3 py-3 rounded-lg text-base font-medium transition-colors ${

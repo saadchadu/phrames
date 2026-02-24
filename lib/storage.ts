@@ -23,10 +23,14 @@ export const deleteImage = async (path: string): Promise<boolean> => {
   }
 }
 
-export const validateImageFile = (file: File): { valid: boolean; error?: string } => {
+export const validateImageFile = (file: File, allowAllTypes = false): { valid: boolean; error?: string } => {
   // Check file type
-  if (file.type !== 'image/png') {
+  if (!allowAllTypes && file.type !== 'image/png') {
     return { valid: false, error: 'Only PNG files are allowed' }
+  }
+  
+  if (allowAllTypes && !file.type.startsWith('image/')) {
+    return { valid: false, error: 'Only image files are allowed' }
   }
   
   // Check file size (10MB max)

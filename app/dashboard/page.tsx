@@ -19,6 +19,7 @@ import {
   PlusIcon,
   ArrowPathIcon,
   ChatBubbleLeftRightIcon,
+  UserCircleIcon,
 } from '@heroicons/react/24/outline'
 import { CreditCard } from 'lucide-react'
 import SupportHub from '@/components/SupportHub'
@@ -215,6 +216,13 @@ function DashboardContent() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <Link
+                href="/dashboard/profile"
+                className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:scale-95 text-primary border border-[#00240020] px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition-all shadow-sm"
+              >
+                <UserCircleIcon className="h-5 w-5" />
+                <span>Profile</span>
+              </Link>
               <Link
                 href="/dashboard/payments"
                 className="inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 active:scale-95 text-primary border border-[#00240020] px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-medium transition-all shadow-sm"
