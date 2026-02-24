@@ -25,6 +25,7 @@ export default function AdminLayoutClient({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const [pendingTicketsCount, setPendingTicketsCount] = useState(0);
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -62,6 +63,31 @@ export default function AdminLayoutClient({
     checkAdminStatus();
   }, [user, loading, router]);
 
+  // Fetch pending tickets count
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const fetchPendingTickets = async () => {
+      try {
+        const res = await fetch('/api/admin/support?status=open,in_progress');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.tickets)) {
+            setPendingTicketsCount(data.tickets.length);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching pending tickets:', error);
+      }
+    };
+
+    fetchPendingTickets();
+    
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchPendingTickets, 30000);
+    return () => clearInterval(interval);
+  }, [isAdmin]);
+
   // Show loading state while checking
   if (isChecking || loading) {
     return (
@@ -84,7 +110,7 @@ export default function AdminLayoutClient({
     { name: 'Campaigns', href: '/admin/campaigns', icon: Megaphone },
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Payments', href: '/admin/payments', icon: CreditCard },
-    { name: 'Tickets', href: '/admin/support', icon: MessageSquare },
+    { name: 'Tickets', href: '/admin/support', icon: MessageSquare, badge: pendingTicketsCount },
     { name: 'Logs', href: '/admin/logs', icon: FileText },
     { name: 'Coupons', href: '/admin/coupons', icon: Tag },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
@@ -142,13 +168,20 @@ export default function AdminLayoutClient({
                   key={item.name}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${active
+                  className={`group flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors ${active
                       ? 'bg-emerald-50 text-emerald-600'
                       : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-600'
                     }`}
                 >
-                  <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                  {item.name}
+                  <div className="flex items-center">
+                    <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                    {item.name}
+                  </div>
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full min-w-[20px]">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -168,13 +201,20 @@ export default function AdminLayoutClient({
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${active
+                  className={`group flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors ${active
                       ? 'bg-emerald-50 text-emerald-600'
                       : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-600'
                     }`}
                 >
-                  <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
-                  {item.name}
+                  <div className="flex items-center">
+                    <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                    {item.name}
+                  </div>
+                  {item.badge !== undefined && item.badge > 0 && (
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full min-w-[20px] animate-pulse">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
