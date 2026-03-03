@@ -1,4 +1,4 @@
-export type AspectRatio = '1:1' | '4:5' | '3:4'
+export type AspectRatio = '1:1' | '4:5' | '3:4' | '9:16'
 
 export interface AspectRatioDimensions {
   width: number
@@ -25,6 +25,12 @@ export const ASPECT_RATIOS: Record<AspectRatio, AspectRatioDimensions> = {
     height: 1440,
     label: 'Portrait',
     description: 'Classic portrait orientation for photos'
+  },
+  '9:16': {
+    width: 1080,
+    height: 1920,
+    label: 'Story',
+    description: 'Perfect for Instagram/TikTok stories and reels'
   }
 }
 
@@ -34,7 +40,7 @@ export function getAspectRatioDimensions(aspectRatio: AspectRatio): AspectRatioD
 
 export function getCanvasDimensions(aspectRatio: AspectRatio, baseSize: number = 400): { width: number; height: number } {
   const ratio = ASPECT_RATIOS[aspectRatio]
-  
+
   if (aspectRatio === '1:1') {
     // For square, use baseSize for both dimensions
     return {
@@ -51,16 +57,18 @@ export function getCanvasDimensions(aspectRatio: AspectRatio, baseSize: number =
   }
 }
 
-export function detectAspectRatio(width: number, height: number, tolerance: number = 0.01): AspectRatio | null {
+export function detectAspectRatio(width: number, height: number, tolerance: number = 0.02): AspectRatio | null {
   const ratio = width / height
-  
+
   if (Math.abs(ratio - 1) < tolerance) {
     return '1:1'
-  } else if (Math.abs(ratio - (4/5)) < tolerance) {
+  } else if (Math.abs(ratio - (4 / 5)) < tolerance) {
     return '4:5'
-  } else if (Math.abs(ratio - (3/4)) < tolerance) {
+  } else if (Math.abs(ratio - (3 / 4)) < tolerance) {
     return '3:4'
+  } else if (Math.abs(ratio - (9 / 16)) < tolerance) {
+    return '9:16'
   }
-  
+
   return null
 }

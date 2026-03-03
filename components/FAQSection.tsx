@@ -6,7 +6,7 @@ import { ChevronDown } from 'lucide-react'
 const faqs = [
   {
     question: 'What image format should I upload?',
-    answer: 'Upload PNG images with transparency for best results. This allows your frame to overlay perfectly on user photos. Supported aspect ratios: 1:1 (1080×1080px), 4:5 (1080×1350px), or 3:4 (1080×1440px).'
+    answer: 'Upload PNG images with transparency for best results. This allows your frame to overlay perfectly on user photos. Supported aspect ratios: 1:1 (1080×1080px), 4:5 (1080×1350px), 3:4 (1080×1440px), or 9:16 (1080×1920px).'
   },
   {
     question: 'What happens when my plan expires?',
@@ -26,7 +26,7 @@ const faqs = [
   },
   {
     question: 'Is there a limit on frame file size?',
-    answer: 'Frame images should be under 10MB for optimal performance. We recommend using PNG format with transparency. Supported aspect ratios: 1:1 (1080×1080px), 4:5 (1080×1350px), or 3:4 (1080×1440px).'
+    answer: 'Frame images should be under 10MB for optimal performance. We recommend using PNG format with transparency. Supported aspect ratios: 1:1 (1080×1080px), 4:5 (1080×1350px), 3:4 (1080×1440px), or 9:16 (1080×1920px).'
   },
   {
     question: 'Can I create multiple campaigns?',
@@ -79,9 +79,8 @@ export default function FAQSection() {
                   {faq.question}
                 </span>
                 <ChevronDown
-                  className={`w-5 h-5 text-secondary flex-shrink-0 transition-transform ${
-                    openIndex === index ? 'rotate-180' : ''
-                  }`}
+                  className={`w-5 h-5 text-secondary flex-shrink-0 transition-transform ${openIndex === index ? 'rotate-180' : ''
+                    }`}
                 />
               </button>
               {openIndex === index && (

@@ -9,6 +9,7 @@ export const uploadImage = async (file: File, path: string): Promise<string | nu
     const downloadURL = await getDownloadURL(snapshot.ref)
     return downloadURL
   } catch (error) {
+    console.error('Firebase Storage uploadImage error:', error, 'path:', path)
     return null
   }
 }
@@ -28,17 +29,17 @@ export const validateImageFile = (file: File, allowAllTypes = false): { valid: b
   if (!allowAllTypes && file.type !== 'image/png') {
     return { valid: false, error: 'Only PNG files are allowed' }
   }
-  
+
   if (allowAllTypes && !file.type.startsWith('image/')) {
     return { valid: false, error: 'Only image files are allowed' }
   }
-  
+
   // Check file size (10MB max)
   const maxSize = 10 * 1024 * 1024 // 10MB in bytes
   if (file.size > maxSize) {
     return { valid: false, error: 'File size must be less than 10MB' }
   }
-  
+
   return { valid: true }
 }
 
@@ -63,19 +64,19 @@ export const checkImageTransparency = (file: File): Promise<boolean> => {
         canvas.width = img.width
         canvas.height = img.height
         const ctx = canvas.getContext('2d')
-        
+
         if (!ctx) {
           reject(new Error('Could not get canvas context'))
           return
         }
-        
+
         // Draw the image
         ctx.drawImage(img, 0, 0)
-        
+
         // Get image data
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
         const data = imageData.data
-        
+
         // Check for any transparent pixels (alpha < 255)
         let hasTransparency = false
         for (let i = 3; i < data.length; i += 4) {
@@ -84,10 +85,10 @@ export const checkImageTransparency = (file: File): Promise<boolean> => {
             break
           }
         }
-        
+
         // Clean up
         URL.revokeObjectURL(img.src)
-        
+
         resolve(hasTransparency)
       } catch (error) {
         reject(error)
@@ -101,48 +102,47 @@ export const checkImageTransparency = (file: File): Promise<boolean> => {
   })
 }
 
-export const validateFrameImage = async (file: File): Promise<{ valid: boolean; error?: string; aspectRatio?: AspectRatio }> => {
+export const validateFrameImage = async (file: File): Promise<{ valid: boolean; error?: string; aspectRatio?: AspectRatio; dimensions?: { width: number; height: number } }> => {
   // First check basic file validation
   const basicValidation = validateImageFile(file)
   if (!basicValidation.valid) {
     return basicValidation
   }
-  
+
   try {
     // Check dimensions
     const dimensions = await checkImageDimensions(file)
-    
+
     // Detect aspect ratio
     const detectedAspectRatio = detectAspectRatio(dimensions.width, dimensions.height)
-    
+
     if (!detectedAspectRatio) {
-      return { 
-        valid: false, 
-        error: 'Image must have a supported aspect ratio: 1:1 (square), 4:5 (portrait), or 3:4 (portrait).' 
+      return {
+        valid: false,
+        error: 'Image must have a supported aspect ratio: 1:1, 4:5, 3:4, or 9:16.'
       }
     }
-    
-    // Get minimum dimensions for this aspect ratio
+
+    // Enforce minimum dimensions for each ratio
     const { width: minWidth, height: minHeight } = getAspectRatioDimensions(detectedAspectRatio)
-    
-    // Check minimum dimensions based on aspect ratio
+
     if (dimensions.width < minWidth || dimensions.height < minHeight) {
-      return { 
-        valid: false, 
-        error: `Image must be at least ${minWidth}x${minHeight} pixels for ${detectedAspectRatio} aspect ratio` 
+      return {
+        valid: false,
+        error: `Frame must be at least ${minWidth}×${minHeight}px for ${detectedAspectRatio} ratio. Your image is ${dimensions.width}×${dimensions.height}px.`
       }
     }
-    
+
     // Check for transparency
     const hasTransparency = await checkImageTransparency(file)
     if (!hasTransparency) {
-      return { 
-        valid: false, 
-        error: 'Image must have transparent areas. Please upload a PNG with transparency where the user photo should appear.' 
+      return {
+        valid: false,
+        error: 'Image must have transparent areas. Please upload a PNG with transparency where the user photo should appear.'
       }
     }
-    
-    return { valid: true, aspectRatio: detectedAspectRatio }
+
+    return { valid: true, aspectRatio: detectedAspectRatio, dimensions }
   } catch (error) {
     return { valid: false, error: 'Error validating image. Please try again.' }
   }

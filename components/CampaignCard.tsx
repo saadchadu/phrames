@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { Campaign } from '@/lib/firestore'
+import { Campaign, parseFirestoreDate } from '@/lib/firestore'
 import { PencilIcon, LinkIcon, TrashIcon, QrCodeIcon } from '@heroicons/react/24/outline'
 import { toast } from '@/components/ui/toaster'
 import QRCode from 'qrcode'
@@ -19,16 +19,18 @@ interface CampaignCardProps {
 // Helper function to format expiry countdown
 function formatExpiryCountdown(expiresAt: any): string {
   if (!expiresAt) return ''
-  
-  const expiryDate = expiresAt.toDate ? expiresAt.toDate() : new Date(expiresAt)
+
+  const expiryDate = parseFirestoreDate(expiresAt)
+  if (!expiryDate) return ''
+
   const now = new Date()
   const diffMs = expiryDate.getTime() - now.getTime()
-  
+
   if (diffMs <= 0) return 'Expired'
-  
+
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
   const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  
+
   if (diffDays > 0) {
     return `${diffDays} day${diffDays > 1 ? 's' : ''} left`
   } else if (diffHours > 0) {
@@ -41,23 +43,66 @@ function formatExpiryCountdown(expiresAt: any): string {
 // Check if campaign is truly active
 function isCampaignActive(campaign: Campaign): boolean {
   if (!campaign.isActive) return false
-  
-  // Check expiry for all campaigns (including free)
-  if (!campaign.expiresAt) return campaign.isActive // Grandfathered campaigns
-  
-  const expiryDate = campaign.expiresAt.toDate ? campaign.expiresAt.toDate() : new Date(campaign.expiresAt)
-  return expiryDate > new Date()
+
+  const isPaid = !!campaign.paymentId && campaign.paymentId !== 'null' && campaign.paymentId !== 'undefined';
+  const createdDate = parseFirestoreDate(campaign.createdAt);
+
+  if (!isPaid && createdDate) {
+    const inferredExpiry = new Date(createdDate);
+    inferredExpiry.setDate(inferredExpiry.getDate() + 30);
+    if (inferredExpiry < new Date()) {
+      return false; // Automatically inactive if 30 days past creation and unpaid
+    }
+  }
+
+  // Check explicit expiry
+  if (campaign.expiresAt) {
+    const expiryDate = parseFirestoreDate(campaign.expiresAt);
+    if (expiryDate) {
+      return expiryDate > new Date()
+    }
+  }
+
+  // Fallback for older campaigns that might not have expiresAt set
+  if (createdDate) {
+    const inferredExpiry = new Date(createdDate);
+    inferredExpiry.setDate(inferredExpiry.getDate() + 30);
+    return inferredExpiry > new Date();
+  }
+
+  // Other grandfathered campaigns without expiry
+  return campaign.isActive
 }
 
 export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onReactivate }: CampaignCardProps) {
   // Use real-time campaign stats
   const { stats: campaignStats } = useCampaignStats(campaign.id)
   const isActive = isCampaignActive(campaign)
-  const isFree = campaign.isFreeCampaign === true
-  const expiryText = campaign.expiresAt ? formatExpiryCountdown(campaign.expiresAt) : ''
+  const isFree = campaign.isFreeCampaign === true || !campaign.paymentId
+  const isPaid = !!campaign.paymentId && campaign.paymentId !== 'null' && campaign.paymentId !== 'undefined';
+
+  // Calculate expiry for all free/paid campaigns
+  const createdDate = parseFirestoreDate(campaign.createdAt);
+  let inferredExpiresAt = campaign.expiresAt ? parseFirestoreDate(campaign.expiresAt) : null;
+
+  if (!isPaid && createdDate) {
+    // If it's unpaid, the absolute limit is 30 days from creation
+    const absoluteLimit = new Date(createdDate);
+    absoluteLimit.setDate(absoluteLimit.getDate() + 30);
+    if (!inferredExpiresAt || inferredExpiresAt > absoluteLimit) {
+      inferredExpiresAt = absoluteLimit;
+    }
+  } else if (!inferredExpiresAt && createdDate) {
+    // Legacy fallback
+    const d = new Date(createdDate);
+    d.setDate(d.getDate() + 30);
+    inferredExpiresAt = d;
+  }
+
+  const expiryText = inferredExpiresAt ? formatExpiryCountdown(inferredExpiresAt) : ''
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/campaign/${campaign.slug}`
-    
+
     try {
       await navigator.clipboard.writeText(url)
       toast('Link copied to clipboard!', 'success')
@@ -69,7 +114,7 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
   const handleDownloadQR = async () => {
     try {
       const url = `${window.location.origin}/campaign/${campaign.slug}`
-      
+
       // Generate QR code as data URL
       const qrDataUrl = await QRCode.toDataURL(url, {
         width: 512,
@@ -87,7 +132,7 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
-      
+
       toast('QR code downloaded!', 'success')
     } catch (error) {
       toast('Failed to download QR code', 'error')
@@ -97,11 +142,10 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
   return (
     <div className="bg-white rounded-2xl border border-[#00240010] overflow-hidden hover:border-[#00240020] transition-all shadow-sm hover:shadow-md">
       {/* Image */}
-      <div className={`relative w-full overflow-hidden bg-gray-50 ${
-        campaign.aspectRatio === '4:5' ? 'aspect-[4/5]' : 
-        campaign.aspectRatio === '3:4' ? 'aspect-[3/4]' : 
-        'aspect-square'
-      }`}>
+      <div className={`relative w-full overflow-hidden bg-gray-50 ${campaign.aspectRatio === '4:5' ? 'aspect-[4/5]' :
+        campaign.aspectRatio === '3:4' ? 'aspect-[3/4]' :
+          'aspect-square'
+        }`}>
         <Image
           src={campaign.frameURL}
           alt={campaign.campaignName}
@@ -140,7 +184,7 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
           </button>
         </div>
       </div>
-      
+
       {/* Info */}
       <div className="flex flex-col p-4 sm:p-6">
         {/* Top - Title & Description */}
@@ -148,14 +192,14 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
           <h3 className="text-primary text-lg sm:text-xl font-semibold leading-tight truncate mb-1.5 sm:mb-2">
             {campaign.campaignName}
           </h3>
-          
+
           {campaign.description && (
             <p className="text-primary/60 text-sm leading-relaxed line-clamp-2">
               {campaign.description}
             </p>
           )}
         </div>
-        
+
         {/* Bottom - Stats and Status */}
         <div className="flex flex-col gap-3 pt-3 sm:pt-4 border-t border-[#00240010]">
           {/* Status Badge and Expiry */}
@@ -167,19 +211,17 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
                   Free Campaign
                 </span>
               ) : (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  isActive 
-                    ? 'bg-secondary/10 text-secondary' 
-                    : 'bg-gray-100 text-gray-600'
-                }`}>
-                  <div className={`w-1.5 h-1.5 rounded-full ${
-                    isActive ? 'bg-secondary' : 'bg-gray-400'
-                  }`} />
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isActive
+                  ? 'bg-secondary/10 text-secondary'
+                  : 'bg-gray-100 text-gray-600'
+                  }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-secondary' : 'bg-gray-400'
+                    }`} />
                   {isActive ? 'Active' : 'Inactive'}
                 </span>
               )}
             </div>
-            
+
             {isActive && expiryText && (
               <span className="text-xs text-primary/60 font-medium">
                 {expiryText}
@@ -211,8 +253,8 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
             </div>
           )}
 
-          {/* Reactivate Button for Inactive Paid Campaigns Only */}
-          {!isActive && !isFree && onReactivate && (
+          {/* Reactivate Button for Inactive Campaigns */}
+          {!isActive && onReactivate && (
             <button
               onClick={(e) => {
                 e.stopPropagation()

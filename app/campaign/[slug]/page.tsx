@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { getCampaignBySlug, incrementCampaignVisit, incrementCampaignDownload, Campaign } from '@/lib/firestore'
+import { getCampaignBySlug, incrementCampaignVisit, incrementCampaignDownload, Campaign, parseFirestoreDate } from '@/lib/firestore'
 import { addSupporter, hasUserSupported, getSessionId } from '@/lib/supporters'
 import { getUserProfile, UserProfile } from '@/lib/auth'
 import { ArrowDownTrayIcon, PhotoIcon, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon, ScissorsIcon } from '@heroicons/react/24/outline'
@@ -31,7 +31,7 @@ export default function CampaignPage() {
   const slug = params.slug as string
   const { user } = useAuth()
   const { alertState, showAlert, closeAlert } = useDialog()
-  
+
   const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [creatorProfile, setCreatorProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -43,7 +43,7 @@ export default function CampaignPage() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [showQRCode, setShowQRCode] = useState(false)
   const [showCropModal, setShowCropModal] = useState(false)
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const previewCanvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -62,29 +62,51 @@ export default function CampaignPage() {
   const loadCampaign = async () => {
     try {
       const campaignData = await getCampaignBySlug(slug)
-      
+
       // Check if campaign is active and not expired
       if (campaignData) {
         const isActive = campaignData.isActive
-        
+
         // Check if campaign is active
         if (!isActive) {
           setCampaign(null) // Will show inactive message
           setLoading(false)
           return
         }
-        
-        // Check expiry for all campaigns (including free)
-        const hasExpiry = campaignData.expiresAt
-        const isExpired = hasExpiry && campaignData.expiresAt.toDate() < new Date()
-        
-        if (isExpired) {
-          setCampaign(null) // Will show inactive message
-          setLoading(false)
-          return
+
+        const isPaid = !!campaignData.paymentId && campaignData.paymentId !== 'null' && campaignData.paymentId !== 'undefined';
+        const createdDate = parseFirestoreDate(campaignData.createdAt);
+
+        if (!isPaid && createdDate) {
+          const inferredExpiry = new Date(createdDate);
+          inferredExpiry.setDate(inferredExpiry.getDate() + 30);
+          if (inferredExpiry < new Date()) {
+            setCampaign(null);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Check explicit expiry
+        if (campaignData.expiresAt) {
+          const expiryDate = parseFirestoreDate(campaignData.expiresAt);
+          if (expiryDate && expiryDate < new Date()) {
+            setCampaign(null)
+            setLoading(false)
+            return
+          }
+        } else if (createdDate) {
+          // Infer expiry for old campaigns
+          const inferredExpiry = new Date(createdDate)
+          inferredExpiry.setDate(inferredExpiry.getDate() + 30)
+          if (inferredExpiry < new Date()) {
+            setCampaign(null)
+            setLoading(false)
+            return
+          }
         }
       }
-      
+
       setCampaign(campaignData)
 
       // Load creator profile
@@ -97,7 +119,7 @@ export default function CampaignPage() {
       if (campaignData?.id) {
         const visitKey = `visited_${campaignData.id}`
         const hasVisited = sessionStorage.getItem(visitKey)
-        
+
         if (!hasVisited) {
           try {
             await incrementCampaignVisit(campaignData.id)
@@ -126,7 +148,7 @@ export default function CampaignPage() {
     // Calculate canvas dimensions based on aspect ratio
     const aspectRatio = campaign?.aspectRatio || '1:1'
     const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions(aspectRatio, 400)
-    
+
     canvas.width = canvasWidth
     canvas.height = canvasHeight
 
@@ -134,11 +156,11 @@ export default function CampaignPage() {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
     try {
-      
+
       // Load user image
       const userImg = new Image()
-      userImg.crossOrigin = 'anonymous'
-      
+      if (imageUrl.startsWith('http')) userImg.crossOrigin = 'anonymous'
+
       await new Promise<void>((resolve, reject) => {
         userImg.onload = () => {
           resolve()
@@ -152,15 +174,15 @@ export default function CampaignPage() {
 
       // Save context for user image
       ctx.save()
-      
+
       // Apply transform to user image
       ctx.translate(canvasWidth / 2, canvasHeight / 2)
       ctx.scale(currentTransform.scale, currentTransform.scale)
       ctx.translate(currentTransform.x, currentTransform.y)
-      
+
       // Draw user image
       ctx.drawImage(userImg, -userImg.width / 2, -userImg.height / 2)
-      
+
       // Restore context
       ctx.restore()
 
@@ -181,7 +203,7 @@ export default function CampaignPage() {
     const aspectRatio = campaign?.aspectRatio || '1:1'
     const baseSize = isHighRes ? 1080 : 400
     const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions(aspectRatio, baseSize)
-    
+
     canvas.width = canvasWidth
     canvas.height = canvasHeight
 
@@ -189,11 +211,11 @@ export default function CampaignPage() {
     ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
     try {
-      
+
       // Load frame image FIRST to get its dimensions and structure
       const frameImg = new Image()
-      frameImg.crossOrigin = 'anonymous'
-      
+      if (campaign.frameURL.startsWith('http')) frameImg.crossOrigin = 'anonymous'
+
       await new Promise<void>((resolve, reject) => {
         frameImg.onload = () => {
           resolve()
@@ -207,8 +229,8 @@ export default function CampaignPage() {
 
       // Load user image
       const userImg = new Image()
-      userImg.crossOrigin = 'anonymous'
-      
+      if (imageUrl.startsWith('http')) userImg.crossOrigin = 'anonymous'
+
       await new Promise<void>((resolve, reject) => {
         userImg.onload = () => {
           resolve()
@@ -225,15 +247,15 @@ export default function CampaignPage() {
 
       // STEP 1: Draw user image FIRST (background layer)
       ctx.save()
-      
+
       // Apply transform to user image
       ctx.translate(canvasWidth / 2, canvasHeight / 2)
       ctx.scale(currentTransform.scale * scaleFactor, currentTransform.scale * scaleFactor)
       ctx.translate(currentTransform.x / scaleFactor, currentTransform.y / scaleFactor)
-      
+
       // Draw user image as background
       ctx.drawImage(userImg, -userImg.width / 2, -userImg.height / 2)
-      
+
       ctx.restore()
 
       // STEP 2: Draw frame ON TOP (foreground layer with transparency)
@@ -245,16 +267,17 @@ export default function CampaignPage() {
       // Fallback: just draw the user image if frame fails
       try {
         const userImg = new Image()
+        if (imageUrl.startsWith('http')) userImg.crossOrigin = 'anonymous'
         await new Promise<void>((resolve, reject) => {
           userImg.onload = () => resolve()
           userImg.onerror = reject
           userImg.src = imageUrl
         })
-        
+
         ctx.clearRect(0, 0, canvasWidth, canvasHeight)
         ctx.fillStyle = 'white'
         ctx.fillRect(0, 0, canvasWidth, canvasHeight)
-        
+
         const scaleFactor = isHighRes ? canvasHeight / 400 : 1
         ctx.save()
         ctx.translate(canvasWidth / 2, canvasHeight / 2)
@@ -262,7 +285,7 @@ export default function CampaignPage() {
         ctx.translate(currentTransform.x / scaleFactor, currentTransform.y / scaleFactor)
         ctx.drawImage(userImg, -userImg.width / 2, -userImg.height / 2)
         ctx.restore()
-        
+
       } catch (fallbackError) {
         console.error('❌ Fallback render also failed:', fallbackError)
       }
@@ -317,15 +340,16 @@ export default function CampaignPage() {
 
   const handleCropComplete = (croppedImage: string) => {
     setUserImage(croppedImage)
-    
+
     // Auto-fit the cropped image
     const img = new Image()
+    if (croppedImage.startsWith('http')) img.crossOrigin = 'anonymous'
     img.onload = () => {
       const canvasSize = 400
-      
+
       // Scale to cover the entire canvas
       let initialScale = Math.max(canvasSize / img.width, canvasSize / img.height)
-      
+
       const initialTransform = { x: 0, y: 0, scale: initialScale }
       setTransform(initialTransform)
       updatePreview(croppedImage, initialTransform)
@@ -337,28 +361,28 @@ export default function CampaignPage() {
     if (!userImage) return
     e.preventDefault()
     setIsDragging(true)
-    
+
     const rect = e.currentTarget.getBoundingClientRect()
-    setDragStart({ 
-      x: e.clientX - rect.left - transform.x, 
-      y: e.clientY - rect.top - transform.y 
+    setDragStart({
+      x: e.clientX - rect.left - transform.x,
+      y: e.clientY - rect.top - transform.y
     })
   }
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDragging || !userImage) return
     e.preventDefault()
-    
+
     const rect = e.currentTarget.getBoundingClientRect()
     const newTransform = {
       ...transform,
       x: e.clientX - rect.left - dragStart.x,
       y: e.clientY - rect.top - dragStart.y
     }
-    
+
     // Store the pending transform
     pendingTransformRef.current = newTransform
-    
+
     // Use requestAnimationFrame for smooth updates
     if (!rafRef.current) {
       rafRef.current = requestAnimationFrame(() => {
@@ -388,9 +412,10 @@ export default function CampaignPage() {
 
   const handleReset = () => {
     if (!userImage) return
-    
+
     // Reset to auto-fit
     const img = new Image()
+    if (userImage.startsWith('http')) img.crossOrigin = 'anonymous'
     img.onload = () => {
       const canvasSize = 400
       const initialScale = Math.max(canvasSize / img.width, canvasSize / img.height)
@@ -403,118 +428,87 @@ export default function CampaignPage() {
     if (!userImage || !campaign) return
 
     setProcessing(true)
-    
+
     try {
-      
-      // Create final canvas for download with correct aspect ratio
-      const canvas = document.createElement('canvas')
-      const aspectRatio = campaign.aspectRatio || '1:1'
-      const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions(aspectRatio, 1080)
-      
-      canvas.width = canvasWidth
-      canvas.height = canvasHeight
-      const ctx = canvas.getContext('2d')
-      
-      if (!ctx) {
-        throw new Error('Could not get canvas context')
-      }
-
-      // Step 1: Load and draw user's photo (BACKGROUND LAYER)
-      const userImg = new Image()
-      userImg.src = userImage
-      
-      await new Promise<void>((resolve, reject) => {
-        userImg.onload = () => {
-          resolve()
-        }
-        userImg.onerror = reject
-      })
-
-      // Draw user's photo with EXACT same positioning as preview
-      const scaleFactor = canvasHeight / 400 // Scale from 400px preview height to final canvas height
-      
-      ctx.save()
-      
-      // Use EXACT same transform logic as preview canvas
-      ctx.translate(canvasWidth / 2, canvasHeight / 2) // Center of canvas
-      ctx.scale(transform.scale, transform.scale) // Use original scale (not multiplied by scaleFactor)
-      ctx.translate(transform.x * scaleFactor, transform.y * scaleFactor) // Scale the position
-      
-      // Draw user image (scale the image itself for high-res)
-      const imageWidth = userImg.width * scaleFactor
-      const imageHeight = userImg.height * scaleFactor
-      ctx.drawImage(userImg, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight)
-      
-      ctx.restore()
-
-      // Step 2: Load and draw frame PNG via proxy (FOREGROUND LAYER with transparency)
+      // Step 1: Load the frame image first so we know its native resolution
       const frameImg = new Image()
       const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(campaign.frameURL)}`
-      
       frameImg.crossOrigin = 'anonymous'
-      
+
       await new Promise<void>((resolve, reject) => {
-        frameImg.onload = () => {
-          resolve()
-        }
-        frameImg.onerror = async (e) => {
+        frameImg.onload = () => resolve()
+        frameImg.onerror = async () => {
           console.warn('⚠️ Proxy failed, trying direct URL...')
-          
-          // Fallback: try direct URL without crossOrigin
           const fallbackImg = new Image()
           fallbackImg.onload = () => {
-            // Copy properties to main image
-            frameImg.width = fallbackImg.width
-            frameImg.height = fallbackImg.height
             frameImg.src = fallbackImg.src
             resolve()
           }
-          fallbackImg.onerror = () => {
-            console.error('❌ Both proxy and direct loading failed')
-            reject(new Error('Frame loading failed'))
-          }
+          fallbackImg.onerror = () => reject(new Error('Frame loading failed'))
           fallbackImg.src = campaign.frameURL
         }
-        
-        // Start with proxy
         frameImg.src = proxyUrl
-        
-        // Add timeout to avoid hanging
         setTimeout(() => reject(new Error('Frame load timeout')), 15000)
       })
 
-      // Draw frame PNG on top (transparent areas will show user photo)
+      // Use the frame's actual native pixel dimensions for the export canvas
+      const canvasWidth = frameImg.naturalWidth || frameImg.width
+      const canvasHeight = frameImg.naturalHeight || frameImg.height
+
+      // Create final canvas matching the frame exactly
+      const canvas = document.createElement('canvas')
+      canvas.width = canvasWidth
+      canvas.height = canvasHeight
+      const ctx = canvas.getContext('2d')
+
+      if (!ctx) throw new Error('Could not get canvas context')
+
+      // Step 2: Load and draw user's photo (BACKGROUND LAYER)
+      const userImg = new Image()
+      if (userImage.startsWith('http')) userImg.crossOrigin = 'anonymous'
+      userImg.src = userImage
+
+      await new Promise<void>((resolve, reject) => {
+        userImg.onload = () => resolve()
+        userImg.onerror = reject
+      })
+
+      // Scale factor: preview canvas height is 400px, export canvas is the frame's actual height
+      const scaleFactor = canvasHeight / 400
+
+      ctx.save()
+      ctx.translate(canvasWidth / 2, canvasHeight / 2)
+      ctx.scale(transform.scale, transform.scale)
+      ctx.translate(transform.x * scaleFactor, transform.y * scaleFactor)
+
+      const imageWidth = userImg.width * scaleFactor
+      const imageHeight = userImg.height * scaleFactor
+      ctx.drawImage(userImg, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight)
+      ctx.restore()
+
+      // Step 3: Draw frame PNG on top (transparent areas show user photo)
       ctx.drawImage(frameImg, 0, 0, canvasWidth, canvasHeight)
 
-      // Step 3: Download the single combined image using toBlob (handles tainted canvas)
+      // Step 4: Download as PNG at full resolution
       canvas.toBlob((blob) => {
         if (!blob) {
-          console.error('❌ Failed to create blob from canvas')
-          showAlert({
-            title: 'Error',
-            message: 'Error generating image. Please try again.',
-            type: 'error',
-          })
+          showAlert({ title: 'Error', message: 'Error generating image. Please try again.', type: 'error' })
           return
         }
-        
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
         const timestamp = Date.now()
         link.download = `${campaign.campaignName}-framed-photo-${timestamp}.png`
         link.href = url
         link.click()
-        
-        // Clean up the object URL
         setTimeout(() => URL.revokeObjectURL(url), 100)
-        
       }, 'image/png', 1.0)
 
       // Add supporter (with deduplication) and track download
       if (campaign.id) {
         try {
           const sessionId = getSessionId()
-          
+
           // Call the API endpoint instead of direct function
           const response = await fetch('/api/supporters/add', {
             method: 'POST',
@@ -528,13 +522,13 @@ export default function CampaignPage() {
               sessionId: sessionId
             })
           })
-          
+
           const result = await response.json()
-          
+
           if (result.success && result.isNewSupporter) {
             // Only increment UI count if this is a new supporter
             setCampaign(prev => prev ? { ...prev, supportersCount: prev.supportersCount + 1 } : null)
-            
+
             // Force refresh campaign stats after a short delay
             setTimeout(() => {
               loadCampaign()
@@ -547,7 +541,7 @@ export default function CampaignPage() {
           console.error('❌ Error calling supporters API:', error)
           // Don't block download on supporter tracking error
         }
-        
+
         // Track download for analytics
         try {
           await incrementCampaignDownload(campaign.id)
@@ -608,7 +602,7 @@ export default function CampaignPage() {
                 <h1 className="text-lg sm:text-xl lg:text-[22px] font-semibold text-primary mb-2">{campaign.campaignName}</h1>
                 <div className="flex items-center gap-2 text-xs sm:text-sm">
                   {creatorProfile && (
-                    <Link 
+                    <Link
                       href={creatorProfile.username ? `/user/${creatorProfile.username}` : '#'}
                       className={`flex items-center gap-2 ${creatorProfile.username ? 'hover:opacity-70 transition-opacity' : ''}`}
                     >
@@ -634,7 +628,7 @@ export default function CampaignPage() {
                   )}
                 </div>
               </div>
-              
+
               {/* Stats */}
               <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm flex-wrap">
                 <span className="text-primary/60">
@@ -644,9 +638,8 @@ export default function CampaignPage() {
                 </span>
                 <span className="text-primary/30">•</span>
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    campaign.status === 'Active' ? 'bg-secondary' : 'bg-gray-400'
-                  }`} />
+                  <div className={`w-2 h-2 rounded-full ${campaign.status === 'Active' ? 'bg-secondary' : 'bg-gray-400'
+                    }`} />
                   <span className="text-primary/60">{campaign.status}</span>
                 </div>
               </div>
@@ -660,100 +653,98 @@ export default function CampaignPage() {
             <div className="flex flex-col gap-3 sm:gap-4">
               <div className="bg-white border border-[#00240010] rounded-2xl p-4 sm:p-6 lg:p-7 shadow-sm">
                 <h2 className="text-base sm:text-lg lg:text-[19px] font-semibold text-primary mb-3 sm:mb-4">Frame Preview</h2>
-            
+
                 {/* Layered Frame Display */}
-                <div 
-                  id="final-image-container" 
-                  className={`bg-white rounded-xl overflow-hidden mb-3 sm:mb-4 relative w-full border border-[#00240010] touch-none ${
-                    campaign.aspectRatio === '4:5' ? 'aspect-[4/5]' : 
-                    campaign.aspectRatio === '3:4' ? 'aspect-[3/4]' : 
-                    'aspect-square'
-                  }`}
-                >
-              {/* User Photo Canvas (Background Layer) */}
-              {userImage && (
-                <canvas
-                  ref={previewCanvasRef}
-                  width={getCanvasDimensions(campaign?.aspectRatio || '1:1', 400).width}
-                  height={getCanvasDimensions(campaign?.aspectRatio || '1:1', 400).height}
-                  className="absolute inset-0 w-full h-full"
-                  style={{ 
-                    zIndex: 1,
-                    willChange: isDragging ? 'transform' : 'auto'
-                  }}
-                />
-              )}
-              
-              {/* Frame Image (Foreground Layer) */}
-              <img
-                src={campaign.frameURL}
-                alt={campaign.campaignName}
-                className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                style={{ zIndex: 2 }}
-              />
-              
-              {/* Invisible interaction layer for dragging */}
-              {userImage && (
                 <div
-                  className={`absolute inset-0 w-full h-full ${
-                    isDragging ? 'cursor-grabbing' : 'cursor-grab'
-                  } select-none`}
-                  style={{ 
-                    zIndex: 3,
-                    touchAction: 'none',
-                    userSelect: 'none'
-                  }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
-                  onTouchStart={(e) => {
-                    if (!userImage) return
-                    e.preventDefault()
-                    const touch = e.touches[0]
-                    const rect = e.currentTarget.getBoundingClientRect()
-                    setIsDragging(true)
-                    setDragStart({ 
-                      x: touch.clientX - rect.left - transform.x, 
-                      y: touch.clientY - rect.top - transform.y 
-                    })
-                  }}
-                  onTouchMove={(e) => {
-                    if (!isDragging || !userImage) return
-                    e.preventDefault()
-                    const touch = e.touches[0]
-                    const rect = e.currentTarget.getBoundingClientRect()
-                    const newTransform = {
-                      ...transform,
-                      x: touch.clientX - rect.left - dragStart.x,
-                      y: touch.clientY - rect.top - dragStart.y
-                    }
-                    
-                    // Store the pending transform
-                    pendingTransformRef.current = newTransform
-                    
-                    // Use requestAnimationFrame for smooth updates
-                    if (!rafRef.current) {
-                      rafRef.current = requestAnimationFrame(() => {
-                        if (pendingTransformRef.current) {
-                          setTransform(pendingTransformRef.current)
-                          pendingTransformRef.current = null
+                  id="final-image-container"
+                  className={`bg-white rounded-xl overflow-hidden mb-3 sm:mb-4 relative w-full border border-[#00240010] touch-none ${campaign.aspectRatio === '4:5' ? 'aspect-[4/5]' :
+                    campaign.aspectRatio === '3:4' ? 'aspect-[3/4]' :
+                      'aspect-square'
+                    }`}
+                >
+                  {/* User Photo Canvas (Background Layer) */}
+                  {userImage && (
+                    <canvas
+                      ref={previewCanvasRef}
+                      width={getCanvasDimensions(campaign?.aspectRatio || '1:1', 400).width}
+                      height={getCanvasDimensions(campaign?.aspectRatio || '1:1', 400).height}
+                      className="absolute inset-0 w-full h-full"
+                      style={{
+                        zIndex: 1,
+                        willChange: isDragging ? 'transform' : 'auto'
+                      }}
+                    />
+                  )}
+
+                  {/* Frame Image (Foreground Layer) */}
+                  <img
+                    src={campaign.frameURL}
+                    alt={campaign.campaignName}
+                    className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+                    style={{ zIndex: 2 }}
+                  />
+
+                  {/* Invisible interaction layer for dragging */}
+                  {userImage && (
+                    <div
+                      className={`absolute inset-0 w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'
+                        } select-none`}
+                      style={{
+                        zIndex: 3,
+                        touchAction: 'none',
+                        userSelect: 'none'
+                      }}
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                      onTouchStart={(e) => {
+                        if (!userImage) return
+                        e.preventDefault()
+                        const touch = e.touches[0]
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        setIsDragging(true)
+                        setDragStart({
+                          x: touch.clientX - rect.left - transform.x,
+                          y: touch.clientY - rect.top - transform.y
+                        })
+                      }}
+                      onTouchMove={(e) => {
+                        if (!isDragging || !userImage) return
+                        e.preventDefault()
+                        const touch = e.touches[0]
+                        const rect = e.currentTarget.getBoundingClientRect()
+                        const newTransform = {
+                          ...transform,
+                          x: touch.clientX - rect.left - dragStart.x,
+                          y: touch.clientY - rect.top - dragStart.y
                         }
-                        rafRef.current = null
-                      })
-                    }
-                  }}
-                  onTouchEnd={() => {
-                    setIsDragging(false)
-                    // Cancel any pending animation frame
-                    if (rafRef.current) {
-                      cancelAnimationFrame(rafRef.current)
-                      rafRef.current = null
-                    }
-                  }}
-                />
-              )}
-              
+
+                        // Store the pending transform
+                        pendingTransformRef.current = newTransform
+
+                        // Use requestAnimationFrame for smooth updates
+                        if (!rafRef.current) {
+                          rafRef.current = requestAnimationFrame(() => {
+                            if (pendingTransformRef.current) {
+                              setTransform(pendingTransformRef.current)
+                              pendingTransformRef.current = null
+                            }
+                            rafRef.current = null
+                          })
+                        }
+                      }}
+                      onTouchEnd={() => {
+                        setIsDragging(false)
+                        // Cancel any pending animation frame
+                        if (rafRef.current) {
+                          cancelAnimationFrame(rafRef.current)
+                          rafRef.current = null
+                        }
+                      }}
+                    />
+                  )}
+
                   {isDragging && (
                     <div className="absolute top-2 left-1/2 transform -translate-x-1/2 bg-primary text-white px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium shadow-lg" style={{ zIndex: 4 }}>
                       Drag to position
@@ -795,7 +786,7 @@ export default function CampaignPage() {
                   {campaign.description && (
                     <p className="text-primary/70 text-sm sm:text-base leading-relaxed mb-4 sm:mb-5">{campaign.description}</p>
                   )}
-                  
+
                   {/* Stats */}
                   <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm mb-5 sm:mb-7 pb-5 sm:pb-7 border-b border-[#00240010] flex-wrap">
                     <span className="text-primary/60">
@@ -805,9 +796,8 @@ export default function CampaignPage() {
                     </span>
                     <span className="text-primary/30">•</span>
                     <div className="flex items-center gap-1.5 sm:gap-2">
-                      <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${
-                        campaign.status === 'Active' ? 'bg-secondary' : 'bg-gray-400'
-                      }`} />
+                      <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${campaign.status === 'Active' ? 'bg-secondary' : 'bg-gray-400'
+                        }`} />
                       <span className="text-primary/60">{campaign.status}</span>
                     </div>
                   </div>
@@ -815,7 +805,7 @@ export default function CampaignPage() {
                   {/* Creator Info */}
                   <div className="flex items-center gap-3 text-sm sm:text-base">
                     {creatorProfile && (
-                      <Link 
+                      <Link
                         href={creatorProfile.username ? `/user/${creatorProfile.username}` : '#'}
                         className={`flex items-center gap-3 ${creatorProfile.username ? 'hover:opacity-70 transition-opacity' : ''}`}
                       >
@@ -840,10 +830,10 @@ export default function CampaignPage() {
                           <p className="text-primary font-semibold">{creatorProfile.displayName || 'Anonymous'}</p>
                           {campaign.createdAt && (
                             <p className="text-primary/60 text-xs sm:text-sm">
-                              Created {(campaign.createdAt.toDate ? campaign.createdAt.toDate() : new Date(campaign.createdAt)).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric', 
-                                year: 'numeric' 
+                              Created {(campaign.createdAt.toDate ? campaign.createdAt.toDate() : new Date(campaign.createdAt)).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
                               })}
                             </p>
                           )}
@@ -868,8 +858,8 @@ export default function CampaignPage() {
                         <p className="text-primary/70 text-xs sm:text-sm mb-4">
                           Share your campaign with a QR code
                         </p>
-                        <CampaignQRCode 
-                          slug={campaign.slug} 
+                        <CampaignQRCode
+                          slug={campaign.slug}
                           campaignName={campaign.campaignName}
                           size={160}
                         />
@@ -905,7 +895,7 @@ export default function CampaignPage() {
                 {/* Adjust & Download Section */}
                 <div className="bg-white border border-[#00240010] rounded-2xl p-5 sm:p-6 lg:p-7 shadow-sm">
                   <h3 className="text-base sm:text-lg lg:text-[19px] font-semibold text-primary mb-4 sm:mb-5">Adjust & Download</h3>
-                  
+
                   {/* Zoom Slider */}
                   <div className="mb-4 sm:mb-5">
                     <div className="flex items-center justify-between mb-2">
@@ -923,7 +913,7 @@ export default function CampaignPage() {
                       >
                         <MagnifyingGlassMinusIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                       </button>
-                      
+
                       <input
                         type="range"
                         min="10"
@@ -938,7 +928,7 @@ export default function CampaignPage() {
                           background: `linear-gradient(to right, #00dd78 0%, #00dd78 ${((transform.scale * 100 - 10) / (500 - 10)) * 100}%, #00240010 ${((transform.scale * 100 - 10) / (500 - 10)) * 100}%, #00240010 100%)`
                         }}
                       />
-                      
+
                       <button
                         onClick={() => handleZoom(0.1)}
                         className="p-2 sm:p-2.5 hover:bg-[#00240005] active:scale-95 rounded-xl transition-all flex-shrink-0"

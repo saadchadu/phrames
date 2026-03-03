@@ -89,6 +89,12 @@ service firebase.storage {
       allow delete: if isAuthenticated() && isOwner(userId);
     }
     
+    // Processed images for campaign framing
+    match /processed-images/{fileName} {
+      allow read: if true;
+      allow create: if isImage() && request.resource.size < 2 * 1024 * 1024; // up to 2MB processed webp
+    }
+    
     // Deny all other access
     match /{allPaths=**} {
       allow read, write: if false;

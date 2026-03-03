@@ -1,14 +1,14 @@
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
   serverTimestamp,
   increment,
   setDoc
@@ -28,7 +28,7 @@ export interface Campaign {
   createdBy: string
   createdByEmail?: string
   createdAt: any
-  
+
   // Payment-related fields
   isFreeCampaign: boolean // true for first free campaign, false for paid
   isActive: boolean
@@ -37,10 +37,19 @@ export interface Campaign {
   paymentId?: string | null
   expiresAt?: any | null // Timestamp - null for free campaigns
   lastPaymentAt?: any // Timestamp
-  
+
   // Trending data (computed fields, not stored in Firestore)
   weeklyDownloads?: number
   trendingScore?: number
+}
+
+// Robust helper to parse Firestore Timestamps, JS Dates, ISO Strings, or raw objects
+export const parseFirestoreDate = (dateField: any): Date | null => {
+  if (!dateField) return null;
+  if (typeof dateField.toDate === 'function') return dateField.toDate();
+  if (typeof dateField.seconds === 'number') return new Date(dateField.seconds * 1000);
+  const d = new Date(dateField);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 export interface User {
@@ -70,14 +79,14 @@ export const createCampaign = async (campaignData: Omit<Campaign, 'id' | 'create
         return { id: null, error: 'Your account has been blocked. You cannot create campaigns at this time.' }
       }
     }
-    
+
     // Check if slug already exists
     const existingCampaign = await getCampaignBySlug(campaignData.slug)
     if (existingCampaign) {
       console.error('createCampaign: Slug already exists')
       return { id: null, error: 'This URL slug is already taken. Please choose a different one.' }
     }
-    
+
     // Filter out undefined values to prevent Firestore errors
     const cleanData: any = {
       campaignName: campaignData.campaignName,
@@ -90,19 +99,19 @@ export const createCampaign = async (campaignData: Omit<Campaign, 'id' | 'create
       createdAt: serverTimestamp(),
       isActive: false, // Requires payment to activate
     }
-    
+
     // Add createdByEmail if provided
     if (campaignData.createdByEmail) {
       cleanData.createdByEmail = campaignData.createdByEmail
     }
-    
+
     // Only add description if it's not undefined or empty
     if (campaignData.description && campaignData.description.trim()) {
       cleanData.description = campaignData.description.trim()
     }
-    
+
     const docRef = await addDoc(collection(db, 'campaigns'), cleanData)
-    
+
     return { id: docRef.id, error: null }
   } catch (error: any) {
     console.error('createCampaign: Error creating campaign:', error)
@@ -114,7 +123,7 @@ export const getCampaign = async (id: string): Promise<Campaign | null> => {
   try {
     const docRef = doc(db, 'campaigns', id)
     const docSnap = await getDoc(docRef)
-    
+
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() } as Campaign
     }
@@ -129,13 +138,13 @@ export const getCampaignBySlug = async (slug: string): Promise<Campaign | null> 
   try {
     const q = query(collection(db, 'campaigns'), where('slug', '==', slug))
     const querySnapshot = await getDocs(q)
-    
+
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0]
       const campaignData = { id: doc.id, ...doc.data() } as Campaign
       return campaignData
     }
-    
+
     return null
   } catch (error) {
     console.error('Error getting campaign by slug:', error)
@@ -147,23 +156,23 @@ export const getUserCampaigns = async (userId: string): Promise<Campaign[]> => {
   try {
     // First try with ordering
     let q = query(
-      collection(db, 'campaigns'), 
+      collection(db, 'campaigns'),
       where('createdBy', '==', userId),
       orderBy('createdAt', 'desc')
     )
-    
+
     let querySnapshot
     try {
       querySnapshot = await getDocs(q)
     } catch (orderError) {
       // Fallback: query without ordering if index doesn't exist
       q = query(
-        collection(db, 'campaigns'), 
+        collection(db, 'campaigns'),
         where('createdBy', '==', userId)
       )
       querySnapshot = await getDocs(q)
     }
-    
+
     const campaigns = querySnapshot.docs.map(doc => {
       const data = doc.data()
       return {
@@ -171,14 +180,14 @@ export const getUserCampaigns = async (userId: string): Promise<Campaign[]> => {
         ...data
       }
     }) as Campaign[]
-    
+
     // Sort manually if we couldn't use orderBy
     campaigns.sort((a, b) => {
       const aTime = a.createdAt?.toDate?.() || new Date(0)
       const bTime = b.createdAt?.toDate?.() || new Date(0)
       return bTime.getTime() - aTime.getTime()
     })
-    
+
     return campaigns
   } catch (error) {
     console.error('Error getting user campaigns:', error)
@@ -189,7 +198,7 @@ export const getUserCampaigns = async (userId: string): Promise<Campaign[]> => {
 export const updateCampaign = async (id: string, updates: Partial<Campaign>) => {
   try {
     const docRef = doc(db, 'campaigns', id)
-    
+
     // Filter out undefined values
     const cleanUpdates: any = {}
     Object.keys(updates).forEach(key => {
@@ -205,7 +214,7 @@ export const updateCampaign = async (id: string, updates: Partial<Campaign>) => 
         }
       }
     })
-    
+
     await updateDoc(docRef, cleanUpdates)
     return { error: null }
   } catch (error: any) {
@@ -248,7 +257,7 @@ export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
       where('isActive', '==', true),
       orderBy('createdAt', 'desc')
     )
-    
+
     let querySnapshot
     try {
       querySnapshot = await getDocs(q)
@@ -263,24 +272,52 @@ export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
       )
       querySnapshot = await getDocs(fallbackQuery)
     }
-    
+
     const campaigns = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Campaign[]
-    
+
     // Additional client-side filter to ensure both status and isActive are true
-    const activeCampaigns = campaigns.filter(campaign => 
-      campaign.status === 'Active' && campaign.isActive === true
-    )
-    
+    // and that the campaign is not expired
+    const activeCampaigns = campaigns.filter(campaign => {
+      if (campaign.status !== 'Active' || campaign.isActive !== true) return false
+
+      const isPaid = !!campaign.paymentId && campaign.paymentId !== 'null' && campaign.paymentId !== 'undefined';
+      const createdDate = parseFirestoreDate(campaign.createdAt);
+
+      if (!isPaid && createdDate) {
+        const inferredExpiry = new Date(createdDate);
+        inferredExpiry.setDate(inferredExpiry.getDate() + 30);
+        if (inferredExpiry < new Date()) {
+          return false;
+        }
+      }
+
+      // Check for explicit expiry
+      if (campaign.expiresAt) {
+        const expiryDate = parseFirestoreDate(campaign.expiresAt)
+        if (expiryDate && expiryDate < new Date()) {
+          return false
+        }
+      } else if (createdDate) {
+        const inferredExpiry = new Date(createdDate)
+        inferredExpiry.setDate(inferredExpiry.getDate() + 30)
+        if (inferredExpiry < new Date()) {
+          return false
+        }
+      }
+
+      return true
+    })
+
     // Sort manually if we couldn't use orderBy
     activeCampaigns.sort((a, b) => {
       const aTime = a.createdAt?.toDate?.() || new Date(0)
       const bTime = b.createdAt?.toDate?.() || new Date(0)
       return bTime.getTime() - aTime.getTime()
     })
-    
+
     return activeCampaigns
   } catch (error) {
     console.error('Error getting public active campaigns:', error)
@@ -292,12 +329,12 @@ export const getPublicActiveCampaigns = async (): Promise<Campaign[]> => {
 export const getAllCampaigns = async (): Promise<Campaign[]> => {
   try {
     const querySnapshot = await getDocs(collection(db, 'campaigns'))
-    
+
     const campaigns = querySnapshot.docs.map(doc => {
       const data = { id: doc.id, ...doc.data() } as Campaign
       return data
     })
-    
+
     return campaigns
   } catch (error) {
     console.error('Error getting all campaigns:', error)
@@ -311,10 +348,10 @@ export const generateUniqueSlug = async (baseName: string): Promise<string> => {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
-  
+
   let slug = baseSlug
   let counter = 1
-  
+
   while (true) {
     const existing = await getCampaignBySlug(slug)
     if (!existing) {
@@ -359,9 +396,9 @@ export const incrementCampaignVisit = async (campaignId: string): Promise<void> 
     const date = getTodayDate()
     const statDocId = getStatDocId(campaignId, date)
     const statRef = doc(db, 'CampaignStatsDaily', statDocId)
-    
+
     const statSnap = await getDoc(statRef)
-    
+
     if (statSnap.exists()) {
       // Update existing document
       await updateDoc(statRef, {
@@ -385,7 +422,7 @@ export const incrementCampaignVisit = async (campaignId: string): Promise<void> 
       const date = getTodayDate()
       const statDocId = getStatDocId(campaignId, date)
       const statRef = doc(db, 'CampaignStatsDaily', statDocId)
-      
+
       await setDoc(statRef, {
         campaignId,
         date,
@@ -406,9 +443,9 @@ export const incrementCampaignDownload = async (campaignId: string): Promise<voi
     const date = getTodayDate()
     const statDocId = getStatDocId(campaignId, date)
     const statRef = doc(db, 'CampaignStatsDaily', statDocId)
-    
+
     const statSnap = await getDoc(statRef)
-    
+
     if (statSnap.exists()) {
       // Update existing document
       await updateDoc(statRef, {
@@ -432,7 +469,7 @@ export const incrementCampaignDownload = async (campaignId: string): Promise<voi
       const date = getTodayDate()
       const statDocId = getStatDocId(campaignId, date)
       const statRef = doc(db, 'CampaignStatsDaily', statDocId)
-      
+
       await setDoc(statRef, {
         campaignId,
         date,
@@ -456,7 +493,7 @@ export const getCampaignStats = async (campaignId: string, days: number = 30): P
       where('campaignId', '==', campaignId),
       orderBy('date', 'desc')
     )
-    
+
     const querySnapshot = await getDocs(q)
     const stats: DailyStats[] = []
 
@@ -487,26 +524,26 @@ export const getCampaignStats = async (campaignId: string, days: number = 30): P
 export const getCampaignWeeklyDownloads = async (campaignId: string): Promise<number> => {
   try {
     const statsRef = collection(db, 'CampaignStatsDaily')
-    
+
     // Get last 7 days
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
     const cutoffDateStr = sevenDaysAgo.toISOString().split('T')[0]
-    
+
     const q = query(
       statsRef,
       where('campaignId', '==', campaignId),
       where('date', '>=', cutoffDateStr)
     )
-    
+
     const querySnapshot = await getDocs(q)
     let totalDownloads = 0
-    
+
     querySnapshot.forEach((doc) => {
       const data = doc.data()
       totalDownloads += data.downloads || 0
     })
-    
+
     return totalDownloads
   } catch (error) {
     console.error('Error getting weekly downloads:', error)
@@ -527,12 +564,38 @@ export const getTrendingCampaigns = async (limit: number = 8): Promise<Campaign[
       orderBy('trendingScore', 'desc'),
       orderBy('createdAt', 'desc')
     )
-    
+
     const querySnapshot = await getDocs(q)
     const campaigns: Campaign[] = []
-    
+
     querySnapshot.forEach((doc) => {
       const data = doc.data()
+
+      const isPaid = !!data.paymentId && data.paymentId !== 'null' && data.paymentId !== 'undefined';
+      const createdDate = parseFirestoreDate(data.createdAt);
+
+      if (!isPaid && createdDate) {
+        const inferredExpiry = new Date(createdDate);
+        inferredExpiry.setDate(inferredExpiry.getDate() + 30);
+        if (inferredExpiry < new Date()) {
+          return; // Skip explicitly expired fallback ones
+        }
+      }
+
+      // Check for explicit expiry
+      if (data.expiresAt) {
+        const expiryDate = parseFirestoreDate(data.expiresAt)
+        if (expiryDate && expiryDate < new Date()) {
+          return // Skip expired campaigns
+        }
+      } else if (createdDate) {
+        const inferredExpiry = new Date(createdDate)
+        inferredExpiry.setDate(inferredExpiry.getDate() + 30)
+        if (inferredExpiry < new Date()) {
+          return // Skip explicitly expired fallback ones
+        }
+      }
+
       campaigns.push({
         id: doc.id,
         campaignName: data.campaignName,
@@ -557,7 +620,7 @@ export const getTrendingCampaigns = async (limit: number = 8): Promise<Campaign[
         trendingScore: data.trendingScore || 0
       } as Campaign)
     })
-    
+
     // If no campaigns have trending scores yet, fall back to supporters count
     if (campaigns.length === 0 || campaigns.every(c => !c.trendingScore)) {
       const fallbackCampaigns = await getPublicActiveCampaigns()
@@ -565,11 +628,11 @@ export const getTrendingCampaigns = async (limit: number = 8): Promise<Campaign[
         .sort((a, b) => (b.supportersCount || 0) - (a.supportersCount || 0))
         .slice(0, limit)
     }
-    
+
     return campaigns.slice(0, limit)
   } catch (error) {
     console.error('Error getting trending campaigns:', error)
-    
+
     // Fallback to basic sorting by supporters count
     try {
       const fallbackCampaigns = await getPublicActiveCampaigns()
@@ -590,12 +653,12 @@ const calculateTrendingScore = (supportersCount: number, weeklyDownloads: number
   // while still considering recent activity (weekly downloads)
   const supportersWeight = 0.7
   const downloadsWeight = 0.3
-  
+
   // Normalize the values to prevent one metric from dominating
   // Use logarithmic scaling to handle large differences
   const normalizedSupporters = Math.log(supportersCount + 1) * 10
   const normalizedDownloads = Math.log(weeklyDownloads + 1) * 10
-  
+
   return (normalizedSupporters * supportersWeight) + (normalizedDownloads * downloadsWeight)
 }
 
@@ -605,27 +668,27 @@ export const getUserAggregateStats = async (userId: string): Promise<{ visits: n
     // First, get all campaigns for the user
     const campaigns = await getUserCampaigns(userId)
     const campaignIds = campaigns.map(c => c.id).filter(Boolean) as string[]
-    
+
     if (campaignIds.length === 0) {
       return { visits: 0, downloads: 0 }
     }
-    
+
     let totalVisits = 0
     let totalDownloads = 0
-    
+
     // Get stats for each campaign
     for (const campaignId of campaignIds) {
       const statsRef = collection(db, 'CampaignStatsDaily')
       const q = query(statsRef, where('campaignId', '==', campaignId))
       const querySnapshot = await getDocs(q)
-      
+
       querySnapshot.forEach((doc) => {
         const data = doc.data() as CampaignStatsDaily
         totalVisits += data.visits || 0
         totalDownloads += data.downloads || 0
       })
     }
-    
+
     return { visits: totalVisits, downloads: totalDownloads }
   } catch (error) {
     console.error('Error getting user aggregate stats:', error)
@@ -698,21 +761,21 @@ export const getPaymentByOrderId = async (orderId: string): Promise<PaymentRecor
     // First try to find by orderId
     let q = query(collection(db, 'payments'), where('orderId', '==', orderId))
     let querySnapshot = await getDocs(q)
-    
+
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0]
       return { id: doc.id, ...doc.data() } as PaymentRecord
     }
-    
+
     // If not found, try to find by cashfreeOrderId
     q = query(collection(db, 'payments'), where('cashfreeOrderId', '==', orderId))
     querySnapshot = await getDocs(q)
-    
+
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0]
       return { id: doc.id, ...doc.data() } as PaymentRecord
     }
-    
+
     return null
   } catch (error) {
     console.error('Error getting payment by order ID:', error)
@@ -740,18 +803,18 @@ export const getUserDailyStats = async (userId: string, days: number = 30): Prom
     // Get all campaigns for the user
     const campaigns = await getUserCampaigns(userId)
     const campaignIds = campaigns.map(c => c.id).filter(Boolean) as string[]
-    
+
     if (campaignIds.length === 0) {
       return []
     }
-    
+
     // Create a map to aggregate stats by date
     const statsByDate = new Map<string, { visits: number; downloads: number }>()
-    
+
     // Get stats for each campaign
     for (const campaignId of campaignIds) {
       const stats = await getCampaignStats(campaignId, days)
-      
+
       stats.forEach(stat => {
         const existing = statsByDate.get(stat.date) || { visits: 0, downloads: 0 }
         statsByDate.set(stat.date, {
@@ -760,7 +823,7 @@ export const getUserDailyStats = async (userId: string, days: number = 30): Prom
         })
       })
     }
-    
+
     // Convert map to array and sort by date
     const result: DailyStats[] = Array.from(statsByDate.entries())
       .map(([date, stats]) => ({
@@ -769,21 +832,21 @@ export const getUserDailyStats = async (userId: string, days: number = 30): Prom
         downloads: stats.downloads
       }))
       .sort((a, b) => a.date.localeCompare(b.date))
-    
+
     // Fill in missing dates with zeros
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - days)
     const filledStats: DailyStats[] = []
-    
+
     for (let i = 0; i < days; i++) {
       const date = new Date(cutoffDate)
       date.setDate(date.getDate() + i)
       const dateStr = date.toISOString().split('T')[0]
-      
+
       const existing = result.find(s => s.date === dateStr)
       filledStats.push(existing || { date: dateStr, visits: 0, downloads: 0 })
     }
-    
+
     return filledStats
   } catch (error) {
     console.error('Error getting user daily stats:', error)
@@ -804,7 +867,7 @@ export const checkFreeCampaignEligibility = async (userId: string): Promise<bool
         return false
       }
     }
-    
+
     // Then check user eligibility
     const userDoc = await getDoc(doc(db, 'users', userId))
     if (!userDoc.exists()) {
@@ -825,14 +888,14 @@ export const activateFreeCampaign = async (campaignId: string, userId: string): 
     // Get the current user's ID token
     const { auth } = await import('./firebase')
     const user = auth.currentUser
-    
+
     if (!user) {
       console.error('activateFreeCampaign: User not authenticated')
       return { error: 'User not authenticated' }
     }
-    
+
     const idToken = await user.getIdToken()
-    
+
     // Call the API route to activate the free campaign
     const response = await fetch('/api/campaigns/activate-free', {
       method: 'POST',
@@ -842,13 +905,13 @@ export const activateFreeCampaign = async (campaignId: string, userId: string): 
       },
       body: JSON.stringify({ campaignId })
     })
-    
+
     const data = await response.json()
-    
+
     if (!response.ok) {
       return { error: data.error || 'Failed to activate free campaign' }
     }
-    
+
     return { error: null }
   } catch (error: any) {
     return { error: error.message }
@@ -874,7 +937,7 @@ export const createOrUpdateUser = async (userId: string, userData: Partial<User>
   try {
     const userRef = doc(db, 'users', userId)
     const userDoc = await getDoc(userRef)
-    
+
     if (userDoc.exists()) {
       await updateDoc(userRef, userData as any)
     } else {
@@ -884,7 +947,7 @@ export const createOrUpdateUser = async (userId: string, userData: Partial<User>
         ...userData
       })
     }
-    
+
     return { error: null }
   } catch (error: any) {
     console.error('Error creating/updating user:', error)
