@@ -372,9 +372,13 @@ export default function CampaignPage() {
     setIsDragging(true)
 
     const rect = e.currentTarget.getBoundingClientRect()
+    // Convert CSS mouse coords → canvas pixel coords
+    const canvas = previewCanvasRef.current
+    const scaleX = canvas ? canvas.width / rect.width : 1
+    const scaleY = canvas ? canvas.height / rect.height : 1
     setDragStart({
-      x: e.clientX - rect.left - transform.x,
-      y: e.clientY - rect.top - transform.y
+      x: (e.clientX - rect.left) * scaleX - transform.x,
+      y: (e.clientY - rect.top) * scaleY - transform.y
     })
   }
 
@@ -383,16 +387,18 @@ export default function CampaignPage() {
     e.preventDefault()
 
     const rect = e.currentTarget.getBoundingClientRect()
+    // Convert CSS mouse coords → canvas pixel coords
+    const canvas = previewCanvasRef.current
+    const scaleX = canvas ? canvas.width / rect.width : 1
+    const scaleY = canvas ? canvas.height / rect.height : 1
     const newTransform = {
       ...transform,
-      x: e.clientX - rect.left - dragStart.x,
-      y: e.clientY - rect.top - dragStart.y
+      x: (e.clientX - rect.left) * scaleX - dragStart.x,
+      y: (e.clientY - rect.top) * scaleY - dragStart.y
     }
 
-    // Store the pending transform
     pendingTransformRef.current = newTransform
 
-    // Use requestAnimationFrame for smooth updates
     if (!rafRef.current) {
       rafRef.current = requestAnimationFrame(() => {
         if (pendingTransformRef.current) {
@@ -422,12 +428,12 @@ export default function CampaignPage() {
   const handleReset = () => {
     if (!userImage) return
 
-    // Reset to auto-fit
     const img = new Image()
     if (userImage.startsWith('http')) img.crossOrigin = 'anonymous'
     img.onload = () => {
-      const canvasSize = 400
-      const initialScale = Math.max(canvasSize / img.width, canvasSize / img.height)
+      const previewW = frameNativeSize ? Math.round(frameNativeSize.width * (400 / frameNativeSize.height)) : 400
+      const previewH = 400
+      const initialScale = Math.max(previewW / img.width, previewH / img.height)
       setTransform({ x: 0, y: 0, scale: initialScale })
     }
     img.src = userImage
@@ -471,60 +477,41 @@ export default function CampaignPage() {
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = 'high'
 
-      // Scale factor: preview canvas height is 400px
+      // Scale factor: map from 400px preview height to the frame's actual pixel height
       const scaleFactor = canvasHeight / 400
 
-      // ------------------------------------------------------------------
-      // Step 2: Draw user photo at FULL ORIGINAL RESOLUTION
-      // If we have the crop metadata, draw directly from originalImage using
-      // the stored crop region — skipping the intermediate PNG entirely.
-      // This is lossless: original bytes → canvas, no re-encoding step.
-      // ------------------------------------------------------------------
-      if (originalImage && cropMeta) {
-        const rawImg = new Image()
-        if (originalImage.startsWith('http')) rawImg.crossOrigin = 'anonymous'
-        rawImg.src = originalImage
-        await new Promise<void>((resolve, reject) => {
-          rawImg.onload = () => resolve()
-          rawImg.onerror = reject
-        })
+      // Step 2: Load and draw user's photo (BACKGROUND LAYER)
+      // userImage is a lossless PNG crop at the original resolution — no quality loss.
+      // We use the same transform mathematics as the preview canvas so the
+      // downloaded result is pixel-perfect identical to what the user sees.
+      const userImg = new Image()
+      if (userImage.startsWith('http')) userImg.crossOrigin = 'anonymous'
+      userImg.src = userImage
 
-        const { region, brightness, contrast, saturation } = cropMeta
-        const hasAdjustments = brightness !== 100 || contrast !== 100 || saturation !== 100
-        if (hasAdjustments) {
+      await new Promise<void>((resolve, reject) => {
+        userImg.onload = () => resolve()
+        userImg.onerror = reject
+      })
+
+      // Apply brightness/contrast/saturation if the user adjusted them
+      if (cropMeta) {
+        const { brightness, contrast, saturation } = cropMeta
+        if (brightness !== 100 || contrast !== 100 || saturation !== 100) {
           ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`
         }
-
-        // Reproduce the same visual positioning as the preview canvas, scaled up
-        const srcW = region.width
-        const srcH = region.height
-        const destW = srcW * transform.scale * scaleFactor
-        const destH = srcH * transform.scale * scaleFactor
-        const destX = canvasWidth / 2 + transform.x * scaleFactor - destW / 2
-        const destY = canvasHeight / 2 + transform.y * scaleFactor - destH / 2
-
-        ctx.drawImage(rawImg, region.x, region.y, srcW, srcH, destX, destY, destW, destH)
-        ctx.filter = 'none'
-
-      } else {
-        // Fallback: use the preview PNG (cropped DataURL)
-        const userImg = new Image()
-        if (userImage.startsWith('http')) userImg.crossOrigin = 'anonymous'
-        userImg.src = userImage
-        await new Promise<void>((resolve, reject) => {
-          userImg.onload = () => resolve()
-          userImg.onerror = reject
-        })
-
-        ctx.save()
-        ctx.translate(canvasWidth / 2, canvasHeight / 2)
-        ctx.scale(transform.scale, transform.scale)
-        ctx.translate(transform.x * scaleFactor, transform.y * scaleFactor)
-        const imageWidth = userImg.width * scaleFactor
-        const imageHeight = userImg.height * scaleFactor
-        ctx.drawImage(userImg, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight)
-        ctx.restore()
       }
+
+      ctx.save()
+      // Mirror the preview canvas transform exactly, scaled up by scaleFactor
+      ctx.translate(canvasWidth / 2, canvasHeight / 2)
+      ctx.scale(transform.scale, transform.scale)
+      ctx.translate(transform.x * scaleFactor, transform.y * scaleFactor)
+      // Draw the image at scaleFactor × its natural size to fill the high-res canvas
+      const imageWidth = userImg.width * scaleFactor
+      const imageHeight = userImg.height * scaleFactor
+      ctx.drawImage(userImg, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight)
+      ctx.restore()
+      ctx.filter = 'none'
 
       // Step 3: Draw frame PNG on top (transparent areas show user photo)
       ctx.drawImage(frameImg, 0, 0, canvasWidth, canvasHeight)
@@ -748,10 +735,13 @@ export default function CampaignPage() {
                         e.preventDefault()
                         const touch = e.touches[0]
                         const rect = e.currentTarget.getBoundingClientRect()
+                        const canvas = previewCanvasRef.current
+                        const scaleX = canvas ? canvas.width / rect.width : 1
+                        const scaleY = canvas ? canvas.height / rect.height : 1
                         setIsDragging(true)
                         setDragStart({
-                          x: touch.clientX - rect.left - transform.x,
-                          y: touch.clientY - rect.top - transform.y
+                          x: (touch.clientX - rect.left) * scaleX - transform.x,
+                          y: (touch.clientY - rect.top) * scaleY - transform.y
                         })
                       }}
                       onTouchMove={(e) => {
@@ -759,16 +749,17 @@ export default function CampaignPage() {
                         e.preventDefault()
                         const touch = e.touches[0]
                         const rect = e.currentTarget.getBoundingClientRect()
+                        const canvas = previewCanvasRef.current
+                        const scaleX = canvas ? canvas.width / rect.width : 1
+                        const scaleY = canvas ? canvas.height / rect.height : 1
                         const newTransform = {
                           ...transform,
-                          x: touch.clientX - rect.left - dragStart.x,
-                          y: touch.clientY - rect.top - dragStart.y
+                          x: (touch.clientX - rect.left) * scaleX - dragStart.x,
+                          y: (touch.clientY - rect.top) * scaleY - dragStart.y
                         }
 
-                        // Store the pending transform
                         pendingTransformRef.current = newTransform
 
-                        // Use requestAnimationFrame for smooth updates
                         if (!rafRef.current) {
                           rafRef.current = requestAnimationFrame(() => {
                             if (pendingTransformRef.current) {
