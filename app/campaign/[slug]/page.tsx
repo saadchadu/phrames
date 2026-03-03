@@ -9,7 +9,7 @@ import { getUserProfile, UserProfile } from '@/lib/auth'
 import { ArrowDownTrayIcon, PhotoIcon, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon, ScissorsIcon } from '@heroicons/react/24/outline'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import CampaignQRCode from '@/components/CampaignQRCode'
-import ImageCropModal from '@/components/ImageCropModal'
+import ImageCropModal, { CropMeta } from '@/components/ImageCropModal'
 import { useAuth } from '@/components/AuthProvider'
 import { getCanvasDimensions, getAspectRatioDimensions } from '@/lib/aspect-ratios'
 import useCampaignStats from '@/hooks/useCampaignStats'
@@ -49,6 +49,12 @@ export default function CampaignPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const rafRef = useRef<number | null>(null)
   const pendingTransformRef = useRef<ImageTransform | null>(null)
+
+  // Native pixel dimensions of the frame image (set once frame loads)
+  const [frameNativeSize, setFrameNativeSize] = useState<{ width: number; height: number } | null>(null)
+
+  // Stores the crop region + adjustments from the last crop — used for full-res download
+  const [cropMeta, setCropMeta] = useState<CropMeta | null>(null)
 
   // Use real-time campaign stats
   const { stats: campaignStats } = useCampaignStats(campaign?.id || null)
@@ -145,9 +151,13 @@ export default function CampaignPage() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Calculate canvas dimensions based on aspect ratio
-    const aspectRatio = campaign?.aspectRatio || '1:1'
-    const { width: canvasWidth, height: canvasHeight } = getCanvasDimensions(aspectRatio, 400)
+    // Use frameNativeSize if available, otherwise fall back to stored aspectRatio
+    const previewW = frameNativeSize?.width || getCanvasDimensions(campaign?.aspectRatio || '1:1', 400).width
+    const previewH = frameNativeSize?.height || getCanvasDimensions(campaign?.aspectRatio || '1:1', 400).height
+    // Scale to fit within 400px height
+    const scale = 400 / previewH
+    const canvasWidth = Math.round(previewW * scale)
+    const canvasHeight = 400
 
     canvas.width = canvasWidth
     canvas.height = canvasHeight
@@ -338,18 +348,17 @@ export default function CampaignPage() {
     reader.readAsDataURL(file)
   }
 
-  const handleCropComplete = (croppedImage: string) => {
+  const handleCropComplete = (croppedImage: string, meta: CropMeta) => {
     setUserImage(croppedImage)
+    setCropMeta(meta)
 
-    // Auto-fit the cropped image
+    // Auto-fit the cropped image to the frame's actual preview canvas size
     const img = new Image()
     if (croppedImage.startsWith('http')) img.crossOrigin = 'anonymous'
     img.onload = () => {
-      const canvasSize = 400
-
-      // Scale to cover the entire canvas
-      let initialScale = Math.max(canvasSize / img.width, canvasSize / img.height)
-
+      const previewW = frameNativeSize ? Math.round(frameNativeSize.width * (400 / frameNativeSize.height)) : 400
+      const previewH = 400
+      let initialScale = Math.max(previewW / img.width, previewH / img.height)
       const initialTransform = { x: 0, y: 0, scale: initialScale }
       setTransform(initialTransform)
       updatePreview(croppedImage, initialTransform)
@@ -440,10 +449,7 @@ export default function CampaignPage() {
         frameImg.onerror = async () => {
           console.warn('⚠️ Proxy failed, trying direct URL...')
           const fallbackImg = new Image()
-          fallbackImg.onload = () => {
-            frameImg.src = fallbackImg.src
-            resolve()
-          }
+          fallbackImg.onload = () => { frameImg.src = fallbackImg.src; resolve() }
           fallbackImg.onerror = () => reject(new Error('Frame loading failed'))
           fallbackImg.src = campaign.frameURL
         }
@@ -451,40 +457,74 @@ export default function CampaignPage() {
         setTimeout(() => reject(new Error('Frame load timeout')), 15000)
       })
 
-      // Use the frame's actual native pixel dimensions for the export canvas
+      // Canvas sized to frame's actual native pixel dimensions
       const canvasWidth = frameImg.naturalWidth || frameImg.width
       const canvasHeight = frameImg.naturalHeight || frameImg.height
 
-      // Create final canvas matching the frame exactly
       const canvas = document.createElement('canvas')
       canvas.width = canvasWidth
       canvas.height = canvasHeight
       const ctx = canvas.getContext('2d')
-
       if (!ctx) throw new Error('Could not get canvas context')
 
-      // Step 2: Load and draw user's photo (BACKGROUND LAYER)
-      const userImg = new Image()
-      if (userImage.startsWith('http')) userImg.crossOrigin = 'anonymous'
-      userImg.src = userImage
+      // Use high-quality image smoothing for all draw operations
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
 
-      await new Promise<void>((resolve, reject) => {
-        userImg.onload = () => resolve()
-        userImg.onerror = reject
-      })
-
-      // Scale factor: preview canvas height is 400px, export canvas is the frame's actual height
+      // Scale factor: preview canvas height is 400px
       const scaleFactor = canvasHeight / 400
 
-      ctx.save()
-      ctx.translate(canvasWidth / 2, canvasHeight / 2)
-      ctx.scale(transform.scale, transform.scale)
-      ctx.translate(transform.x * scaleFactor, transform.y * scaleFactor)
+      // ------------------------------------------------------------------
+      // Step 2: Draw user photo at FULL ORIGINAL RESOLUTION
+      // If we have the crop metadata, draw directly from originalImage using
+      // the stored crop region — skipping the intermediate PNG entirely.
+      // This is lossless: original bytes → canvas, no re-encoding step.
+      // ------------------------------------------------------------------
+      if (originalImage && cropMeta) {
+        const rawImg = new Image()
+        if (originalImage.startsWith('http')) rawImg.crossOrigin = 'anonymous'
+        rawImg.src = originalImage
+        await new Promise<void>((resolve, reject) => {
+          rawImg.onload = () => resolve()
+          rawImg.onerror = reject
+        })
 
-      const imageWidth = userImg.width * scaleFactor
-      const imageHeight = userImg.height * scaleFactor
-      ctx.drawImage(userImg, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight)
-      ctx.restore()
+        const { region, brightness, contrast, saturation } = cropMeta
+        const hasAdjustments = brightness !== 100 || contrast !== 100 || saturation !== 100
+        if (hasAdjustments) {
+          ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`
+        }
+
+        // Reproduce the same visual positioning as the preview canvas, scaled up
+        const srcW = region.width
+        const srcH = region.height
+        const destW = srcW * transform.scale * scaleFactor
+        const destH = srcH * transform.scale * scaleFactor
+        const destX = canvasWidth / 2 + transform.x * scaleFactor - destW / 2
+        const destY = canvasHeight / 2 + transform.y * scaleFactor - destH / 2
+
+        ctx.drawImage(rawImg, region.x, region.y, srcW, srcH, destX, destY, destW, destH)
+        ctx.filter = 'none'
+
+      } else {
+        // Fallback: use the preview PNG (cropped DataURL)
+        const userImg = new Image()
+        if (userImage.startsWith('http')) userImg.crossOrigin = 'anonymous'
+        userImg.src = userImage
+        await new Promise<void>((resolve, reject) => {
+          userImg.onload = () => resolve()
+          userImg.onerror = reject
+        })
+
+        ctx.save()
+        ctx.translate(canvasWidth / 2, canvasHeight / 2)
+        ctx.scale(transform.scale, transform.scale)
+        ctx.translate(transform.x * scaleFactor, transform.y * scaleFactor)
+        const imageWidth = userImg.width * scaleFactor
+        const imageHeight = userImg.height * scaleFactor
+        ctx.drawImage(userImg, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight)
+        ctx.restore()
+      }
 
       // Step 3: Draw frame PNG on top (transparent areas show user photo)
       ctx.drawImage(frameImg, 0, 0, canvasWidth, canvasHeight)
@@ -654,20 +694,21 @@ export default function CampaignPage() {
               <div className="bg-white border border-[#00240010] rounded-2xl p-4 sm:p-6 lg:p-7 shadow-sm">
                 <h2 className="text-base sm:text-lg lg:text-[19px] font-semibold text-primary mb-3 sm:mb-4">Frame Preview</h2>
 
-                {/* Layered Frame Display */}
+                {/* Layered Frame Display - sized to frame's actual aspect ratio */}
                 <div
                   id="final-image-container"
-                  className={`bg-white rounded-xl overflow-hidden mb-3 sm:mb-4 relative w-full border border-[#00240010] touch-none ${campaign.aspectRatio === '4:5' ? 'aspect-[4/5]' :
-                    campaign.aspectRatio === '3:4' ? 'aspect-[3/4]' :
-                      'aspect-square'
-                    }`}
+                  className="bg-white rounded-xl overflow-hidden mb-3 sm:mb-4 relative w-full border border-[#00240010] touch-none"
+                  style={frameNativeSize
+                    ? { paddingBottom: `${(frameNativeSize.height / frameNativeSize.width) * 100}%` }
+                    : { aspectRatio: ({ '4:5': '4/5', '3:4': '3/4', '9:16': '9/16', '1:1': '1/1' } as Record<string, string>)[campaign.aspectRatio || '1:1'] ?? '1/1' }
+                  }
                 >
                   {/* User Photo Canvas (Background Layer) */}
                   {userImage && (
                     <canvas
                       ref={previewCanvasRef}
-                      width={getCanvasDimensions(campaign?.aspectRatio || '1:1', 400).width}
-                      height={getCanvasDimensions(campaign?.aspectRatio || '1:1', 400).height}
+                      width={frameNativeSize ? Math.round(frameNativeSize.width * (400 / frameNativeSize.height)) : getCanvasDimensions(campaign?.aspectRatio || '1:1', 400).width}
+                      height={400}
                       className="absolute inset-0 w-full h-full"
                       style={{
                         zIndex: 1,
@@ -676,12 +717,16 @@ export default function CampaignPage() {
                     />
                   )}
 
-                  {/* Frame Image (Foreground Layer) */}
+                  {/* Frame Image (Foreground Layer) — drives the container height via native aspect ratio */}
                   <img
                     src={campaign.frameURL}
                     alt={campaign.campaignName}
                     className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                     style={{ zIndex: 2 }}
+                    onLoad={(e) => {
+                      const img = e.currentTarget
+                      setFrameNativeSize({ width: img.naturalWidth, height: img.naturalHeight })
+                    }}
                   />
 
                   {/* Invisible interaction layer for dragging */}
@@ -989,6 +1034,7 @@ export default function CampaignPage() {
           onClose={() => setShowCropModal(false)}
           image={originalImage}
           onCropComplete={handleCropComplete}
+          frameAspect={frameNativeSize ? frameNativeSize.width / frameNativeSize.height : null}
         />
       )}
 
