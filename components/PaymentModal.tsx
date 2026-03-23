@@ -243,8 +243,18 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
           returnUrl: `${window.location.origin}/dashboard?payment=success&campaignId=${campaignId}`
         }
 
-        // Call checkout - it will redirect automatically
-        await cashfree.checkout(checkoutOptions)
+        // Call checkout - Cashfree v3 SDK redirects the page automatically.
+        // We set loading=false after a short delay as a safety net in case
+        // the redirect is blocked or the SDK call returns without redirecting.
+        try {
+          cashfree.checkout(checkoutOptions)
+        } catch (checkoutErr: any) {
+          throw new Error(checkoutErr?.message || 'Failed to open payment checkout')
+        }
+
+        // Give the redirect 4 seconds to happen; if still on page, reset loading
+        setTimeout(() => setLoading(false), 4000)
+
       } else {
         throw new Error('No payment session received')
       }
