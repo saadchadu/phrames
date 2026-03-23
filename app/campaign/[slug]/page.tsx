@@ -40,7 +40,6 @@ export default function CampaignPage() {
   const [processing, setProcessing] = useState(false)
   const [transform, setTransform] = useState<ImageTransform>({ x: 0, y: 0, scale: 1 })
   const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [showQRCode, setShowQRCode] = useState(false)
   const [showCropModal, setShowCropModal] = useState(false)
 
@@ -49,6 +48,8 @@ export default function CampaignPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const rafRef = useRef<number | null>(null)
   const pendingTransformRef = useRef<ImageTransform | null>(null)
+  const transformRef = useRef<ImageTransform>({ x: 0, y: 0, scale: 1 })
+  const dragStartRef = useRef({ x: 0, y: 0 })
 
   // Native pixel dimensions of the frame image (set once frame loads)
   const [frameNativeSize, setFrameNativeSize] = useState<{ width: number; height: number } | null>(null)
@@ -185,13 +186,12 @@ export default function CampaignPage() {
       // Save context for user image
       ctx.save()
 
-      // Apply transform to user image
+      // Draw image at its natural pixel size — no pre-scaling that would distort aspect ratio.
+      // transform.scale is the user's zoom; at scale=1 the image renders at native resolution.
       ctx.translate(canvasWidth / 2, canvasHeight / 2)
       ctx.scale(currentTransform.scale, currentTransform.scale)
       ctx.translate(currentTransform.x, currentTransform.y)
-
-      // Draw user image
-      ctx.drawImage(userImg, -userImg.width / 2, -userImg.height / 2)
+      ctx.drawImage(userImg, -userImg.width / 2, -userImg.height / 2, userImg.width, userImg.height)
 
       // Restore context
       ctx.restore()
@@ -313,6 +313,7 @@ export default function CampaignPage() {
     if (userImage) {
       updatePreview(userImage, transform)
     }
+    transformRef.current = transform
   }, [userImage, transform, updatePreview])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -358,7 +359,8 @@ export default function CampaignPage() {
     img.onload = () => {
       const previewW = frameNativeSize ? Math.round(frameNativeSize.width * (400 / frameNativeSize.height)) : 400
       const previewH = 400
-      let initialScale = Math.max(previewW / img.width, previewH / img.height)
+      // Fit image inside canvas (contain), then let user zoom out/in from there
+      const initialScale = Math.min(previewW / img.width, previewH / img.height)
       const initialTransform = { x: 0, y: 0, scale: initialScale }
       setTransform(initialTransform)
       updatePreview(croppedImage, initialTransform)
@@ -372,14 +374,13 @@ export default function CampaignPage() {
     setIsDragging(true)
 
     const rect = e.currentTarget.getBoundingClientRect()
-    // Convert CSS mouse coords → canvas pixel coords
     const canvas = previewCanvasRef.current
     const scaleX = canvas ? canvas.width / rect.width : 1
     const scaleY = canvas ? canvas.height / rect.height : 1
-    setDragStart({
-      x: (e.clientX - rect.left) * scaleX - transform.x,
-      y: (e.clientY - rect.top) * scaleY - transform.y
-    })
+    dragStartRef.current = {
+      x: (e.clientX - rect.left) * scaleX - transformRef.current.x,
+      y: (e.clientY - rect.top) * scaleY - transformRef.current.y
+    }
   }
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -387,16 +388,16 @@ export default function CampaignPage() {
     e.preventDefault()
 
     const rect = e.currentTarget.getBoundingClientRect()
-    // Convert CSS mouse coords → canvas pixel coords
     const canvas = previewCanvasRef.current
     const scaleX = canvas ? canvas.width / rect.width : 1
     const scaleY = canvas ? canvas.height / rect.height : 1
     const newTransform = {
-      ...transform,
-      x: (e.clientX - rect.left) * scaleX - dragStart.x,
-      y: (e.clientY - rect.top) * scaleY - dragStart.y
+      ...transformRef.current,
+      x: (e.clientX - rect.left) * scaleX - dragStartRef.current.x,
+      y: (e.clientY - rect.top) * scaleY - dragStartRef.current.y
     }
 
+    transformRef.current = newTransform
     pendingTransformRef.current = newTransform
 
     if (!rafRef.current) {
@@ -408,7 +409,7 @@ export default function CampaignPage() {
         rafRef.current = null
       })
     }
-  }, [isDragging, userImage, transform, dragStart])
+  }, [isDragging, userImage])
 
   const handleMouseUp = () => {
     setIsDragging(false)
@@ -427,13 +428,11 @@ export default function CampaignPage() {
 
   const handleReset = () => {
     if (!userImage) return
-
     const img = new Image()
-    if (userImage.startsWith('http')) img.crossOrigin = 'anonymous'
     img.onload = () => {
       const previewW = frameNativeSize ? Math.round(frameNativeSize.width * (400 / frameNativeSize.height)) : 400
       const previewH = 400
-      const initialScale = Math.max(previewW / img.width, previewH / img.height)
+      const initialScale = Math.min(previewW / img.width, previewH / img.height)
       setTransform({ x: 0, y: 0, scale: initialScale })
     }
     img.src = userImage
@@ -503,13 +502,13 @@ export default function CampaignPage() {
 
       ctx.save()
       // Mirror the preview canvas transform exactly, scaled up by scaleFactor
+      // Draw image at natural size × scaleFactor — no aspect-ratio-distorting cover scale
+      const drawW = userImg.width * scaleFactor
+      const drawH = userImg.height * scaleFactor
       ctx.translate(canvasWidth / 2, canvasHeight / 2)
       ctx.scale(transform.scale, transform.scale)
       ctx.translate(transform.x * scaleFactor, transform.y * scaleFactor)
-      // Draw the image at scaleFactor × its natural size to fill the high-res canvas
-      const imageWidth = userImg.width * scaleFactor
-      const imageHeight = userImg.height * scaleFactor
-      ctx.drawImage(userImg, -imageWidth / 2, -imageHeight / 2, imageWidth, imageHeight)
+      ctx.drawImage(userImg, -drawW / 2, -drawH / 2, drawW, drawH)
       ctx.restore()
       ctx.filter = 'none'
 
@@ -709,7 +708,11 @@ export default function CampaignPage() {
                     src={campaign.frameURL}
                     alt={campaign.campaignName}
                     className="absolute inset-0 w-full h-full object-contain pointer-events-none"
-                    style={{ zIndex: 2 }}
+                    style={{
+                      zIndex: 2,
+                      opacity: isDragging ? 0.45 : 1,
+                      transition: isDragging ? 'none' : 'opacity 0.25s ease'
+                    }}
                     onLoad={(e) => {
                       const img = e.currentTarget
                       setFrameNativeSize({ width: img.naturalWidth, height: img.naturalHeight })
@@ -739,10 +742,10 @@ export default function CampaignPage() {
                         const scaleX = canvas ? canvas.width / rect.width : 1
                         const scaleY = canvas ? canvas.height / rect.height : 1
                         setIsDragging(true)
-                        setDragStart({
-                          x: (touch.clientX - rect.left) * scaleX - transform.x,
-                          y: (touch.clientY - rect.top) * scaleY - transform.y
-                        })
+                        dragStartRef.current = {
+                          x: (touch.clientX - rect.left) * scaleX - transformRef.current.x,
+                          y: (touch.clientY - rect.top) * scaleY - transformRef.current.y
+                        }
                       }}
                       onTouchMove={(e) => {
                         if (!isDragging || !userImage) return
@@ -753,11 +756,12 @@ export default function CampaignPage() {
                         const scaleX = canvas ? canvas.width / rect.width : 1
                         const scaleY = canvas ? canvas.height / rect.height : 1
                         const newTransform = {
-                          ...transform,
-                          x: (touch.clientX - rect.left) * scaleX - dragStart.x,
-                          y: (touch.clientY - rect.top) * scaleY - dragStart.y
+                          ...transformRef.current,
+                          x: (touch.clientX - rect.left) * scaleX - dragStartRef.current.x,
+                          y: (touch.clientY - rect.top) * scaleY - dragStartRef.current.y
                         }
 
+                        transformRef.current = newTransform
                         pendingTransformRef.current = newTransform
 
                         if (!rafRef.current) {
@@ -1025,7 +1029,6 @@ export default function CampaignPage() {
           onClose={() => setShowCropModal(false)}
           image={originalImage}
           onCropComplete={handleCropComplete}
-          frameAspect={frameNativeSize ? frameNativeSize.width / frameNativeSize.height : null}
         />
       )}
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useState, useCallback } from 'react'
+import { Fragment, useState, useCallback, useEffect } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { XMarkIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 import Cropper from 'react-easy-crop'
@@ -12,7 +12,6 @@ interface ImageCropModalProps {
   onClose: () => void
   image: string
   onCropComplete: (croppedImage: string, meta: CropMeta) => void
-  frameAspect?: number | null
 }
 
 export interface CropMeta {
@@ -22,41 +21,17 @@ export interface CropMeta {
   saturation: number
 }
 
-type RatioKey = 'free' | '1:1' | '4:5' | '3:4' | '9:16' | 'custom'
-
-const RATIO_OPTIONS: { key: RatioKey; label: string; value: number | null }[] = [
-  { key: 'free', label: 'Free', value: null },
-  { key: '1:1', label: '1:1', value: 1 },
-  { key: '4:5', label: '4:5', value: 4 / 5 },
-  { key: '3:4', label: '3:4', value: 3 / 4 },
-  { key: '9:16', label: '9:16', value: 9 / 16 },
-  { key: 'custom', label: 'Custom', value: null },
-]
-
-function nearestRatioKey(aspect: number | null | undefined): RatioKey {
-  if (!aspect) return 'free'
-  const tol = 0.02
-  if (Math.abs(aspect - 1) < tol) return '1:1'
-  if (Math.abs(aspect - 4 / 5) < tol) return '4:5'
-  if (Math.abs(aspect - 3 / 4) < tol) return '3:4'
-  if (Math.abs(aspect - 9 / 16) < tol) return '9:16'
-  return 'custom'
-}
+const DEFAULT_W = 4
+const DEFAULT_H = 3
+const MIN_SIZE = 1
+const MAX_SIZE = 99
 
 export default function ImageCropModal({
   isOpen,
   onClose,
   image,
   onCropComplete,
-  frameAspect,
 }: ImageCropModalProps) {
-  const defaultRatioKey = nearestRatioKey(frameAspect)
-  const defaultAspect =
-    frameAspect ??
-    (defaultRatioKey === 'free' || defaultRatioKey === 'custom'
-      ? null
-      : RATIO_OPTIONS.find((r) => r.key === defaultRatioKey)?.value ?? null)
-
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [brightness, setBrightness] = useState(100)
@@ -64,50 +39,48 @@ export default function ImageCropModal({
   const [saturation, setSaturation] = useState(100)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
   const [processing, setProcessing] = useState(false)
-
-  // Ratio state
-  const [ratioKey, setRatioKey] = useState<RatioKey>(defaultRatioKey)
-  const [cropAspect, setCropAspect] = useState<number | null>(defaultAspect)
-  const [customW, setCustomW] = useState(9)
-  const [customH, setCustomH] = useState(16)
+  const [cropW, setCropW] = useState(DEFAULT_W)
+  const [cropH, setCropH] = useState(DEFAULT_H)
+  const [inputW, setInputW] = useState(String(DEFAULT_W))
+  const [inputH, setInputH] = useState(String(DEFAULT_H))
 
   const { alertState, showAlert, closeAlert } = useDialog()
+
+  useEffect(() => {
+    if (isOpen) {
+      setCrop({ x: 0, y: 0 })
+      setZoom(1)
+      setBrightness(100)
+      setContrast(100)
+      setSaturation(100)
+      setCropW(DEFAULT_W)
+      setCropH(DEFAULT_H)
+      setInputW(String(DEFAULT_W))
+      setInputH(String(DEFAULT_H))
+    }
+  }, [isOpen])
 
   const onCropChange = useCallback((c: { x: number; y: number }) => setCrop(c), [])
   const onZoomChange = useCallback((z: number) => setZoom(z), [])
   const onCropCompleteCallback = useCallback(
-    (_croppedArea: any, croppedAreaPx: any) => setCroppedAreaPixels(croppedAreaPx),
+    (_area: any, areaPx: any) => setCroppedAreaPixels(areaPx),
     []
   )
 
-  const handleRatioSelect = (key: RatioKey) => {
-    setRatioKey(key)
-    if (key === 'free') {
-      setCropAspect(null)
-    } else if (key === 'custom') {
-      setCropAspect(customW / customH)
-    } else {
-      const opt = RATIO_OPTIONS.find((r) => r.key === key)
-      setCropAspect(opt?.value ?? null)
-    }
-    setCrop({ x: 0, y: 0 })
-    setZoom(1)
+  const commitW = (val: string) => {
+    const n = Math.min(MAX_SIZE, Math.max(MIN_SIZE, parseInt(val) || MIN_SIZE))
+    setCropW(n); setInputW(String(n)); setCrop({ x: 0, y: 0 })
   }
-
-  const handleCustomChange = (w: number, h: number) => {
-    const safeW = Math.max(1, w)
-    const safeH = Math.max(1, h)
-    setCustomW(safeW)
-    setCustomH(safeH)
-    if (ratioKey === 'custom') setCropAspect(safeW / safeH)
+  const commitH = (val: string) => {
+    const n = Math.min(MAX_SIZE, Math.max(MIN_SIZE, parseInt(val) || MIN_SIZE))
+    setCropH(n); setInputH(String(n)); setCrop({ x: 0, y: 0 })
   }
 
   const handleReset = () => {
-    setZoom(1)
-    setCrop({ x: 0, y: 0 })
-    setBrightness(100)
-    setContrast(100)
-    setSaturation(100)
+    setZoom(1); setCrop({ x: 0, y: 0 })
+    setBrightness(100); setContrast(100); setSaturation(100)
+    setCropW(DEFAULT_W); setCropH(DEFAULT_H)
+    setInputW(String(DEFAULT_W)); setInputH(String(DEFAULT_H))
   }
 
   const handleApplyCrop = async () => {
@@ -129,7 +102,6 @@ export default function ImageCropModal({
       canvas.width = croppedAreaPixels.width
       canvas.height = croppedAreaPixels.height
 
-      // Only apply filter if any adjustment differs from the neutral default
       const hasAdjustments = brightness !== 100 || contrast !== 100 || saturation !== 100
       if (hasAdjustments) {
         ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`
@@ -137,28 +109,19 @@ export default function ImageCropModal({
 
       ctx.drawImage(
         userImg,
-        croppedAreaPixels.x,
-        croppedAreaPixels.y,
-        croppedAreaPixels.width,
-        croppedAreaPixels.height,
-        0,
-        0,
-        croppedAreaPixels.width,
-        croppedAreaPixels.height
+        croppedAreaPixels.x, croppedAreaPixels.y,
+        croppedAreaPixels.width, croppedAreaPixels.height,
+        0, 0,
+        croppedAreaPixels.width, croppedAreaPixels.height
       )
 
-      // PNG is lossless — no quality degradation unlike WebP at any quality level
       const dataUrl = canvas.toDataURL('image/png')
       onCropComplete(dataUrl, {
         region: {
-          x: croppedAreaPixels.x,
-          y: croppedAreaPixels.y,
-          width: croppedAreaPixels.width,
-          height: croppedAreaPixels.height,
+          x: croppedAreaPixels.x, y: croppedAreaPixels.y,
+          width: croppedAreaPixels.width, height: croppedAreaPixels.height,
         },
-        brightness,
-        contrast,
-        saturation,
+        brightness, contrast, saturation,
       })
       onClose()
     } catch (error) {
@@ -169,153 +132,159 @@ export default function ImageCropModal({
     }
   }
 
+  const sliderBg = (pct: number) =>
+    `linear-gradient(to right, #00dd78 0%, #00dd78 ${pct}%, #00240010 ${pct}%, #00240010 100%)`
+
   return (
     <>
       <Transition appear show={isOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={() => !processing && onClose()}>
+
+          {/* Backdrop */}
           <Transition.Child
             as={Fragment}
-            enter="ease-out duration-300" enterFrom="opacity-0" enterTo="opacity-100"
-            leave="ease-in duration-200" leaveFrom="opacity-100" leaveTo="opacity-0"
+            enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100"
+            leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+            <div className="fixed inset-0 bg-primary/40 backdrop-blur-sm" />
           </Transition.Child>
 
           <div className="fixed inset-0 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
               <Transition.Child
                 as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                enterTo="opacity-100 translate-y-0 sm:scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enter="ease-out duration-200" enterFrom="opacity-0 translate-y-2 scale-95" enterTo="opacity-100 translate-y-0 scale-100"
+                leave="ease-in duration-150" leaveFrom="opacity-100 translate-y-0 scale-100" leaveTo="opacity-0 translate-y-2 scale-95"
               >
-                <Dialog.Panel className="w-full max-w-[1000px] transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-2xl transition-all flex flex-col max-h-[90vh]">
+                <Dialog.Panel className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-[#00240010]" style={{ maxWidth: 740 }}>
 
                   {/* Header */}
-                  <div className="px-6 py-4 flex items-center justify-between border-b border-[#00240010]">
-                    <Dialog.Title as="h3" className="text-xl font-semibold text-primary">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-[#00240010]">
+                    <Dialog.Title as="h3" className="text-lg font-semibold text-primary">
                       Adjust Image
                     </Dialog.Title>
                     <button
                       onClick={onClose}
                       disabled={processing}
-                      className="text-primary/60 hover:text-primary transition-colors p-1 rounded-full hover:bg-[#00240005] disabled:opacity-50"
+                      className="text-primary/40 hover:text-primary transition-colors p-1.5 rounded-full hover:bg-[#00240008] disabled:opacity-40"
                     >
-                      <XMarkIcon className="h-6 w-6" />
+                      <XMarkIcon className="h-5 w-5" />
                     </button>
                   </div>
 
-                  {/* Body — 2 columns */}
-                  <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+                  {/* Body */}
+                  <div className="flex flex-col sm:flex-row">
 
-                    {/* Left: Crop area (70%) */}
-                    <div className="w-full lg:w-[70%] p-6 bg-white flex flex-col border-b lg:border-b-0 lg:border-r border-[#00240010] min-h-[400px]">
-                      <div className="relative w-full flex-1 rounded-xl overflow-hidden shadow-sm border border-[#00240010] bg-[#00240005]">
-                        <Cropper
-                          image={image}
-                          crop={crop}
-                          zoom={zoom}
-                          aspect={cropAspect ?? undefined}
-                          onCropChange={onCropChange}
-                          onZoomChange={onZoomChange}
-                          onCropComplete={onCropCompleteCallback}
-                          objectFit="contain"
-                          showGrid={true}
-                          style={{
-                            containerStyle: { width: '100%', height: '100%' },
-                            cropAreaStyle: { border: '2px solid white' },
-                            mediaStyle: {
-                              filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`
-                            }
-                          }}
-                        />
-                      </div>
-                      <p className="text-xs text-primary/60 text-center mt-4 tracking-wider font-medium">
-                        Drag to reposition &bull; Scroll to zoom
-                      </p>
+                    {/* Crop canvas — fixed size, aspect ratio drives the crop box */}
+                    <div className="relative bg-[#111] flex-shrink-0" style={{ width: 480, height: 420 }}>
+                      <Cropper
+                        image={image}
+                        crop={crop}
+                        zoom={zoom}
+                        aspect={cropW / cropH}
+                        onCropChange={onCropChange}
+                        onZoomChange={onZoomChange}
+                        onCropComplete={onCropCompleteCallback}
+                        objectFit="contain"
+                        showGrid={true}
+                        zoomWithScroll={true}
+                        restrictPosition={false}
+                        minZoom={0.5}
+                        maxZoom={4}
+                        style={{
+                          containerStyle: { width: '480px', height: '420px', background: '#111' },
+                          cropAreaStyle: {
+                            border: '2px solid #00dd78',
+                            boxShadow: '0 0 0 9999px rgba(0,0,0,0.6)',
+                          },
+                          mediaStyle: {
+                            filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`,
+                          },
+                        }}
+                      />
                     </div>
 
-                    {/* Right: Controls (30%) */}
-                    <div className="w-full lg:w-[30%] p-6 flex flex-col bg-white gap-7">
+                    {/* Right panel */}
+                    <div className="w-full sm:w-52 bg-white border-t sm:border-t-0 sm:border-l border-[#00240010] flex flex-col p-5 gap-5">
 
-                      {/* ── Crop Shape ── */}
+                      {/* Crop size */}
                       <div>
-                        <h4 className="text-xs font-semibold text-primary/50 uppercase tracking-widest mb-3">Crop Shape</h4>
-                        <div className="grid grid-cols-3 gap-2">
-                          {RATIO_OPTIONS.map((opt) => (
-                            <button
-                              key={opt.key}
-                              type="button"
-                              onClick={() => handleRatioSelect(opt.key)}
-                              disabled={processing}
-                              className={`py-2 px-1 rounded-xl text-xs font-semibold border transition-all ${ratioKey === opt.key
-                                ? 'bg-secondary/10 border-secondary text-primary'
-                                : 'bg-white border-[#00240020] text-primary/50 hover:border-secondary/40 hover:text-primary'
-                                }`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Custom ratio W:H inputs */}
-                        {ratioKey === 'custom' && (
-                          <div className="mt-3 flex items-center gap-2">
+                        <p className="text-[10px] font-semibold text-primary/40 uppercase tracking-widest mb-3">Aspect Ratio (W : H)</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <label className="text-[10px] text-primary/50 mb-1 block">W</label>
                             <input
-                              type="number"
-                              min={1} max={99}
-                              value={customW}
-                              onChange={(e) => handleCustomChange(Number(e.target.value), customH)}
-                              className="w-full px-3 py-2 border border-[#00240020] rounded-xl text-sm text-primary focus:outline-none focus:ring-2 focus:ring-secondary text-center"
-                              placeholder="W"
-                            />
-                            <span className="text-primary/40 font-bold flex-shrink-0 text-lg">:</span>
-                            <input
-                              type="number"
-                              min={1} max={99}
-                              value={customH}
-                              onChange={(e) => handleCustomChange(customW, Number(e.target.value))}
-                              className="w-full px-3 py-2 border border-[#00240020] rounded-xl text-sm text-primary focus:outline-none focus:ring-2 focus:ring-secondary text-center"
-                              placeholder="H"
+                              type="number" min={MIN_SIZE} max={MAX_SIZE}
+                              value={inputW}
+                              onChange={(e) => setInputW(e.target.value)}
+                              onBlur={(e) => commitW(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && commitW(inputW)}
+                              className="w-full border border-[#00240020] rounded-xl px-2 py-1.5 text-sm text-primary text-center focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
                             />
                           </div>
-                        )}
+                          <span className="text-primary/30 mt-4 text-sm">×</span>
+                          <div className="flex-1">
+                            <label className="text-[10px] text-primary/50 mb-1 block">H</label>
+                            <input
+                              type="number" min={MIN_SIZE} max={MAX_SIZE}
+                              value={inputH}
+                              onChange={(e) => setInputH(e.target.value)}
+                              onBlur={(e) => commitH(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && commitH(inputH)}
+                              className="w-full border border-[#00240020] rounded-xl px-2 py-1.5 text-sm text-primary text-center focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent"
+                            />
+                          </div>
+                        </div>
                       </div>
 
-                      {/* ── Adjustments ── */}
+                      <div className="border-t border-[#00240010]" />
+
+                      {/* Zoom */}
                       <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-xs font-semibold text-primary/50 uppercase tracking-widest">Adjustments</h4>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-[10px] font-semibold text-primary/40 uppercase tracking-widest">Zoom</span>
+                          <span className="text-xs text-primary/50">{Math.round(zoom * 100)}%</span>
+                        </div>
+                        <input
+                          type="range" min={100} max={300} value={Math.round(zoom * 100)}
+                          onChange={(e) => setZoom(Number(e.target.value) / 100)}
+                          disabled={processing}
+                          className="w-full h-2 rounded-xl appearance-none cursor-pointer slider"
+                          style={{ background: sliderBg(((zoom - 1) / 2) * 100) }}
+                        />
+                      </div>
+
+                      <div className="border-t border-[#00240010]" />
+
+                      {/* Adjustments */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-[10px] font-semibold text-primary/40 uppercase tracking-widest">Adjustments</span>
                           <button
                             onClick={handleReset}
                             disabled={processing}
-                            className="text-xs text-primary/50 hover:text-primary flex items-center gap-1 transition-colors disabled:opacity-50"
+                            className="text-[10px] text-primary/40 hover:text-primary flex items-center gap-1 transition-colors"
                           >
-                            <ArrowPathIcon className="h-3.5 w-3.5" /> Reset
+                            <ArrowPathIcon className="h-3 w-3" /> Reset
                           </button>
                         </div>
-
-                        <div className="space-y-5">
+                        <div className="space-y-4">
                           {[
-                            { label: 'Zoom', value: Math.round(zoom * 100), unit: '%', min: 100, max: 300, onChange: (v: number) => setZoom(v / 100), trackPct: ((zoom * 100 - 100) / 200) * 100 },
-                            { label: 'Brightness', value: brightness, unit: '%', min: 0, max: 200, onChange: setBrightness, trackPct: brightness / 2 },
-                            { label: 'Contrast', value: contrast, unit: '%', min: 0, max: 200, onChange: setContrast, trackPct: contrast / 2 },
-                            { label: 'Saturation', value: saturation, unit: '%', min: 0, max: 200, onChange: setSaturation, trackPct: saturation / 2 },
-                          ].map(({ label, value, unit, min, max, onChange, trackPct }) => (
+                            { label: 'Brightness', value: brightness, onChange: setBrightness, trackPct: brightness / 2 },
+                            { label: 'Contrast',   value: contrast,   onChange: setContrast,   trackPct: contrast / 2 },
+                            { label: 'Saturation', value: saturation, onChange: setSaturation, trackPct: saturation / 2 },
+                          ].map(({ label, value, onChange, trackPct }) => (
                             <div key={label}>
-                              <div className="flex justify-between mb-2">
-                                <label className="text-sm font-medium text-primary">{label}</label>
-                                <span className="text-sm text-primary/60">{value}{unit}</span>
+                              <div className="flex justify-between mb-1.5">
+                                <label className="text-xs font-medium text-primary">{label}</label>
+                                <span className="text-xs text-primary/50">{value}%</span>
                               </div>
                               <input
-                                type="range" min={min} max={max} value={value}
+                                type="range" min={0} max={200} value={value}
                                 onChange={(e) => onChange(Number(e.target.value))}
-                                className="w-full h-2 rounded-xl appearance-none cursor-pointer slider touch-none"
-                                style={{ background: `linear-gradient(to right, #00dd78 0%, #00dd78 ${trackPct}%, #00240010 ${trackPct}%, #00240010 100%)` }}
                                 disabled={processing}
+                                className="w-full h-2 rounded-xl appearance-none cursor-pointer slider"
+                                style={{ background: sliderBg(trackPct) }}
                               />
                             </div>
                           ))}
@@ -325,29 +294,31 @@ export default function ImageCropModal({
                   </div>
 
                   {/* Footer */}
-                  <div className="px-6 py-4 bg-white border-t border-[#00240010] flex justify-end gap-3">
-                    <button
-                      onClick={onClose}
-                      disabled={processing}
-                      className="px-5 py-2.5 rounded-xl border border-[#00240010] text-primary hover:bg-[#00240005] hover:border-[#00240020] transition-colors font-semibold shadow-sm disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleApplyCrop}
-                      disabled={processing || !croppedAreaPixels}
-                      className="px-5 py-2.5 rounded-xl bg-secondary hover:bg-secondary/90 text-primary transition-colors font-semibold shadow-sm disabled:opacity-50 flex items-center justify-center min-w-[120px]"
-                    >
-                      {processing ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-                          <span>Saving...</span>
-                        </div>
-                      ) : (
-                        'Apply Crop'
-                      )}
-                    </button>
+                  <div className="flex items-center justify-between px-6 py-4 border-t border-[#00240010] bg-white">
+                    <p className="text-xs text-primary/40">Drag to reposition &bull; Scroll to zoom</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={onClose}
+                        disabled={processing}
+                        className="px-4 py-2 rounded-xl border border-[#00240015] text-primary hover:bg-[#00240005] hover:border-[#00240025] transition-colors text-sm font-semibold disabled:opacity-40"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleApplyCrop}
+                        disabled={processing || !croppedAreaPixels}
+                        className="px-5 py-2 rounded-xl bg-secondary hover:bg-secondary/90 text-primary transition-colors text-sm font-semibold disabled:opacity-50 flex items-center gap-2 min-w-[110px] justify-center shadow-sm"
+                      >
+                        {processing ? (
+                          <>
+                            <div className="w-3.5 h-3.5 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
+                            Saving...
+                          </>
+                        ) : 'Apply Crop'}
+                      </button>
+                    </div>
                   </div>
+
                 </Dialog.Panel>
               </Transition.Child>
             </div>
