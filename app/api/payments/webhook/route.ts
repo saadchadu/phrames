@@ -221,7 +221,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
+export async function handlePaymentSuccess(data: any, tracker: PerformanceTracker) {
   const startTime = Date.now()
 
   try {

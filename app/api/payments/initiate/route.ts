@@ -302,7 +302,7 @@ export async function POST(request: NextRequest) {
         customer_phone: '9999999999' // Default phone, Cashfree requires this
       },
       order_meta: {
-        return_url: `${baseUrl}/dashboard?payment=success&campaignId=${campaignId}`,
+        return_url: `${baseUrl}/dashboard?payment=success&campaignId=${campaignId}&orderId={order_id}`,
         notify_url: `${baseUrl}/api/payments/webhook`
       },
       order_note: `Campaign: ${campaign.campaignName} - Plan: ${planType}`

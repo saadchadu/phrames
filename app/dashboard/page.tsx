@@ -50,10 +50,36 @@ function DashboardContent() {
     const freeCampaign = searchParams.get('freeCampaign')
 
     if (paymentStatus === 'success') {
-      toast('Campaign activated successfully!', 'success')
-      // Reload campaigns to show updated status
-      if (user) {
-        loadCampaigns(true)
+      const orderId = searchParams.get('orderId')
+      if (orderId && user) {
+        // Try verifying payment from server instantly
+        const verifyPayment = async () => {
+          try {
+            const token = await user.getIdToken()
+            const res = await fetch('/api/payments/verify', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ orderId })
+            })
+            
+            if (res.ok) {
+              toast('Campaign activated successfully!', 'success')
+            } else {
+              toast('Verifying payment, please wait a moment.', 'success')
+            }
+          } catch (e) {
+             console.error('Error verifying payment:', e)
+          } finally {
+             loadCampaigns(true)
+          }
+        }
+        verifyPayment()
+      } else if (user) {
+         toast('Campaign activated successfully!', 'success')
+         loadCampaigns(true)
       }
     } else if (freeCampaign === 'true') {
       toast('🎉 Your first campaign is FREE for 1 month!', 'success')

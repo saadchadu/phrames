@@ -240,7 +240,7 @@ export default function PaymentModal({ isOpen, onClose, campaignId, campaignName
         // Open checkout - Cashfree v3 SDK handles redirect automatically
         const checkoutOptions = {
           paymentSessionId: data.paymentSessionId,
-          returnUrl: `${window.location.origin}/dashboard?payment=success&campaignId=${campaignId}`
+          returnUrl: `${window.location.origin}/dashboard?payment=success&campaignId=${campaignId}&orderId={order_id}`
         }
 
         // Call checkout - Cashfree v3 SDK redirects the page automatically.
