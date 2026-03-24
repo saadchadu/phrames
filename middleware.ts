@@ -17,7 +17,7 @@ export function middleware(request: NextRequest) {
       "frame-src 'self' https://www.google.com https://sdk.cashfree.com https://accounts.google.com https://*.firebaseapp.com https://vercel.live",
       "object-src 'none'",
       "base-uri 'self'",
-      "form-action 'self'",
+      "form-action 'self' https://api.cashfree.com https://sandbox.cashfree.com",
       "frame-ancestors 'none'",
       "upgrade-insecure-requests"
     ].join('; '),
