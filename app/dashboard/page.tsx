@@ -65,10 +65,13 @@ function DashboardContent() {
               body: JSON.stringify({ orderId })
             })
             
-            if (res.ok) {
+            const data = await res.json()
+            if (res.ok && data.success) {
               toast('Campaign activated successfully!', 'success')
+            } else if (!data.success && data.message) {
+              toast(data.message, 'error')
             } else {
-              toast('Verifying payment, please wait a moment.', 'success')
+              toast('Payment verification failed. Please contact support.', 'error')
             }
           } catch (e) {
              console.error('Error verifying payment:', e)
@@ -88,7 +91,7 @@ function DashboardContent() {
         loadCampaigns(true)
       }
     }
-  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchParams, user]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadCampaigns = async (isRefresh = false) => {
     if (!user) {
