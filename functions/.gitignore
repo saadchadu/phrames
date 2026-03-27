@@ -20,3 +20,5 @@ firebase-debug.*.log
 .env
 .env.local
 .runtimeconfig.json
+.vercel
+.env*.local

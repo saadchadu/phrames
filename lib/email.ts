@@ -182,6 +182,7 @@ export function sendPaymentConfirmationEmail(to: string, data: {
   return sendEmail(to, '\u2713 Payment confirmed \u2013 your campaign is live', html)
 }
 
+// Sent to user only when support team sends their FIRST reply — not on ticket creation
 export function sendSupportTicketEmail(to: string, data: {
   name: string
   ticketId: string
@@ -190,17 +191,47 @@ export function sendSupportTicketEmail(to: string, data: {
   const rows: Array<[string, string]> = [
     ['Ticket ID', data.ticketId],
     ['Subject',   data.subject],
-    ['Status',    'Open'],
+    ['Status',    'In Progress'],
   ]
   const content = (
-    badge('Support Ticket', C.blue, C.blueBg) +
-    heading('We got your message') +
-    bodyText('Hi ' + data.name + ', your support ticket has been submitted. Our team will get back to you as soon as possible.') +
+    badge('Support Reply', C.blue, C.blueBg) +
+    heading('We have replied to your ticket') +
+    bodyText('Hi ' + data.name + ', our support team has responded to your ticket. Log in to view the reply and continue the conversation.') +
     infoCard(rows) +
-    btn('View My Tickets', APP_URL + '/dashboard/support')
+    btn('View Reply', APP_URL + '/dashboard/support')
   )
   const html = base(content, { tag: 'Support', tagBg: C.blueBg, tagColor: C.blue, accent: C.blue })
-  return sendEmail(to, 'Support ticket received \u2013 ' + data.ticketId, html)
+  return sendEmail(to, 'Support reply \u2013 ' + data.ticketId, html)
+}
+
+// Sent internally to the support team when a new ticket is created — never sent to the user
+export function sendSupportTeamNotificationEmail(data: {
+  name: string
+  email: string
+  ticketId: string
+  subject: string
+  category: string
+  message: string
+}): Promise<unknown> {
+  const rows: Array<[string, string]> = [
+    ['Ticket ID', data.ticketId],
+    ['Category',  data.category],
+    ['From',      data.name + ' (' + data.email + ')'],
+    ['Subject',   data.subject],
+  ]
+  const content = (
+    badge('New Ticket', '#166534', '#dcfce7') +
+    heading('New support ticket') +
+    bodyText('A new support ticket has been submitted and is waiting for a response.') +
+    infoCard(rows) +
+    '<div style="background:' + C.muted + ';border:1px solid ' + C.border + ';border-radius:12px;padding:16px;margin-top:16px;">' +
+    '<p style="margin:0 0 8px;color:' + C.textLight + ';font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;">Message</p>' +
+    '<p style="margin:0;color:' + C.textBase + ';font-size:14px;line-height:1.6;">' + data.message + '</p>' +
+    '</div>' +
+    btn('View in Admin', APP_URL + '/admin/support')
+  )
+  const html = base(content, { tag: 'Internal', tagBg: '#dcfce7', tagColor: '#166534', accent: C.accent })
+  return sendEmail('support@cleffon.com', 'New support ticket \u2013 ' + data.ticketId, html)
 }
 
 export function sendCampaignStatusEmail(to: string, data: {

@@ -19,3 +19,6 @@ scripts/
 
 # Development configs
 tsconfig.scripts.json
+
+# Firebase functions (deployed via Firebase CLI, not Vercel)
+functions/
