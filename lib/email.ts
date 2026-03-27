@@ -9,11 +9,12 @@ export async function sendEmail(to: string, subject: string, html: string) {
     console.warn('[email] RESEND_API_KEY not set, skipping email')
     return
   }
-  try {
-    await resend.emails.send({ from: FROM, to, subject, html })
-  } catch (err) {
-    console.error('[email] Failed to send email:', err)
+  const result = await resend.emails.send({ from: FROM, to, subject, html })
+  if (result.error) {
+    console.error('[email] Resend error:', result.error)
+    throw new Error(result.error.message)
   }
+  return result
 }
 
 // ─── Templates ────────────────────────────────────────────────────────────────
