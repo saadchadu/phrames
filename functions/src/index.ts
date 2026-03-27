@@ -67,49 +67,128 @@ function sendResendEmail(to: string, subject: string, html: string): Promise<voi
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://phrames.cleffon.com'
 
-function emailBase(content: string, accentColor = '#00dd78') {
-  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f0f2f0;font-family:sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px;">
-<table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;">
-<tr><td style="background:#002400;border-radius:16px 16px 0 0;padding:24px 32px;">
-  <span style="color:#fff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">Phrames</span>
-</td></tr>
-<tr><td style="background:${accentColor};height:3px;"></td></tr>
-<tr><td style="background:#fff;padding:32px 36px;">${content}</td></tr>
-<tr><td style="background:#fafafa;border-radius:0 0 16px 16px;padding:16px 36px;border-top:1px solid #eee;">
-  <span style="color:#aaa;font-size:12px;">© ${new Date().getFullYear()} Phrames · support@cleffon.com</span>
-</td></tr>
-</table></td></tr></table></body></html>`
+// ─── Design tokens (mirrors lib/email.ts + globals.css) ──────────────────────
+const C = {
+  primary:   '#002400',
+  accent:    '#00dd78',
+  bg:        '#F2FFF2',
+  white:     '#ffffff',
+  border:    '#d4edda',
+  muted:     '#f4fbf4',
+  textMuted: '#5a7a5a',
+  textLight: '#8aaa8a',
+  red:       '#dc2626',
+  redBg:     '#fef2f2',
+  amber:     '#d97706',
+  amberBg:   '#fffbeb',
 }
 
-function emailBtn(text: string, url: string) {
-  return `<a href="${url}" style="display:inline-block;margin-top:20px;padding:12px 28px;background:#002400;color:#fff;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;">${text}</a>`
+// ─── Logo (hosted image — SVG inline doesn't render in email clients) ─────────
+const FN_LOGO_IMG = `<img src="https://phrames.cleffon.com/logos/Logo-white.svg" alt="Phrames" width="130" height="31" style="display:block;border:0;outline:none;" />`
+
+function fnEmailBase(content: string, opts: { accent?: string; tag?: string; tagColor?: string; tagBg?: string } = {}) {
+  const accent   = opts.accent   ?? C.accent
+  const tag      = opts.tag      ?? 'Notification'
+  const tagColor = opts.tagColor ?? C.primary
+  const tagBg    = opts.tagBg    ?? C.accent
+  const year     = new Date().getFullYear()
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="color-scheme" content="light"/></head>
+<body style="margin:0;padding:0;background:${C.bg};font-family:'Mona Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.bg};min-height:100vh;">
+<tr><td align="center" style="padding:40px 16px 56px;">
+  <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
+    <tr><td style="background:${C.primary};border-radius:16px 16px 0 0;padding:24px 32px 22px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="vertical-align:middle;">${FN_LOGO_IMG}</td>
+          <td align="right" style="vertical-align:middle;">
+            <span style="display:inline-block;background:${tagBg};color:${tagColor};font-size:11px;font-weight:700;letter-spacing:0.6px;padding:5px 12px;border-radius:100px;text-transform:uppercase;white-space:nowrap;">${tag}</span>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+    <tr><td style="background:${accent};height:2px;line-height:2px;font-size:0;">&nbsp;</td></tr>
+    <tr><td style="background:${C.white};padding:40px 32px 32px;border-left:1px solid ${C.border};border-right:1px solid ${C.border};">
+      ${content}
+    </td></tr>
+    <tr><td style="background:${C.muted};border-radius:0 0 16px 16px;padding:20px 32px;border:1px solid ${C.border};border-top:none;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="color:${C.textLight};font-size:12px;line-height:1.5;">© ${year} Phrames &nbsp;·&nbsp; <a href="${APP_URL}" style="color:${C.textLight};text-decoration:none;">phrames.cleffon.com</a></td>
+          <td align="right" style="color:${C.textLight};font-size:12px;"><a href="mailto:support@cleffon.com" style="color:${C.textLight};text-decoration:none;">support@cleffon.com</a></td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body></html>`
+}
+
+function fnBtn(label: string, url: string) {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;"><tr>
+    <td style="border-radius:10px;background:${C.primary};">
+      <a href="${url}" style="display:inline-block;padding:14px 32px;color:${C.white};font-size:15px;font-weight:600;text-decoration:none;letter-spacing:0.1px;border-radius:10px;white-space:nowrap;">${label}</a>
+    </td>
+  </tr></table>`
+}
+
+function fnBadge(label: string, color: string, bg: string) {
+  return `<div style="display:inline-block;background:${bg};border-radius:100px;padding:5px 14px;margin-bottom:20px;"><span style="color:${color};font-size:12px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;">${label}</span></div>`
+}
+
+function fnHeading(text: string) {
+  return `<h1 style="margin:0 0 12px;color:${C.primary};font-size:26px;font-weight:800;line-height:1.25;letter-spacing:-0.5px;">${text}</h1>`
+}
+
+function fnBody(text: string) {
+  return `<p style="margin:0 0 4px;color:${C.textMuted};font-size:15px;line-height:1.7;">${text}</p>`
+}
+
+function fnInfoCard(rows: [string, string][]) {
+  const rowsHtml = rows.map(([label, value], i) => {
+    const isLast = i === rows.length - 1
+    const border = isLast ? '' : `border-bottom:1px solid ${C.border};`
+    return `<tr>
+      <td style="padding:11px 0;color:${C.textLight};font-size:13px;font-weight:500;${border}">${label}</td>
+      <td style="padding:11px 0;color:${C.primary};font-size:13px;font-weight:700;text-align:right;${border}">${value}</td>
+    </tr>`
+  }).join('')
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${C.muted};border:1px solid ${C.border};border-radius:12px;padding:0 16px;margin-top:24px;">${rowsHtml}</table>`
+}
+
+function fnCallout(text: string, borderColor = C.accent) {
+  return `<div style="background:${C.muted};border-left:3px solid ${borderColor};border-radius:0 8px 8px 0;padding:14px 16px;margin-top:20px;color:${C.textMuted};font-size:14px;line-height:1.6;">${text}</div>`
 }
 
 async function sendExpiryWarningEmail(userEmail: string, userName: string, campaignName: string, campaignSlug: string, daysLeft: number, expiresAt: string) {
   const isUrgent = daysLeft <= 1
-  const accent = isUrgent ? '#ff6b35' : '#f6ad55'
-  const html = emailBase(`
-    <h2 style="margin:0 0 10px;color:#002400;font-size:22px;font-weight:700;">Your campaign expires ${isUrgent ? 'tomorrow' : `in ${daysLeft} days`}</h2>
-    <p style="color:#666;font-size:15px;line-height:1.6;">Hi ${userName}, your campaign <strong>${campaignName}</strong> will expire on <strong>${expiresAt}</strong>. Renew now to keep it live.</p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8faf8;border-radius:10px;padding:4px 16px;margin-top:16px;">
-      <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid #f0f0f0;">Campaign</td><td style="padding:8px 0;color:#002400;font-weight:600;font-size:13px;text-align:right;border-bottom:1px solid #f0f0f0;">${campaignName}</td></tr>
-      <tr><td style="padding:8px 0;color:#888;font-size:13px;">Days Remaining</td><td style="padding:8px 0;color:${isUrgent ? '#c0392b' : '#002400'};font-weight:700;font-size:13px;text-align:right;">${daysLeft} day${daysLeft !== 1 ? 's' : ''}</td></tr>
-    </table>
-    ${emailBtn('Renew Campaign', `${APP_URL}/campaign/${campaignSlug}`)}
-  `, accent)
+  const accent   = isUrgent ? '#f97316' : C.amber
+  const html = fnEmailBase(`
+    ${fnBadge(isUrgent ? 'Expires Tomorrow' : `Expires in ${daysLeft} Days`, isUrgent ? '#9a3412' : '#92400e', isUrgent ? '#fff7ed' : C.amberBg)}
+    ${fnHeading(`Your campaign expires ${isUrgent ? 'tomorrow' : `in ${daysLeft} days`}`)}
+    ${fnBody(`Hi ${userName}, your campaign <strong style="color:${C.primary};">${campaignName}</strong> will expire on <strong>${expiresAt}</strong>. Renew now to keep it live and continue collecting supporters.`)}
+    ${fnInfoCard([
+      ['Campaign',       campaignName],
+      ['Expiry Date',    expiresAt],
+      ['Days Remaining', `${daysLeft} day${daysLeft !== 1 ? 's' : ''}`],
+    ])}
+    ${fnBtn('Renew Campaign', `${APP_URL}/campaign/${campaignSlug}`)}
+  `, { accent, tag: isUrgent ? 'Urgent' : 'Reminder', tagBg: isUrgent ? '#fff7ed' : C.amberBg, tagColor: isUrgent ? '#9a3412' : '#92400e' })
   return sendResendEmail(userEmail, `${isUrgent ? '🚨' : '⏰'} Your campaign "${campaignName}" expires ${isUrgent ? 'tomorrow' : `in ${daysLeft} days`}`, html)
 }
 
 async function sendExpiredEmail(userEmail: string, userName: string, campaignName: string, campaignSlug: string) {
-  const html = emailBase(`
-    <h2 style="margin:0 0 10px;color:#002400;font-size:22px;font-weight:700;">Your campaign has expired</h2>
-    <p style="color:#666;font-size:15px;line-height:1.6;">Hi ${userName}, your campaign <strong>${campaignName}</strong> has expired and is no longer visible to the public.</p>
-    <div style="background:#f8faf8;border-left:3px solid #00dd78;border-radius:0 8px 8px 0;padding:12px 16px;margin-top:16px;color:#555;font-size:14px;">
-      Your campaign data is safe. Renewing will restore it immediately.
-    </div>
-    ${emailBtn('Renew Campaign', `${APP_URL}/campaign/${campaignSlug}`)}
-  `, '#ff6b6b')
+  const html = fnEmailBase(`
+    ${fnBadge('Campaign Expired', C.red, C.redBg)}
+    ${fnHeading('Your campaign has expired')}
+    ${fnBody(`Hi ${userName}, your campaign <strong style="color:${C.primary};">${campaignName}</strong> has expired and is no longer visible to the public.`)}
+    ${fnCallout('Your campaign data is safe. Renewing will restore it immediately.')}
+    ${fnBtn('Renew Campaign', `${APP_URL}/campaign/${campaignSlug}`)}
+  `, { accent: '#f87171', tag: 'Expired', tagBg: C.redBg, tagColor: C.red })
   return sendResendEmail(userEmail, `Your campaign "${campaignName}" has expired`, html)
 }
 
@@ -319,7 +398,7 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
 /**
  * Manual trigger for campaign expiry check (for testing/admin use)
  */
-export const manualCampaignExpiryCheck = functions.https.onRequest(async (req, res) => {
+export const manualCampaignExpiryCheck = functions.https.onRequest(async (req: functions.https.Request, res: any) => {
   // Set CORS headers
   res.set('Access-Control-Allow-Origin', '*')
   res.set('Access-Control-Allow-Methods', 'POST')

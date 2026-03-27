@@ -267,8 +267,8 @@ export async function handlePaymentSuccess(data: any, tracker: PerformanceTracke
       return
     }
 
-    // Check if already processed (idempotency)
-    if (paymentRecord.status === 'success') {
+    // Check if already processed (idempotency) — case-insensitive
+    if (paymentRecord.status?.toLowerCase() === 'success') {
       logWebhookProcessed({
         orderId,
         campaignId: paymentRecord.campaignId,
@@ -332,7 +332,7 @@ export async function handlePaymentSuccess(data: any, tracker: PerformanceTracke
     if (paymentRecord.id) {
       const paymentRef = db.collection('payments').doc(paymentRecord.id)
       await paymentRef.update({
-        status: 'SUCCESS',
+        status: 'success',
         cashfreePaymentId: paymentId,
         completedAt: Timestamp.now(),
         webhookData: data,

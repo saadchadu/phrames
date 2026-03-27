@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { sendSupportTicketEmail } from '@/lib/email';
 
 export async function GET(request: NextRequest) {
   try {
@@ -94,12 +95,24 @@ export async function PATCH(request: NextRequest) {
     if (note) {
       const ticketData = ticketDoc.data();
       const notes = ticketData?.notes || [];
+      const isFirstReply = notes.length === 0;
       notes.push({
         text: note,
         addedBy: userData?.email || 'admin',
         addedAt: new Date().toISOString(),
       });
       updateData.notes = notes;
+
+      // Send confirmation email to user on first reply
+      if (isFirstReply && ticketData?.email) {
+        sendSupportTicketEmail(ticketData.email, {
+          name: ticketData.name,
+          ticketId: ticketData.ticketId,
+          subject: ticketData.subject,
+        }).catch((err) => {
+          console.error('[email] Support ticket user email failed:', err);
+        });
+      }
     }
 
     await ticketRef.update(updateData);

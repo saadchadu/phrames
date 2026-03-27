@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         }
 
         // If the payment is not already processed as success
-        if (paymentData.status !== 'success' && paymentData.status !== 'SUCCESS') {
+        if (paymentData.status?.toLowerCase() !== 'success') {
           // Construct synthetic webhook payload
           const syntheticPayload = {
             order: {
