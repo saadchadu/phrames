@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
     await adminDb.collection('support_tickets').doc(ticketId).set(ticketData);
 
     // Send confirmation email (non-blocking)
-    sendSupportTicketEmail(email, { name, ticketId, subject }).catch(() => {})
+    sendSupportTicketEmail(email, { name, ticketId, subject }).catch((err) => {
+      console.error('[email] Support ticket email failed:', err)
+    })
 
     return NextResponse.json({
       success: true,
