@@ -21,11 +21,97 @@
 
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import * as https from 'https'
 
 // Initialize Firebase Admin
 admin.initializeApp()
 
 const db = admin.firestore()
+
+// ─── Resend email helper (no extra deps) ─────────────────────────────────────
+function sendResendEmail(to: string, subject: string, html: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY
+  const from = process.env.EMAIL_FROM || 'Phrames <support@cleffon.com>'
+  if (!apiKey) {
+    console.warn('[email] RESEND_API_KEY not set, skipping email to', to)
+    return Promise.resolve()
+  }
+  const body = JSON.stringify({ from, to, subject, html })
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: 'api.resend.com',
+      path: '/emails',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, (res) => {
+      let data = ''
+      res.on('data', (chunk) => { data += chunk })
+      res.on('end', () => {
+        if (res.statusCode && res.statusCode >= 400) {
+          console.error('[email] Resend error:', data)
+          reject(new Error(`Resend HTTP ${res.statusCode}: ${data}`))
+        } else {
+          resolve()
+        }
+      })
+    })
+    req.on('error', reject)
+    req.write(body)
+    req.end()
+  })
+}
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://phrames.cleffon.com'
+
+function emailBase(content: string, accentColor = '#00dd78') {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f0f2f0;font-family:sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px;">
+<table width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;">
+<tr><td style="background:#002400;border-radius:16px 16px 0 0;padding:24px 32px;">
+  <span style="color:#fff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">Phrames</span>
+</td></tr>
+<tr><td style="background:${accentColor};height:3px;"></td></tr>
+<tr><td style="background:#fff;padding:32px 36px;">${content}</td></tr>
+<tr><td style="background:#fafafa;border-radius:0 0 16px 16px;padding:16px 36px;border-top:1px solid #eee;">
+  <span style="color:#aaa;font-size:12px;">© ${new Date().getFullYear()} Phrames · support@cleffon.com</span>
+</td></tr>
+</table></td></tr></table></body></html>`
+}
+
+function emailBtn(text: string, url: string) {
+  return `<a href="${url}" style="display:inline-block;margin-top:20px;padding:12px 28px;background:#002400;color:#fff;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;">${text}</a>`
+}
+
+async function sendExpiryWarningEmail(userEmail: string, userName: string, campaignName: string, campaignSlug: string, daysLeft: number, expiresAt: string) {
+  const isUrgent = daysLeft <= 1
+  const accent = isUrgent ? '#ff6b35' : '#f6ad55'
+  const html = emailBase(`
+    <h2 style="margin:0 0 10px;color:#002400;font-size:22px;font-weight:700;">Your campaign expires ${isUrgent ? 'tomorrow' : `in ${daysLeft} days`}</h2>
+    <p style="color:#666;font-size:15px;line-height:1.6;">Hi ${userName}, your campaign <strong>${campaignName}</strong> will expire on <strong>${expiresAt}</strong>. Renew now to keep it live.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8faf8;border-radius:10px;padding:4px 16px;margin-top:16px;">
+      <tr><td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid #f0f0f0;">Campaign</td><td style="padding:8px 0;color:#002400;font-weight:600;font-size:13px;text-align:right;border-bottom:1px solid #f0f0f0;">${campaignName}</td></tr>
+      <tr><td style="padding:8px 0;color:#888;font-size:13px;">Days Remaining</td><td style="padding:8px 0;color:${isUrgent ? '#c0392b' : '#002400'};font-weight:700;font-size:13px;text-align:right;">${daysLeft} day${daysLeft !== 1 ? 's' : ''}</td></tr>
+    </table>
+    ${emailBtn('Renew Campaign', `${APP_URL}/campaign/${campaignSlug}`)}
+  `, accent)
+  return sendResendEmail(userEmail, `${isUrgent ? '🚨' : '⏰'} Your campaign "${campaignName}" expires ${isUrgent ? 'tomorrow' : `in ${daysLeft} days`}`, html)
+}
+
+async function sendExpiredEmail(userEmail: string, userName: string, campaignName: string, campaignSlug: string) {
+  const html = emailBase(`
+    <h2 style="margin:0 0 10px;color:#002400;font-size:22px;font-weight:700;">Your campaign has expired</h2>
+    <p style="color:#666;font-size:15px;line-height:1.6;">Hi ${userName}, your campaign <strong>${campaignName}</strong> has expired and is no longer visible to the public.</p>
+    <div style="background:#f8faf8;border-left:3px solid #00dd78;border-radius:0 8px 8px 0;padding:12px 16px;margin-top:16px;color:#555;font-size:14px;">
+      Your campaign data is safe. Renewing will restore it immediately.
+    </div>
+    ${emailBtn('Renew Campaign', `${APP_URL}/campaign/${campaignSlug}`)}
+  `, '#ff6b6b')
+  return sendResendEmail(userEmail, `Your campaign "${campaignName}" has expired`, html)
+}
 
 /**
  * Scheduled function that runs daily to check for expired campaigns
@@ -137,6 +223,11 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
         count++
         batchCount++
         
+        // Collect for email sending after batch commit
+        if (campaign.createdBy) {
+          expiredCampaignDetails[expiredCampaignDetails.length - 1].slug = campaign.slug || doc.id
+        }
+        
         // Commit batch every 166 operations (500 / 3 since we do 3 operations per campaign)
         if (batchCount >= 166) {
           await batch.commit()
@@ -157,6 +248,25 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
           batchCount,
           batchId
         })
+      }
+
+      // Send expiry emails to campaign owners (best-effort, don't block on failure)
+      for (const detail of expiredCampaignDetails) {
+        try {
+          if (!detail.userId) continue
+          const userDoc = await db.collection('users').doc(detail.userId).get()
+          const user = userDoc.data()
+          if (user?.email) {
+            await sendExpiredEmail(
+              user.email,
+              user.displayName || user.name || 'there',
+              detail.name || 'Your Campaign',
+              detail.slug || detail.id
+            )
+          }
+        } catch (emailErr) {
+          console.error(`[email] Failed to send expiry email for campaign ${detail.id}:`, emailErr)
+        }
       }
       
       const duration = Date.now() - startTime
@@ -767,4 +877,65 @@ export const scheduledTrendingUpdate = functions.pubsub
       
       throw error
     }
+  })
+
+/**
+ * Scheduled function that runs daily to send expiry warning emails
+ * Sends warnings at 7 days and 1 day before campaign expiry
+ */
+export const scheduledCampaignExpiryWarnings = functions.pubsub
+  .schedule('0 8 * * *') // Run daily at 8 AM UTC
+  .timeZone('UTC')
+  .onRun(async () => {
+    const now = new Date()
+
+    // Calculate the two warning windows: exactly 7 days and 1 day from now
+    const targets = [
+      { daysLeft: 7, label: '7-day' },
+      { daysLeft: 1, label: '1-day' },
+    ]
+
+    for (const { daysLeft, label } of targets) {
+      const windowStart = new Date(now)
+      windowStart.setDate(windowStart.getDate() + daysLeft)
+      windowStart.setHours(0, 0, 0, 0)
+
+      const windowEnd = new Date(windowStart)
+      windowEnd.setHours(23, 59, 59, 999)
+
+      const campaigns = await db.collection('campaigns')
+        .where('isActive', '==', true)
+        .where('expiresAt', '>=', admin.firestore.Timestamp.fromDate(windowStart))
+        .where('expiresAt', '<=', admin.firestore.Timestamp.fromDate(windowEnd))
+        .get()
+
+      console.log(`[expiry_warning] ${label}: found ${campaigns.size} campaigns`)
+
+      for (const doc of campaigns.docs) {
+        const campaign = doc.data()
+        if (!campaign.createdBy) continue
+        try {
+          const userDoc = await db.collection('users').doc(campaign.createdBy).get()
+          const user = userDoc.data()
+          if (!user?.email) continue
+          const expiresDate = campaign.expiresAt?.toDate()
+          const expiresAt = expiresDate
+            ? expiresDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
+            : 'soon'
+          await sendExpiryWarningEmail(
+            user.email,
+            user.displayName || user.name || 'there',
+            campaign.campaignName || 'Your Campaign',
+            campaign.slug || doc.id,
+            daysLeft,
+            expiresAt
+          )
+          console.log(`[expiry_warning] Sent ${label} warning to ${user.email} for campaign ${doc.id}`)
+        } catch (err) {
+          console.error(`[expiry_warning] Failed for campaign ${doc.id}:`, err)
+        }
+      }
+    }
+
+    return null
   })

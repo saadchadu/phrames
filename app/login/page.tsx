@@ -27,6 +27,12 @@ export default function LoginPage() {
     setForgotError('')
     try {
       await sendPasswordResetEmail(auth, forgotEmail)
+      // Send branded confirmation email via Resend (best-effort)
+      fetch('/api/auth/password-reset-confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      }).catch(() => {})
       setForgotStatus('sent')
     } catch (err: any) {
       setForgotStatus('error')
