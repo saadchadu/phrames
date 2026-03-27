@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
+import { sendSupportTicketEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,6 +35,9 @@ export async function POST(request: NextRequest) {
     };
 
     await adminDb.collection('support_tickets').doc(ticketId).set(ticketData);
+
+    // Send confirmation email (non-blocking)
+    sendSupportTicketEmail(email, { name, ticketId, subject }).catch(() => {})
 
     return NextResponse.json({
       success: true,

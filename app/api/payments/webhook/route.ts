@@ -16,6 +16,7 @@ import {
   trackError,
   formatError
 } from '@/lib/monitoring'
+import { sendPaymentConfirmationEmail } from '@/lib/email'
 
 // Initialize Firebase Admin
 if (getApps().length === 0) {
@@ -408,6 +409,18 @@ export async function handlePaymentSuccess(data: any, tracker: PerformanceTracke
       amount,
       planType
     })
+
+    // Send payment confirmation email
+    if (userEmail) {
+      await sendPaymentConfirmationEmail(userEmail, {
+        userName,
+        campaignName,
+        planName: getPlanDisplayName(planType),
+        amount,
+        invoiceNumber,
+        orderId,
+      }).catch(() => {}) // non-blocking
+    }
 
     // Log campaign activation
     logCampaignActivated({

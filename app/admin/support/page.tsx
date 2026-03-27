@@ -392,7 +392,7 @@ export default function AdminSupportPage() {
                         <div key={idx} className="bg-blue-50 border border-blue-100 p-4 rounded-lg">
                           <p className="text-sm text-gray-900">{note.text}</p>
                           <p className="text-xs text-gray-500 mt-2">
-                            {note.addedBy} • {new Date(note.addedAt).toLocaleString('en-US', {
+                            Support Team • {new Date(note.addedAt).toLocaleString('en-US', {
                               month: 'short',
                               day: 'numeric',
                               hour: '2-digit',

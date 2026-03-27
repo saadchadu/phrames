@@ -3,6 +3,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import type { Query } from 'firebase-admin/firestore';
 import { logCampaignDeactivated, logCampaignReactivated, logCampaignExtended, logCampaignDeleted } from '@/lib/admin-logging-server';
+import { sendCampaignStatusEmail } from '@/lib/email';
 
 const db = adminDb;
 
@@ -199,6 +200,11 @@ export async function PATCH(request: NextRequest) {
 
     const campaignData = campaignDoc.data();
 
+    // Get campaign owner details for email notifications
+    const ownerEmail = campaignData?.createdByEmail || ''
+    const ownerName = campaignData?.createdByName || 'there'
+    const campaignName = campaignData?.campaignName || 'Your campaign'
+
     switch (action) {
       case 'deactivate':
         await campaignRef.update({ isActive: false });
@@ -208,6 +214,7 @@ export async function PATCH(request: NextRequest) {
           campaignData?.campaignName || 'Unknown',
           data.reason
         );
+        if (ownerEmail) sendCampaignStatusEmail(ownerEmail, { userName: ownerName, campaignName, status: 'deactivated', reason: data.reason }).catch(() => {})
         break;
 
       case 'reactivate':
@@ -223,6 +230,7 @@ export async function PATCH(request: NextRequest) {
           campaignData?.campaignName || 'Unknown',
           newExpiryDate
         );
+        if (ownerEmail) sendCampaignStatusEmail(ownerEmail, { userName: ownerName, campaignName, status: 'reactivated' }).catch(() => {})
         break;
 
       case 'extend':

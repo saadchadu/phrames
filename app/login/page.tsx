@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
 import { signInWithEmail, signInWithGoogle } from '@/lib/auth'
+import { sendPasswordResetEmail } from 'firebase/auth'
+import { auth } from '@/lib/firebase'
 import AuthGuard from '@/components/AuthGuard'
 
 export default function LoginPage() {
@@ -13,7 +15,24 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showForgot, setShowForgot] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotStatus, setForgotStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle')
+  const [forgotError, setForgotError] = useState('')
   const router = useRouter()
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setForgotStatus('loading')
+    setForgotError('')
+    try {
+      await sendPasswordResetEmail(auth, forgotEmail)
+      setForgotStatus('sent')
+    } catch (err: any) {
+      setForgotStatus('error')
+      setForgotError(err.code === 'auth/user-not-found' ? 'No account found with this email.' : 'Failed to send reset email. Try again.')
+    }
+  }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -117,6 +136,17 @@ export default function LoginPage() {
               </div>
             </div>
             
+            {/* Forgot Password */}
+            <div className="flex justify-end -mt-2">
+              <button
+                type="button"
+                onClick={() => { setShowForgot(true); setForgotEmail(email); setForgotStatus('idle'); setForgotError('') }}
+                className="text-sm text-secondary hover:text-secondary/80 font-medium transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
@@ -182,6 +212,57 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgot && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 sm:p-8 flex flex-col gap-4">
+            {forgotStatus === 'sent' ? (
+              <>
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                  </div>
+                  <h3 className="text-primary text-lg font-bold">Check your inbox</h3>
+                  <p className="text-primary/70 text-sm">We sent a password reset link to <span className="font-semibold text-primary">{forgotEmail}</span></p>
+                </div>
+                <button onClick={() => setShowForgot(false)} className="w-full py-3 rounded-xl bg-secondary text-primary font-semibold text-base hover:bg-secondary/90 transition-all">
+                  Done
+                </button>
+              </>
+            ) : (
+              <>
+                <h3 className="text-primary text-lg font-bold">Reset your password</h3>
+                <p className="text-primary/70 text-sm">Enter your email and we&apos;ll send you a reset link.</p>
+                {forgotStatus === 'error' && (
+                  <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl px-3 py-2">{forgotError}</p>
+                )}
+                <form onSubmit={handleForgotPassword} className="flex flex-col gap-3">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    required
+                    autoFocus
+                    className="w-full px-4 py-3 border border-[#00240033] rounded-xl text-base text-primary placeholder:text-[#00240066] focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-all bg-white"
+                  />
+                  <button
+                    type="submit"
+                    disabled={forgotStatus === 'loading'}
+                    className="w-full py-3 rounded-xl bg-secondary text-primary font-semibold text-base hover:bg-secondary/90 transition-all disabled:opacity-50"
+                  >
+                    {forgotStatus === 'loading' ? 'Sending...' : 'Send reset link'}
+                  </button>
+                  <button type="button" onClick={() => setShowForgot(false)} className="w-full py-3 rounded-xl border border-[#00240033] text-primary/70 font-medium text-base hover:bg-gray-50 transition-all">
+                    Cancel
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </AuthGuard>
   )
 }
