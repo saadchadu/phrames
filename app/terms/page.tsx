@@ -25,7 +25,7 @@ export default function TermsPage() {
         
         <div className="prose prose-lg max-w-none">
           <p className="text-primary/70 mb-6">
-            <strong>Last Updated:</strong> November 24, 2025
+            <strong>Last Updated:</strong> March 28, 2026
           </p>
 
           <section className="mb-8">
@@ -61,11 +61,16 @@ export default function TermsPage() {
               Phrames offers the following campaign plans:
             </p>
             <ul className="list-disc pl-6 text-primary/80 space-y-2 mb-4">
-              <li><strong>First Campaign Free:</strong> New users receive their first campaign free for 1 month</li>
-              <li><strong>Paid Plans:</strong> Additional campaigns or extended durations require payment as per our pricing page</li>
-              <li><strong>Campaign Duration:</strong> Campaigns remain active and visible for the duration of the selected plan</li>
-              <li><strong>Expiration:</strong> Campaigns automatically become inactive after the plan expires unless renewed</li>
+              <li><strong>First Campaign Free:</strong> New users receive their first campaign free for 30 days — no credit card required</li>
+              <li><strong>1 Week:</strong> Campaign active for 7 days</li>
+              <li><strong>1 Month:</strong> Campaign active for 30 days</li>
+              <li><strong>3 Months:</strong> Campaign active for 90 days</li>
+              <li><strong>6 Months:</strong> Campaign active for 180 days</li>
+              <li><strong>1 Year:</strong> Campaign active for 365 days</li>
             </ul>
+            <p className="text-primary/80 mb-4">
+              All prices are in Indian Rupees (INR). Campaigns automatically become inactive after the plan duration expires. Expired campaigns are archived and can be reactivated by purchasing a new plan.
+            </p>
           </section>
 
           <section className="mb-8">

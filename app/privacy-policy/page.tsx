@@ -25,7 +25,7 @@ export default function PrivacyPolicyPage() {
         
         <div className="prose prose-lg max-w-none">
           <p className="text-primary/70 mb-6">
-            <strong>Last Updated:</strong> November 26, 2025
+            <strong>Last Updated:</strong> March 28, 2026
           </p>
 
           <section className="mb-8">
@@ -152,7 +152,7 @@ export default function PrivacyPolicyPage() {
               <li>Required by law or for legitimate business purposes</li>
             </ul>
             <p className="text-primary/80 mb-4">
-              When you delete your account, we will delete or anonymize your personal data within 30 days, except where we are required to retain it by law.
+              Campaign data (frames, analytics) is retained even after a campaign expires so you can reactivate it. When you delete your account, we will delete or anonymize your personal data within 30 days, except where we are required to retain it by law (e.g. payment records).
             </p>
           </section>
 

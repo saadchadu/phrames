@@ -25,7 +25,7 @@ export default function RefundPolicyPage() {
         
         <div className="prose prose-lg max-w-none">
           <p className="text-primary/70 mb-6">
-            <strong>Last Updated:</strong> November 24, 2025
+            <strong>Last Updated:</strong> March 28, 2026
           </p>
 
           <section className="mb-8">
@@ -90,7 +90,7 @@ export default function RefundPolicyPage() {
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-primary mb-4">5. Free Campaign Policy</h2>
             <p className="text-primary/80 mb-4">
-              The first free campaign (1 month) provided to new users is a promotional offer and does not involve any payment. Therefore, no refund applies to free campaigns.
+              The first free campaign (30 days) provided to new users is a promotional offer and does not involve any payment. No refund applies to free campaigns. The free campaign expires after 30 days and can be renewed by purchasing a paid plan.
             </p>
           </section>
 
@@ -103,10 +103,11 @@ export default function RefundPolicyPage() {
               <li>1 Week Plan: 7 days</li>
               <li>1 Month Plan: 30 days</li>
               <li>3 Months Plan: 90 days</li>
+              <li>6 Months Plan: 180 days</li>
               <li>1 Year Plan: 365 days</li>
             </ul>
             <p className="text-primary/80 mb-4">
-              Campaigns automatically expire after the plan duration. No refunds will be issued for expired campaigns or unused time.
+              Campaigns automatically expire after the plan duration. Expired campaigns are archived and can be reactivated by purchasing a new plan. No refunds will be issued for expired campaigns or unused time remaining in a plan.
             </p>
           </section>
 
