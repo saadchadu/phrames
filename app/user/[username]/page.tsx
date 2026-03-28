@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Campaign } from '@/lib/firestore'
 import { 
@@ -49,18 +49,13 @@ export default function UserProfilePage() {
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    if (username) {
-      loadProfile()
-    }
-  }, [username])
+    if (!username) return
 
-  const loadProfile = async () => {
-    try {
-      // Find user by username
-      const usersRef = collection(db, 'users')
-      const userQuery = query(usersRef, where('username', '==', username.toLowerCase()))
-      const userSnapshot = await getDocs(userQuery)
+    const usersRef = collection(db, 'users')
+    const userQuery = query(usersRef, where('username', '==', username.toLowerCase()))
 
+    // Real-time listener for user profile
+    const unsubscribeUser = onSnapshot(userQuery, (userSnapshot) => {
       if (userSnapshot.empty) {
         setNotFound(true)
         setLoading(false)
@@ -70,10 +65,8 @@ export default function UserProfilePage() {
       const userData = { uid: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile
       setProfile(userData)
 
-      // Load public campaigns
+      // Real-time listener for campaigns
       const campaignsRef = collection(db, 'campaigns')
-      const now = new Date()
-      
       const campaignsQuery = query(
         campaignsRef,
         where('createdBy', '==', userData.uid),
@@ -82,50 +75,47 @@ export default function UserProfilePage() {
         where('status', '==', 'Active')
       )
 
-      const campaignsSnapshot = await getDocs(campaignsQuery)
-      const campaignsData = campaignsSnapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as Campaign))
-        .filter(campaign => {
-          // Filter out expired campaigns
-          if (campaign.expiresAt) {
-            return campaign.expiresAt.toDate() > now
-          }
-          return true
+      onSnapshot(campaignsQuery, (campaignsSnapshot) => {
+        const now = new Date()
+        const campaignsData = campaignsSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as Campaign))
+          .filter(campaign => {
+            if (campaign.expiresAt) return campaign.expiresAt.toDate() > now
+            return true
+          })
+          .sort((a, b) => {
+            const aExpired = a.expiresAt && a.expiresAt.toDate() < now
+            const bExpired = b.expiresAt && b.expiresAt.toDate() < now
+            if (aExpired !== bExpired) return aExpired ? 1 : -1
+            return (b.supportersCount || 0) - (a.supportersCount || 0)
+          })
+
+        setCampaigns(campaignsData)
+
+        const totalDownloads = campaignsData.reduce((sum, c) => sum + (c.supportersCount || 0), 0)
+        const memberSince = userData.createdAt
+          ? new Date(userData.createdAt.toDate()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+          : 'Recently'
+
+        setStats({
+          totalCampaigns: campaignsData.length,
+          activeCampaigns: campaignsData.filter(c => !c.expiresAt || c.expiresAt.toDate() > now).length,
+          totalDownloads,
+          totalVisits: 0,
+          memberSince
         })
-        .sort((a, b) => {
-          // Sort: Active first, then by downloads
-          const aExpired = a.expiresAt && a.expiresAt.toDate() < now
-          const bExpired = b.expiresAt && b.expiresAt.toDate() < now
-          
-          if (aExpired !== bExpired) {
-            return aExpired ? 1 : -1
-          }
-          
-          return (b.supportersCount || 0) - (a.supportersCount || 0)
-        })
 
-      setCampaigns(campaignsData)
-
-      // Calculate stats
-      const totalDownloads = campaignsData.reduce((sum, c) => sum + (c.supportersCount || 0), 0)
-      const memberSince = userData.createdAt 
-        ? new Date(userData.createdAt.toDate()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-        : 'Recently'
-
-      setStats({
-        totalCampaigns: campaignsData.length,
-        activeCampaigns: campaignsData.filter(c => !c.expiresAt || c.expiresAt.toDate() > now).length,
-        totalDownloads,
-        totalVisits: 0, // Not tracking visits per user yet
-        memberSince
+        setLoading(false)
+      }, () => {
+        setLoading(false)
       })
-
-    } catch (error) {
+    }, () => {
       setNotFound(true)
-    } finally {
       setLoading(false)
-    }
-  }
+    })
+
+    return () => unsubscribeUser()
+  }, [username])
 
   if (loading) {
     return (

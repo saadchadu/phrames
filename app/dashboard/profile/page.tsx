@@ -214,6 +214,7 @@ export default function ProfileEditPage() {
       if (response.ok) {
         toast('Profile updated successfully', 'success')
         setOriginalUsername(formData.username)
+        router.refresh()
         
         // Redirect to profile if username is set
         if (formData.username) {

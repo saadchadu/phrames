@@ -16,15 +16,18 @@ function toDate(timestamp: any): Date | null {
   return null;
 }
 
-export async function GET(request: Request) {
+export async function GET(request?: Request) {
   try {
-    const authHeader = (request as any).headers?.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1]);
-    if (decoded.isAdmin !== true) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // Only enforce auth when called via HTTP (request has headers), not when called server-side directly
+    if (request) {
+      const authHeader = (request as any).headers?.get('authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1]);
+      if (decoded.isAdmin !== true) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     const now = new Date();

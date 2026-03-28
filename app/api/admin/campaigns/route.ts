@@ -167,10 +167,10 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ campaigns });
-  } catch (error) {
-    console.error('Error fetching campaigns:', error);
+  } catch (error: any) {
+    console.error('Error fetching campaigns:', error?.message || error, error?.code, error?.stack);
     return NextResponse.json(
-      { error: 'Failed to fetch campaigns' },
+      { error: 'Failed to fetch campaigns', detail: error?.message, code: error?.code },
       { status: 500 }
     );
   }

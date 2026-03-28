@@ -404,7 +404,7 @@ export default function SupportHub({
                 setFormData({ ...formData, name: e.target.value })
               }
               disabled={isSubmitting}
-              className="w-full px-3 py-2 text-sm border border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all disabled:opacity-50"
+              className="w-full px-3 py-2 text-sm border-2 border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:outline-none focus:border-secondary transition-all disabled:opacity-50"
             />
           </div>
           <div>
@@ -419,7 +419,7 @@ export default function SupportHub({
                 setFormData({ ...formData, email: e.target.value })
               }
               disabled={isSubmitting}
-              className="w-full px-3 py-2 text-sm border border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all disabled:opacity-50"
+              className="w-full px-3 py-2 text-sm border-2 border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:outline-none focus:border-secondary transition-all disabled:opacity-50"
             />
           </div>
         </div>
@@ -435,7 +435,7 @@ export default function SupportHub({
               setFormData({ ...formData, category: e.target.value })
             }
             disabled={isSubmitting}
-            className="w-full px-3 py-2 text-sm border border-[#00240020] rounded-lg text-primary bg-white focus:ring-2 focus:ring-secondary focus:border-transparent transition-all disabled:opacity-50"
+            className="w-full px-3 py-2 text-sm border-2 border-[#00240020] rounded-lg text-primary bg-white focus:outline-none focus:border-secondary transition-all disabled:opacity-50"
           >
             <option value="general">General Question</option>
             <option value="payment">Payment Issue</option>
@@ -459,7 +459,7 @@ export default function SupportHub({
               }
               disabled={isSubmitting}
               placeholder="order_123abc"
-              className="w-full px-3 py-2 text-sm border border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all disabled:opacity-50"
+              className="w-full px-3 py-2 text-sm border-2 border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:outline-none focus:border-secondary transition-all disabled:opacity-50"
             />
           </div>
           <div>
@@ -474,7 +474,7 @@ export default function SupportHub({
               }
               disabled={isSubmitting}
               placeholder="camp_456def"
-              className="w-full px-3 py-2 text-sm border border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all disabled:opacity-50"
+              className="w-full px-3 py-2 text-sm border-2 border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:outline-none focus:border-secondary transition-all disabled:opacity-50"
             />
           </div>
         </div>
@@ -492,7 +492,7 @@ export default function SupportHub({
             }
             disabled={isSubmitting}
             placeholder="Brief description of your issue"
-            className="w-full px-3 py-2 text-sm border border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all disabled:opacity-50"
+            className="w-full px-3 py-2 text-sm border-2 border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:outline-none focus:border-secondary transition-all disabled:opacity-50"
           />
         </div>
 
@@ -509,7 +509,7 @@ export default function SupportHub({
             disabled={isSubmitting}
             placeholder="Please provide details..."
             rows={4}
-            className="w-full px-3 py-2 text-sm border border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all disabled:opacity-50 resize-none"
+            className="w-full px-3 py-2 text-sm border-2 border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:outline-none focus:border-secondary transition-all disabled:opacity-50 resize-none"
           />
         </div>
 
@@ -643,7 +643,7 @@ export default function SupportHub({
               onChange={(e) => setReplyText(e.target.value)}
               placeholder="Write your reply..."
               rows={2}
-              className="w-full px-3 py-2.5 text-sm border border-[#00240030] rounded-xl text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all resize-none"
+              className="w-full px-3 py-2.5 text-sm border-2 border-[#00240030] rounded-xl text-primary placeholder:text-primary/40 focus:outline-none focus:border-secondary transition-all resize-none"
             />
             <button
               onClick={handleReply}

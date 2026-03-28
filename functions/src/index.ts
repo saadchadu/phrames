@@ -192,6 +192,17 @@ async function sendExpiredEmail(userEmail: string, userName: string, campaignNam
   return sendResendEmail(userEmail, `Your campaign "${campaignName}" has expired`, html)
 }
 
+async function sendDeletionWarningEmail(userEmail: string, userName: string, campaignName: string, campaignSlug: string, daysLeft: number) {
+  const html = fnEmailBase(`
+    ${fnBadge('Deletion Warning', C.red, C.redBg)}
+    ${fnHeading(`Your campaign will be deleted in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`)}
+    ${fnBody(`Hi ${userName}, your expired campaign <strong style="color:${C.primary};">${campaignName}</strong> has been inactive for 23 days and will be permanently deleted in <strong>${daysLeft} day${daysLeft !== 1 ? 's' : ''}</strong>.`)}
+    ${fnCallout(`<strong>This action cannot be undone.</strong> Renew your campaign now to keep all your data, supporters, and content.`)}
+    ${fnBtn('Renew & Save Campaign', `${APP_URL}/campaign/${campaignSlug}`)}
+  `, { accent: C.red, tag: 'Action Required', tagBg: C.redBg, tagColor: C.red })
+  return sendResendEmail(userEmail, `⚠️ Your campaign "${campaignName}" will be deleted in ${daysLeft} days`, html)
+}
+
 /**
  * Scheduled function that runs daily to check for expired campaigns
  * and automatically deactivate them
@@ -265,10 +276,11 @@ export const scheduledCampaignExpiryCheck = functions.pubsub
           userId: campaign.createdBy
         })
         
-        // Update campaign
+        // Update campaign — record inactiveSince for accurate 30-day deletion window
         batch.update(doc.ref, {
           isActive: false,
-          status: 'Inactive'
+          status: 'Inactive',
+          inactiveSince: now,
         })
         
         // Create expiry log
@@ -438,10 +450,11 @@ export const manualCampaignExpiryCheck = functions.https.onRequest(async (req: f
     for (const doc of expiredCampaigns.docs) {
       const campaign = doc.data()
       
-      // Update campaign
+      // Update campaign — record inactiveSince for accurate 30-day deletion window
       batch.update(doc.ref, {
         isActive: false,
-        status: 'Inactive'
+        status: 'Inactive',
+        inactiveSince: now,
       })
       
       // Create expiry log
@@ -505,10 +518,10 @@ export const scheduledInactiveCampaignCleanup = functions.pubsub
         createdAt: now
       })
       
-      // Get campaigns that have been inactive for 30+ days
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      
+      const nowDate = new Date()
+      const thirtyDaysAgo = new Date(nowDate.getTime() - 30 * 24 * 60 * 60 * 1000)
+      const twentyThreeDaysAgo = new Date(nowDate.getTime() - 23 * 24 * 60 * 60 * 1000)
+
       const inactiveCampaigns = await db.collection('campaigns')
         .where('isActive', '==', false)
         .where('status', '==', 'Inactive')
@@ -517,19 +530,21 @@ export const scheduledInactiveCampaignCleanup = functions.pubsub
       console.log(`🧹 INFO [inactive_cleanup] Found ${inactiveCampaigns.size} inactive campaigns to analyze`)
       
       let deletedCount = 0
+      let warnedCount = 0
       const batch = db.batch()
-      
+      const toDelete: any[] = []
+      const toWarn: any[] = []
+
       for (const doc of inactiveCampaigns.docs) {
         const campaign = doc.data()
-        const createdAt = campaign.createdAt?.toDate() || new Date()
-        
-        // Check if campaign has been inactive for 30+ days
-        if (createdAt < thirtyDaysAgo) {
-          // Delete the campaign
+        // Use inactiveSince if available, fall back to createdAt for legacy docs
+        const inactiveSince = campaign.inactiveSince?.toDate() || campaign.createdAt?.toDate() || new Date()
+        const daysInactive = Math.floor((nowDate.getTime() - inactiveSince.getTime()) / (24 * 60 * 60 * 1000))
+
+        if (inactiveSince < thirtyDaysAgo) {
+          // 30+ days inactive — delete
           batch.delete(doc.ref)
           deletedCount++
-          
-          // Log the deletion
           const logRef = db.collection('logs').doc()
           batch.set(logRef, {
             eventType: 'campaign_deletion',
@@ -540,24 +555,50 @@ export const scheduledInactiveCampaignCleanup = functions.pubsub
               campaignName: campaign.campaignName,
               userId: campaign.createdBy,
               reason: 'inactive_cleanup',
-              daysInactive: Math.floor((Date.now() - createdAt.getTime()) / (24 * 60 * 60 * 1000)),
+              daysInactive,
               batchId
             },
             createdAt: now
           })
+          toDelete.push({ id: doc.id, campaign })
+        } else if (inactiveSince < twentyThreeDaysAgo && !campaign.deletionWarningSent) {
+          // 23–30 days inactive — send 7-day warning once
+          batch.update(doc.ref, { deletionWarningSent: true })
+          warnedCount++
+          toWarn.push({ id: doc.id, campaign, daysLeft: 30 - daysInactive })
         }
       }
-      
-      // Commit all deletions
-      if (deletedCount > 0) {
+
+      if (deletedCount > 0 || warnedCount > 0) {
         await batch.commit()
-        console.log(`🧹 INFO [inactive_cleanup] Deleted ${deletedCount} inactive campaigns`)
+        console.log(`🧹 INFO [inactive_cleanup] Deleted ${deletedCount}, warned ${warnedCount} inactive campaigns`)
       }
-      
+
+      // Send deletion warning emails (best-effort)
+      for (const { id, campaign, daysLeft } of toWarn) {
+        try {
+          if (!campaign.createdBy) continue
+          const userDoc = await db.collection('users').doc(campaign.createdBy).get()
+          const user = userDoc.data()
+          if (user?.email) {
+            await sendDeletionWarningEmail(
+              user.email,
+              user.displayName || user.name || 'there',
+              campaign.campaignName || 'Your Campaign',
+              campaign.slug || id,
+              daysLeft
+            )
+          }
+        } catch (emailErr) {
+          console.error(`[email] Failed to send deletion warning for campaign ${id}:`, emailErr)
+        }
+      }
+
       const duration = Date.now() - startTime
       console.log(`🧹 INFO [inactive_cleanup_completed] Cleanup completed`, {
         analyzed: inactiveCampaigns.size,
         deleted: deletedCount,
+        warned: warnedCount,
         duration,
         batchId
       })
@@ -566,13 +607,14 @@ export const scheduledInactiveCampaignCleanup = functions.pubsub
       await db.collection('logs').add({
         eventType: 'cron_execution',
         actorId: 'system',
-        description: `Inactive campaign cleanup completed - deleted ${deletedCount} campaigns`,
+        description: `Inactive campaign cleanup completed - deleted ${deletedCount}, warned ${warnedCount} campaigns`,
         metadata: {
           cronType: 'inactive_campaign_cleanup',
           result: 'success',
           batchId,
           campaignsAnalyzed: inactiveCampaigns.size,
           campaignsDeleted: deletedCount,
+          campaignsWarned: warnedCount,
           duration
         },
         createdAt: now

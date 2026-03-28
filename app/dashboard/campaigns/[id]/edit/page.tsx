@@ -167,6 +167,7 @@ export default function EditCampaignPage() {
       }
 
       // Redirect to dashboard
+      router.refresh()
       router.push('/dashboard')
     } catch (error: any) {
       console.error('Update error:', error)

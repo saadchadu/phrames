@@ -345,7 +345,7 @@ export default function MyTicketsPage() {
                         onChange={(e) => setReplyText(e.target.value)}
                         placeholder="Write your reply..."
                         rows={3}
-                        className="w-full px-4 py-3 text-sm border border-[#00240020] rounded-xl text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all resize-none mb-2"
+                        className="w-full px-4 py-3 text-sm border-2 border-[#00240020] rounded-xl text-primary placeholder:text-primary/40 focus:outline-none focus:border-secondary transition-all resize-none mb-2"
                       />
                       <button
                         onClick={handleReply}
