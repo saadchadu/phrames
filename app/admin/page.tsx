@@ -34,8 +34,11 @@ async function getAdminStats() {
         expiredCampaigns: 0,
         freeCampaignsUsed: 0,
         totalRevenue: 0,
+        totalRefunded: 0,
+        netRevenue: 0,
         todayRevenue: 0,
         last30DaysRevenue: 0,
+        totalRefunds: 0,
       },
       charts: {
         dailyRevenue: [],
@@ -113,11 +116,13 @@ export default async function AdminOverviewPage() {
       changeType: 'positive' as const,
     },
     {
-      name: 'Total Revenue',
-      value: `₹${data?.stats?.totalRevenue?.toLocaleString('en-IN') || '0'}`,
+      name: 'Net Revenue',
+      value: `₹${data?.stats?.netRevenue?.toLocaleString('en-IN') ?? data?.stats?.totalRevenue?.toLocaleString('en-IN') ?? '0'}`,
       icon: DollarSign,
-      change: `₹${data?.stats?.last30DaysRevenue?.toLocaleString('en-IN') || '0'} (30d)`,
-      changeType: 'positive' as const,
+      change: data?.stats?.totalRefunded > 0
+        ? `-₹${data.stats.totalRefunded.toLocaleString('en-IN')} refunded`
+        : `₹${data?.stats?.last30DaysRevenue?.toLocaleString('en-IN') || '0'} (30d)`,
+      changeType: data?.stats?.totalRefunded > 0 ? 'negative' as const : 'positive' as const,
     },
   ];
 

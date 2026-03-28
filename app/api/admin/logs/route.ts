@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import type { Query } from 'firebase-admin/firestore';
 
 const db = adminDb;
 
-// Helper to safely convert Firestore timestamp to Date
 function toDate(timestamp: any): Date | null {
   if (!timestamp) return null;
   if (timestamp instanceof Date) return timestamp;
@@ -20,6 +19,15 @@ function toDate(timestamp: any): Date | null {
 }
 
 export async function GET(request: NextRequest) {
+  const auth = request.headers.get('authorization');
+  if (!auth?.startsWith('Bearer ')) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const decoded = await adminAuth.verifyIdToken(auth.split('Bearer ')[1]);
+    if (decoded.isAdmin !== true) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const eventType = searchParams.get('eventType');
@@ -76,11 +84,7 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ logs });
-  } catch (error) {
-    console.error('Error fetching logs:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch logs' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: 'Failed to fetch logs' }, { status: 500 });
   }
 }

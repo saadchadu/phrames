@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { sendSupportTicketEmail } from '@/lib/email';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,28 +22,27 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const category = searchParams.get('category');
 
-    // Build query
-    let query = adminDb.collection('support_tickets').orderBy('createdAt', 'desc');
+    // Build query — apply where() before orderBy() to avoid composite index requirement
+    let query: any = adminDb.collection('support_tickets');
 
     if (status && status !== 'all') {
-      query = query.where('status', '==', status) as any;
+      query = query.where('status', '==', status);
     }
 
     if (category && category !== 'all') {
-      query = query.where('category', '==', category) as any;
+      query = query.where('category', '==', category);
     }
 
     const snapshot = await query.limit(100).get();
-    const tickets = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const tickets = snapshot.docs
+      .map((doc: any) => ({ id: doc.id, ...doc.data() }))
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return NextResponse.json({ tickets });
   } catch (error: any) {
-    console.error('Error fetching tickets:', error);
+    console.error('Error fetching tickets:', error?.message || error);
     return NextResponse.json(
-      { error: 'Failed to fetch tickets' },
+      { error: 'Failed to fetch tickets', details: error?.message },
       { status: 500 }
     );
   }
@@ -100,16 +98,19 @@ export async function PATCH(request: NextRequest) {
         text: note,
         addedBy: userData?.email || 'admin',
         addedAt: new Date().toISOString(),
+        sender: 'admin',
       });
       updateData.notes = notes;
 
       // Send confirmation email to user on first reply
       if (isFirstReply && ticketData?.email) {
-        sendSupportTicketEmail(ticketData.email, {
-          name: ticketData.name,
-          ticketId: ticketData.ticketId,
-          subject: ticketData.subject,
-        }).catch((err) => {
+        import('@/lib/email').then(({ sendSupportTicketEmail }) =>
+          sendSupportTicketEmail(ticketData.email, {
+            name: ticketData.name,
+            ticketId: ticketData.ticketId,
+            subject: ticketData.subject,
+          })
+        ).catch((err) => {
           console.error('[email] Support ticket user email failed:', err);
         });
       }

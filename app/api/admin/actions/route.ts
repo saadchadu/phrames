@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { logManualCronTrigger, logDataExport } from '@/lib/admin-logging-server';
 
 const db = adminDb;
 
-// Helper to safely convert Firestore timestamp to Date
 function toDate(timestamp: any): Date | null {
   if (!timestamp) return null;
   if (timestamp instanceof Date) return timestamp;
@@ -20,15 +19,23 @@ function toDate(timestamp: any): Date | null {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = request.headers.get('authorization');
+  if (!auth?.startsWith('Bearer ')) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  let adminId: string;
+  try {
+    const decoded = await adminAuth.verifyIdToken(auth.split('Bearer ')[1]);
+    if (decoded.isAdmin !== true) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    adminId = decoded.uid;
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    const { action, adminId } = body;
+    const { action } = body;
 
-    if (!action || !adminId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    if (!action) {
+      return NextResponse.json({ error: 'Missing action' }, { status: 400 });
     }
 
     switch (action) {
@@ -228,12 +235,8 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
     }
-  } catch (error) {
-    console.error('Error executing action:', error);
-    return NextResponse.json(
-      { error: 'Failed to execute action' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: 'Failed to execute action' }, { status: 500 });
   }
 }
 

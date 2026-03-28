@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import { sendSupportTeamNotificationEmail } from '@/lib/email';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,11 +14,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Try to get userId from auth token if provided (optional)
+    let userId: string | null = null;
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split('Bearer ')[1];
+        const decoded = await adminAuth.verifyIdToken(token);
+        userId = decoded.uid;
+      } catch {
+        // Not authenticated — that's fine, tickets are public
+      }
+    }
+
     // Generate ticket ID
     const ticketId = `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
     // Create ticket document
-    const ticketData = {
+    const ticketData: any = {
       ticketId,
       name,
       email,
@@ -34,10 +46,16 @@ export async function POST(request: NextRequest) {
       notes: [],
     };
 
+    if (userId) {
+      ticketData.userId = userId;
+    }
+
     await adminDb.collection('support_tickets').doc(ticketId).set(ticketData);
 
     // Notify support team (non-blocking)
-    sendSupportTeamNotificationEmail({ name, email, ticketId, subject, category, message }).catch((err) => {
+    import('@/lib/email').then(({ sendSupportTeamNotificationEmail }) =>
+      sendSupportTeamNotificationEmail({ name, email, ticketId, subject, category, message })
+    ).catch((err) => {
       console.error('[email] Support team notification email failed:', err)
     })
 

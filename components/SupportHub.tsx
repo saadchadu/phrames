@@ -103,9 +103,17 @@ export default function SupportHub({
     setIsSubmitting(true);
 
     try {
+      // Include auth token so userId gets stored with the ticket
+      const user = auth.currentUser;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (user) {
+        const token = await user.getIdToken();
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/support/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(formData),
       });
 
@@ -228,13 +236,14 @@ export default function SupportHub({
       if (!response.ok) throw new Error(data.error || 'Failed to send reply');
       toast('Reply sent', 'success');
       setReplyText('');
-      await fetchTickets();
-      // fetchTickets updates the tickets state async, so re-select from fresh fetch
-      const freshResponse = await fetch('/api/support/my-tickets', {
-        headers: { Authorization: `Bearer ${await user.getIdToken()}` },
+      // Fetch fresh tickets and update selectedTicket
+      const freshToken = await user.getIdToken();
+      const freshRes = await fetch('/api/support/my-tickets', {
+        headers: { Authorization: `Bearer ${freshToken}` },
       });
-      if (freshResponse.ok) {
-        const freshData = await freshResponse.json();
+      if (freshRes.ok) {
+        const freshData = await freshRes.json();
+        setTickets(freshData.tickets);
         const updated = freshData.tickets.find((t: any) => t.ticketId === selectedTicket.ticketId);
         if (updated) setSelectedTicket(updated);
       }
@@ -567,128 +576,96 @@ export default function SupportHub({
           </div>
         </div>
 
-        <div className="space-y-4 max-h-[450px] overflow-y-auto">
-          <div className="grid grid-cols-2 gap-4 text-sm">
+        {/* Scrollable content */}
+        <div className="overflow-y-auto flex-1 space-y-4 pr-1" style={{ maxHeight: '340px' }}>
+          {/* Meta info */}
+          <div className="grid grid-cols-2 gap-3 text-sm bg-[#f9fdf9] rounded-xl p-3 border border-[#00240010]">
             <div>
-              <span className="text-primary/70 font-medium">Category:</span>
-              <p className="text-primary">
-                {getCategoryLabel(selectedTicket.category)}
-              </p>
+              <span className="text-xs text-primary/50 uppercase font-semibold tracking-wide">Category</span>
+              <p className="text-primary mt-0.5">{getCategoryLabel(selectedTicket.category)}</p>
             </div>
             <div>
-              <span className="text-primary/70 font-medium">Created:</span>
-              <p className="text-primary">
-                {new Date(selectedTicket.createdAt).toLocaleDateString()}
-              </p>
+              <span className="text-xs text-primary/50 uppercase font-semibold tracking-wide">Created</span>
+              <p className="text-primary mt-0.5">{new Date(selectedTicket.createdAt).toLocaleDateString()}</p>
             </div>
+            {selectedTicket.orderId && (
+              <div>
+                <span className="text-xs text-primary/50 uppercase font-semibold tracking-wide">Order ID</span>
+                <p className="text-primary font-mono text-xs mt-0.5">{selectedTicket.orderId}</p>
+              </div>
+            )}
+            {selectedTicket.campaignId && (
+              <div>
+                <span className="text-xs text-primary/50 uppercase font-semibold tracking-wide">Campaign ID</span>
+                <p className="text-primary font-mono text-xs mt-0.5">{selectedTicket.campaignId}</p>
+              </div>
+            )}
           </div>
 
-          {(selectedTicket.orderId || selectedTicket.campaignId) && (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {selectedTicket.orderId && (
-                <div>
-                  <span className="text-primary/70 font-medium">Order ID:</span>
-                  <p className="text-primary font-mono text-xs">
-                    {selectedTicket.orderId}
-                  </p>
-                </div>
-              )}
-              {selectedTicket.campaignId && (
-                <div>
-                  <span className="text-primary/70 font-medium">
-                    Campaign ID:
-                  </span>
-                  <p className="text-primary font-mono text-xs">
-                    {selectedTicket.campaignId}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="border-t border-[#00240020] pt-4">
-            <h4 className="font-medium text-primary mb-2">Your Message:</h4>
-            <p className="text-sm text-primary/80 whitespace-pre-wrap bg-[#f2fff2] p-4 rounded-lg">
+          {/* Original message */}
+          <div>
+            <h4 className="text-xs text-primary/50 uppercase font-semibold tracking-wide mb-2">Your Message</h4>
+            <p className="text-sm text-primary/80 whitespace-pre-wrap bg-[#f2fff2] border border-[#00240015] p-3 rounded-xl">
               {selectedTicket.message}
             </p>
           </div>
 
+          {/* Conversation thread */}
           {selectedTicket.notes.length > 0 && (
-            <div className="border-t border-[#00240020] pt-4">
-              <h4 className="font-medium text-primary mb-3">
-                Support Updates:
-              </h4>
-              <div className="space-y-3">
+            <div>
+              <h4 className="text-xs text-primary/50 uppercase font-semibold tracking-wide mb-2">Conversation</h4>
+              <div className="space-y-2">
                 {selectedTicket.notes.map((note, idx) => (
                   <div
                     key={idx}
-                    className={`p-4 rounded-lg text-sm border ${
+                    className={`p-3 rounded-xl text-sm border ${
                       (note as any).sender === 'user'
-                        ? 'bg-[#f2fff2] border-[#00240020] ml-4'
-                        : 'bg-blue-50 border-blue-100'
+                        ? 'bg-[#f2fff2] border-[#00240020] ml-6'
+                        : 'bg-blue-50 border-blue-100 mr-6'
                     }`}
                   >
-                    <p className="text-primary">{note.text}</p>
-                    <p className="text-xs text-primary/50 mt-2">
-                      {(note as any).sender === 'user' ? 'You' : 'Support Team'} •{' '}
-                      {new Date(note.addedAt).toLocaleString()}
+                    <p className="text-primary leading-relaxed">{note.text}</p>
+                    <p className="text-xs text-primary/40 mt-1.5">
+                      {(note as any).sender === 'user' ? 'You' : 'Support Team'} · {new Date(note.addedAt).toLocaleString()}
                     </p>
                   </div>
                 ))}
               </div>
             </div>
           )}
-
-          {/* Reply box - only for open/in_progress tickets */}
-          {(selectedTicket.status === 'open' || selectedTicket.status === 'in_progress') && (
-            <div className="border-t border-[#00240020] pt-4">
-              <h4 className="font-medium text-primary mb-2">Reply:</h4>
-              <textarea
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Write your reply..."
-                rows={3}
-                className="w-full px-3 py-2 text-sm border border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all resize-none mb-2"
-              />
-              <button
-                onClick={handleReply}
-                disabled={!replyText.trim() || isSendingReply}
-                className="w-full px-4 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-primary font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isSendingReply ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                ) : 'Send Reply'}
-              </button>
-            </div>
-          )}
-
-          {/* Cancel Button - Only show for open or in_progress tickets */}
-          {(selectedTicket.status === 'open' ||
-            selectedTicket.status === 'in_progress') && (
-            <div className="border-t border-[#00240020] pt-4">
-              <button
-                onClick={() => handleCancelTicket(selectedTicket.ticketId)}
-                disabled={isCancelling}
-                className="w-full px-4 py-2.5 rounded-lg border-2 border-red-200 text-red-600 hover:bg-red-50 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isCancelling ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                    <span>Cancelling...</span>
-                  </>
-                ) : (
-                  <>
-                    <XMarkIcon className="h-5 w-5" />
-                    <span>Cancel Ticket</span>
-                  </>
-                )}
-              </button>
-              <p className="text-xs text-primary/50 text-center mt-2">
-                This will close your ticket and mark it as cancelled
-              </p>
-            </div>
-          )}
         </div>
+
+        {/* Sticky bottom actions */}
+        {(selectedTicket.status === 'open' || selectedTicket.status === 'in_progress') && (
+          <div className="pt-4 space-y-3 border-t border-[#00240015] mt-4">
+            <textarea
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              placeholder="Write your reply..."
+              rows={2}
+              className="w-full px-3 py-2.5 text-sm border border-[#00240030] rounded-xl text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all resize-none"
+            />
+            <button
+              onClick={handleReply}
+              disabled={!replyText.trim() || isSendingReply}
+              className="w-full py-2.5 rounded-xl bg-secondary hover:bg-secondary/90 text-primary font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSendingReply
+                ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                : 'Send Reply'}
+            </button>
+            <button
+              onClick={() => handleCancelTicket(selectedTicket.ticketId)}
+              disabled={isCancelling}
+              className="w-full py-2.5 rounded-xl border-2 border-red-200 text-red-600 hover:bg-red-50 font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+            >
+              {isCancelling
+                ? <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600" /><span>Cancelling...</span></>
+                : <><XMarkIcon className="h-4 w-4" /><span>Cancel Ticket</span></>}
+            </button>
+            <p className="text-xs text-primary/40 text-center">Cancelling will close this ticket permanently</p>
+          </div>
+        )}
       </>
     );
   };

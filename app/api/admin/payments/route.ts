@@ -90,18 +90,30 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Calculate analytics
-    const successfulPayments = payments.filter(p => {
-      const data = p as any;
-      return data.status === 'SUCCESS' || data.status === 'success';
-    });
+    // Calculate analytics — exclude refunded from revenue
+    const isSuccessful = (p: any) =>
+      (p.status === 'SUCCESS' || p.status === 'success') && p.status !== 'refunded'
+
+    const successfulPayments = payments.filter(p => isSuccessful(p as any))
+    const refundedPayments = payments.filter(p => (p as any).status === 'refunded')
+    const failedPayments = payments.filter(p => {
+      const s = ((p as any).status || '').toLowerCase()
+      return s !== 'success' && s !== 'refunded'
+    })
 
     const totalRevenue = successfulPayments.reduce((sum, p) => {
       const data = p as any;
       return sum + (data.amount || 0);
     }, 0);
 
-    // Revenue by plan type
+    const totalRefunded = refundedPayments.reduce((sum, p) => {
+      const data = p as any;
+      return sum + (data.refundAmount || data.amount || 0);
+    }, 0);
+
+    const netRevenue = Math.max(0, totalRevenue - totalRefunded);
+
+    // Revenue by plan type (excluding refunded)
     const revenueByPlan: { [key: string]: number } = {};
     successfulPayments.forEach(payment => {
       const data = payment as any;
@@ -137,9 +149,12 @@ export async function GET(request: NextRequest) {
       payments,
       analytics: {
         totalRevenue,
+        totalRefunded,
+        netRevenue,
         totalPayments: payments.length,
         successfulPayments: successfulPayments.length,
-        failedPayments: payments.length - successfulPayments.length,
+        refundedPayments: refundedPayments.length,
+        failedPayments: failedPayments.length,
         revenueByPlan,
         dailyRevenue,
       },

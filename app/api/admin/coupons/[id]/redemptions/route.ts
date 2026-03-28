@@ -1,56 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 
-export async function GET(
-    request: NextRequest,
-    context: { params: Promise<{ id: string }> }
-) {
-    try {
-        const { id } = await context.params;
+async function verifyAdmin(req: NextRequest) {
+  const auth = req.headers.get('authorization');
+  if (!auth?.startsWith('Bearer ')) return null;
+  try {
+    const decoded = await adminAuth.verifyIdToken(auth.split('Bearer ')[1]);
+    return decoded.isAdmin === true ? decoded : null;
+  } catch { return null; }
+}
 
-        // Fetch all redemptions under this coupon code
-        const snapshot = await adminDb
-            .collection('coupons')
-            .doc(id)
-            .collection('redemptions')
-            .orderBy('redeemedAt', 'desc')
-            .get();
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  if (!await verifyAdmin(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const { id } = await context.params;
+    const snapshot = await adminDb.collection('coupons').doc(id).collection('redemptions').orderBy('redeemedAt', 'desc').get();
 
-        if (snapshot.empty) {
-            return NextResponse.json({ success: true, redemptions: [] });
-        }
+    if (snapshot.empty) return NextResponse.json({ success: true, redemptions: [] });
 
-        const redemptions = await Promise.all(snapshot.docs.map(async (doc) => {
-            const data = doc.data();
+    const redemptions = await Promise.all(snapshot.docs.map(async (doc) => {
+      const data = doc.data();
+      let userEmail = 'Unknown';
+      try {
+        const userDoc = await adminDb.collection('users').doc(data.userId).get();
+        if (userDoc.exists) userEmail = userDoc.data()?.email || 'Unknown';
+      } catch { /* non-critical */ }
 
-            // Optionally fetch user data securely
-            let userEmail = 'Unknown';
-            try {
-                const userDoc = await adminDb.collection('users').doc(data.userId).get();
-                if (userDoc.exists) {
-                    userEmail = userDoc.data()?.email || 'Unknown';
-                }
-            } catch (err) {
-                console.error("Error fetching user email for redemption", err);
-            }
+      return {
+        id: doc.id,
+        userId: data.userId,
+        userEmail,
+        campaignId: data.campaignId,
+        paymentId: data.paymentId,
+        discountApplied: data.discountApplied,
+        count: data.count,
+        payments: data.payments || [],
+        redeemedAt: data.redeemedAt?.toDate().toISOString() || null,
+        lastRedeemedAt: data.lastRedeemedAt?.toDate().toISOString() || null,
+      };
+    }));
 
-            return {
-                id: doc.id,
-                userId: data.userId,
-                userEmail, // Added email for context rendering
-                campaignId: data.campaignId,
-                paymentId: data.paymentId,
-                discountApplied: data.discountApplied,
-                count: data.count,
-                payments: data.payments || [],
-                redeemedAt: data.redeemedAt?.toDate().toISOString() || null,
-                lastRedeemedAt: data.lastRedeemedAt?.toDate().toISOString() || null,
-            };
-        }));
-
-        return NextResponse.json({ success: true, redemptions });
-    } catch (error: any) {
-        console.error("Error fetching redemptions:", error);
-        return NextResponse.json({ success: false, error: 'Failed to fetch redemptions' }, { status: 500 });
-    }
+    return NextResponse.json({ success: true, redemptions });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: 'Failed to fetch redemptions' }, { status: 500 });
+  }
 }

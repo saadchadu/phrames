@@ -1,66 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 
 const db = adminDb;
 
-export async function GET() {
+async function verifyAdmin(req: NextRequest) {
+  const auth = req.headers.get('authorization');
+  if (!auth?.startsWith('Bearer ')) return null;
+  try {
+    const decoded = await adminAuth.verifyIdToken(auth.split('Bearer ')[1]);
+    return decoded.isAdmin === true ? decoded : null;
+  } catch { return null; }
+}
+
+export async function GET(req: NextRequest) {
+  if (!await verifyAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const [systemDoc, plansDoc] = await Promise.all([
       db.collection('settings').doc('system').get(),
       db.collection('settings').doc('plans').get(),
     ]);
-
     return NextResponse.json({
       system: systemDoc.exists ? systemDoc.data() : null,
       plans: plansDoc.exists ? plansDoc.data() : null,
     });
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to fetch settings' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
   }
 }
 
 export async function PATCH(request: NextRequest) {
+  const admin = await verifyAdmin(request);
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const body = await request.json();
-    const { type, adminId, ...data } = body;
+    const { type, ...data } = body;
 
-    if (!type || !adminId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
+    if (!type) return NextResponse.json({ error: 'Missing type' }, { status: 400 });
 
-    const docRef = db.collection('settings').doc(type);
-    
     const { FieldValue } = await import('firebase-admin/firestore');
-    
-    await docRef.set({
+    await db.collection('settings').doc(type).set({
       ...data,
       updatedAt: FieldValue.serverTimestamp(),
-      updatedBy: adminId,
+      updatedBy: admin.uid,
     }, { merge: true });
 
-    // Log the settings change
     await db.collection('logs').add({
       eventType: 'settings_changed',
-      actorId: adminId,
+      actorId: admin.uid,
       description: `${type} settings changed`,
-      metadata: {
-        settingType: type,
-        changes: data,
-      },
+      metadata: { settingType: type, changes: data },
       createdAt: FieldValue.serverTimestamp(),
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to update settings' },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
   }
 }

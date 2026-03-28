@@ -41,6 +41,7 @@ export default function AdminSupportPage() {
   const [ticketToDelete, setTicketToDelete] = useState<string | null>(null);
 
   useEffect(() => {
+    setSelectedTicket(null);
     fetchTickets();
   }, [statusFilter, categoryFilter]);
 
@@ -164,7 +165,21 @@ export default function AdminSupportPage() {
 
       toast('Note added', 'success');
       setNote('');
-      fetchTickets();
+
+      // Refresh and update selectedTicket with fresh data
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+      if (categoryFilter !== 'all') params.append('category', categoryFilter);
+      const freshToken = await user.getIdToken();
+      const freshRes = await fetch(`/api/admin/support?${params}`, {
+        headers: { Authorization: `Bearer ${freshToken}` },
+      });
+      if (freshRes.ok) {
+        const freshData = await freshRes.json();
+        setTickets(freshData.tickets);
+        const updated = freshData.tickets.find((t: Ticket) => t.ticketId === selectedTicket.ticketId);
+        if (updated) setSelectedTicket(updated);
+      }
     } catch (error: any) {
       toast(error.message, 'error');
     }

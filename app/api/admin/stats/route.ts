@@ -1,45 +1,32 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 
 const db = adminDb;
 
-// Helper to safely convert Firestore timestamp to Date
 function toDate(timestamp: any): Date | null {
   if (!timestamp) return null;
-  
-  // If it's already a Date
   if (timestamp instanceof Date) return timestamp;
-  
-  // If it's a Firestore Timestamp with toDate method
-  if (typeof timestamp.toDate === 'function') {
-    return timestamp.toDate();
-  }
-  
-  // If it's a timestamp object with seconds
-  if (timestamp.seconds) {
-    return new Date(timestamp.seconds * 1000);
-  }
-  
-  // If it's a string, try to parse it
+  if (typeof timestamp.toDate === 'function') return timestamp.toDate();
+  if (timestamp.seconds) return new Date(timestamp.seconds * 1000);
   if (typeof timestamp === 'string') {
     const date = new Date(timestamp);
     return isNaN(date.getTime()) ? null : date;
   }
-  
-  // If it's a number (milliseconds)
-  if (typeof timestamp === 'number') {
-    return new Date(timestamp);
-  }
-  
+  if (typeof timestamp === 'number') return new Date(timestamp);
   return null;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Note: Admin verification is handled by client-side checks in AdminLayoutClient
-    // For production, consider adding server-side verification here
-    
-    // Get current date info
+    const authHeader = (request as any).headers?.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1]);
+    if (decoded.isAdmin !== true) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -74,15 +61,25 @@ export async function GET() {
       return data.isFreeCampaign === true;
     }).length;
 
-    // Calculate revenue stats
-    const successfulPayments = paymentsSnap.docs.filter(doc => {
-      const data = doc.data();
-      return data.status === 'SUCCESS' || data.status === 'success';
-    });
+    // Calculate revenue stats — only count payments that are SUCCESS and NOT refunded
+    const isSuccessful = (data: any) =>
+      (data.status === 'SUCCESS' || data.status === 'success') &&
+      data.status !== 'refunded'
+
+    const isRefunded = (data: any) => data.status === 'refunded'
+
+    const successfulPayments = paymentsSnap.docs.filter(doc => isSuccessful(doc.data()))
+    const refundedPayments = paymentsSnap.docs.filter(doc => isRefunded(doc.data()))
 
     const totalRevenue = successfulPayments.reduce((sum, doc) => {
       return sum + (doc.data().amount || 0);
     }, 0);
+
+    const totalRefunded = refundedPayments.reduce((sum, doc) => {
+      return sum + (doc.data().refundAmount || doc.data().amount || 0);
+    }, 0);
+
+    const netRevenue = Math.max(0, totalRevenue - totalRefunded);
 
     const todayRevenue = successfulPayments
       .filter(doc => {
@@ -201,8 +198,11 @@ export async function GET() {
         expiredCampaigns,
         freeCampaignsUsed,
         totalRevenue,
+        totalRefunded,
+        netRevenue,
         todayRevenue,
         last30DaysRevenue,
+        totalRefunds: refundedPayments.length,
       },
       charts: {
         dailyRevenue,

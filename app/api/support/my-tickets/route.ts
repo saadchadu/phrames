@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await adminAuth.verifyIdToken(token);
-    
+
     // Get user's email
     const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
     const userData = userDoc.data();
@@ -21,24 +21,31 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User email not found' }, { status: 400 });
     }
 
-    // Fetch tickets for this user's email
-    const snapshot = await adminDb
-      .collection('support_tickets')
-      .where('email', '==', userEmail)
-      .limit(50)
-      .get();
+    // Query by userId (for tickets submitted while logged in) AND by email (for older/public tickets)
+    const [byUserId, byEmail] = await Promise.all([
+      adminDb.collection('support_tickets')
+        .where('userId', '==', decodedToken.uid)
+        .limit(50)
+        .get(),
+      adminDb.collection('support_tickets')
+        .where('email', '==', userEmail)
+        .limit(50)
+        .get(),
+    ]);
 
-    // Sort in memory since we don't have a composite index yet
-    const tickets = snapshot.docs
-      .map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }))
-      .sort((a: any, b: any) => {
-        const dateA = new Date(a.createdAt).getTime();
-        const dateB = new Date(b.createdAt).getTime();
-        return dateB - dateA; // Descending order (newest first)
-      });
+    // Merge and deduplicate by doc ID
+    const seen = new Set<string>();
+    const tickets: any[] = [];
+
+    for (const doc of [...byUserId.docs, ...byEmail.docs]) {
+      if (!seen.has(doc.id)) {
+        seen.add(doc.id);
+        tickets.push({ id: doc.id, ...doc.data() });
+      }
+    }
+
+    // Sort newest first
+    tickets.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return NextResponse.json({ tickets });
   } catch (error: any) {

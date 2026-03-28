@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { DollarSign, TrendingUp, ChevronDown, ChevronUp, Copy, Download } from 'lucide-react';
+import { DollarSign, TrendingUp, Copy, Download } from 'lucide-react';
 import PaymentFilters from '@/components/admin/PaymentFilters';
 import RevenueByPlanChart from '@/components/admin/RevenueByPlanChart';
 import RevenueTrendChart from '@/components/admin/RevenueTrendChart';
@@ -352,7 +352,8 @@ function PaymentsContent() {
         title="Payments & Revenue"
         description="View payment transactions and revenue analytics"
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <StatsCardSkeleton />
           <StatsCardSkeleton />
           <StatsCardSkeleton />
           <StatsCardSkeleton />
@@ -396,13 +397,16 @@ function PaymentsContent() {
         <div className="text-gray-900">
           <PaymentFilters />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
               <div className="flex items-center">
                 <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
                 <div className="ml-3 sm:ml-4">
-                  <p className="text-xs sm:text-sm text-gray-500">Total Revenue</p>
-                  <p className="text-xl sm:text-2xl font-bold">₹{data?.analytics?.totalRevenue?.toLocaleString('en-IN') ?? 0}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Net Revenue</p>
+                  <p className="text-xl sm:text-2xl font-bold">₹{data?.analytics?.netRevenue?.toLocaleString('en-IN') ?? 0}</p>
+                  {data?.analytics?.totalRevenue > 0 && data?.analytics?.totalRevenue !== data?.analytics?.netRevenue && (
+                    <p className="text-xs text-gray-400 mt-0.5">gross ₹{data?.analytics?.totalRevenue?.toLocaleString('en-IN')}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -421,6 +425,16 @@ function PaymentsContent() {
                 <div className="ml-3 sm:ml-4">
                   <p className="text-xs sm:text-sm text-gray-500">Failed Payments</p>
                   <p className="text-xl sm:text-2xl font-bold">{data?.analytics?.failedPayments ?? 0}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+              <div className="flex items-center">
+                <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm text-gray-500">Total Refunds</p>
+                  <p className="text-xl sm:text-2xl font-bold">₹{data?.analytics?.totalRefunded?.toLocaleString('en-IN') ?? 0}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{data?.analytics?.refundedPayments ?? 0} refunded</p>
                 </div>
               </div>
             </div>

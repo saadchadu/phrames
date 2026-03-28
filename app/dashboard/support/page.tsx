@@ -84,17 +84,14 @@ export default function MyTicketsPage() {
       if (!response.ok) throw new Error(data.error || 'Failed to send reply');
       toast('Reply sent', 'success');
       setReplyText('');
-      await fetchTickets();
-      // re-select updated ticket
-      const currentUser2 = auth.currentUser;
-      if (currentUser2) {
-        const t2 = await currentUser2.getIdToken();
-        const r2 = await fetch('/api/support/my-tickets', { headers: { Authorization: `Bearer ${t2}` } });
-        if (r2.ok) {
-          const d2 = await r2.json();
-          const updated = d2.tickets.find((t: any) => t.ticketId === selectedTicket.ticketId);
-          if (updated) setSelectedTicket(updated);
-        }
+      // Fetch fresh and update selectedTicket
+      const freshToken = await currentUser.getIdToken();
+      const freshRes = await fetch('/api/support/my-tickets', { headers: { Authorization: `Bearer ${freshToken}` } });
+      if (freshRes.ok) {
+        const freshData = await freshRes.json();
+        setTickets(freshData.tickets);
+        const updated = freshData.tickets.find((t: any) => t.ticketId === selectedTicket.ticketId);
+        if (updated) setSelectedTicket(updated);
       }
     } catch (error: any) {
       toast(error.message || 'Failed to send reply', 'error');
