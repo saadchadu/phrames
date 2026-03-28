@@ -18,6 +18,6 @@ export async function verifyAdmin(request: NextRequest): Promise<{ uid: string; 
   }
 }
 
-export function isNextResponse(val: any): val is NextResponse {
-  return val instanceof NextResponse;
+export async function setAdminClaim(uid: string, isAdmin: boolean): Promise<void> {
+  await adminAuth.setCustomUserClaims(uid, { isAdmin });
 }

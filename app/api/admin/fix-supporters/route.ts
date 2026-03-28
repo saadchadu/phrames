@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdminAccess } from '@/lib/admin-auth'
+import { verifyAdmin } from '@/lib/admin-auth'
 import { fixAllCampaignsSupportersCount, cleanupOrphanedSupporters, recalculateSupportersCount } from '@/lib/supporters'
 
 export async function POST(request: NextRequest) {
   try {
     // Verify admin authentication
-    const authResult = await verifyAdminAccess(request)
-    if (!authResult.isAdmin) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const authResult = await verifyAdmin(request)
+    if (authResult instanceof NextResponse) {
+      return authResult
     }
 
     const body = await request.json()
