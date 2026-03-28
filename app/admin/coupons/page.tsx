@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Tag, Plus, Check, X, AlertCircle, Edit2, Activity, Eye, Trash2 } from 'lucide-react';
 import AdminErrorBoundary from '@/components/admin/AdminErrorBoundary';
 import PageHeader from '@/components/admin/PageHeader';
-import { useAuth } from '@/components/AuthProvider';
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal';
 import AlertDialog from '@/components/ui/AlertDialog';
 
@@ -24,7 +23,6 @@ interface Coupon {
 }
 
 export default function AdminCouponsPage() {
-    const { user } = useAuth();
     const [coupons, setCoupons] = useState<Coupon[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -48,9 +46,19 @@ export default function AdminCouponsPage() {
     });
     const [submitting, setSubmitting] = useState(false);
 
+    const getToken = async () => {
+        const { auth } = await import('@/lib/firebase');
+        const user = auth.currentUser;
+        if (!user) throw new Error('Not authenticated');
+        return user.getIdToken();
+    };
+
     const fetchCoupons = async () => {
         try {
-            const res = await fetch('/api/admin/coupons');
+            const token = await getToken();
+            const res = await fetch('/api/admin/coupons', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const data = await res.json();
             if (data.success) {
                 setCoupons(data.coupons);
@@ -70,9 +78,10 @@ export default function AdminCouponsPage() {
 
     const handleToggleActive = async (code: string, currentStatus: boolean) => {
         try {
+            const token = await getToken();
             const res = await fetch(`/api/admin/coupons/${code}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ isActive: !currentStatus })
             });
             if (!res.ok) throw new Error('Failed to update status');
@@ -85,8 +94,10 @@ export default function AdminCouponsPage() {
     const handleDelete = async () => {
         setDeleteModal(prev => ({ ...prev, isDeleting: true }));
         try {
+            const token = await getToken();
             const res = await fetch(`/api/admin/coupons/${deleteModal.code}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!res.ok) throw new Error('Failed to delete coupon');
             setDeleteModal({ isOpen: false, code: '', isDeleting: false });
@@ -101,7 +112,10 @@ export default function AdminCouponsPage() {
     const handleViewUsages = async (code: string) => {
         setViewingRedemptions({ code, data: [], loading: true });
         try {
-            const res = await fetch(`/api/admin/coupons/${code}/redemptions`);
+            const token = await getToken();
+            const res = await fetch(`/api/admin/coupons/${code}/redemptions`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const data = await res.json();
             if (data.success) {
                 setViewingRedemptions({ code, data: data.redemptions, loading: false });
@@ -141,11 +155,12 @@ export default function AdminCouponsPage() {
             const url = isEditing ? `/api/admin/coupons/${formData.code.toUpperCase()}` : '/api/admin/coupons';
             const method = isEditing ? 'PUT' : 'POST';
 
+            const token = await getToken();
             const res = await fetch(url, {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${await user?.getIdToken()}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     ...formData,

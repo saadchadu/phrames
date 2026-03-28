@@ -16,6 +16,13 @@ export default function AdminSettingsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  const getToken = async () => {
+    const { auth } = await import('@/lib/firebase');
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
+    return user.getIdToken();
+  };
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -24,7 +31,10 @@ export default function AdminSettingsPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/admin/settings');
+      const token = await getToken();
+      const res = await fetch('/api/admin/settings', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
       if (!res.ok) {
         throw new Error(`Failed to fetch settings: ${res.statusText}`);
@@ -44,9 +54,10 @@ export default function AdminSettingsPage() {
   async function handleSave(type: string, data: any) {
     try {
       setSaving(true);
+      const token = await getToken();
       const res = await fetch('/api/admin/settings', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ type, adminId: 'admin', ...data }),
       });
 
@@ -74,9 +85,10 @@ export default function AdminSettingsPage() {
   async function handleAction(action: string) {
     try {
       setActionLoading(action);
+      const token = await getToken();
       const res = await fetch('/api/admin/actions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ action, adminId: 'admin' }),
       });
 

@@ -32,6 +32,11 @@ function LogsContent() {
     setLoading(true);
     setError(null);
     try {
+      const { auth } = await import('@/lib/firebase');
+      const user = auth.currentUser;
+      if (!user) throw new Error('Not authenticated');
+      const token = await user.getIdToken();
+
       const params = new URLSearchParams();
       
       const eventType = searchParams.get('eventType');
@@ -45,7 +50,9 @@ function LogsContent() {
       }
 
       const url = `/api/admin/logs${params.toString() ? `?${params.toString()}` : ''}`;
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
       
       if (!res.ok) {
         throw new Error(`Failed to fetch logs: ${res.statusText}`);
