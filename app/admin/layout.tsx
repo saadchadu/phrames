@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import AdminLayoutClient from './AdminLayoutClient';
-import { verifyAdminAccess } from '@/lib/admin-auth';
 
 export const metadata: Metadata = {
   robots: {
