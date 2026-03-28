@@ -37,7 +37,7 @@ const C = {
 }
 
 // ─── Logo ─────────────────────────────────────────────────────────────────────
-const LOGO_IMG = '<img src="https://phrames.cleffon.com/logos/Logo-white.svg" alt="Phrames" width="130" height="31" style="display:block;border:0;outline:none;" />'
+const LOGO_IMG = '<img src="https://phrames.cleffon.com/logos/Logo-white.png" alt="Phrames" width="130" height="31" style="display:block;border:0;outline:none;" />'
 
 // ─── Base layout ──────────────────────────────────────────────────────────────
 interface BaseOpts { accent?: string; tag?: string; tagColor?: string; tagBg?: string }

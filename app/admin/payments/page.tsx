@@ -402,7 +402,7 @@ function PaymentsContent() {
                 <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
                 <div className="ml-3 sm:ml-4">
                   <p className="text-xs sm:text-sm text-gray-500">Total Revenue</p>
-                  <p className="text-xl sm:text-2xl font-bold">₹0</p>
+                  <p className="text-xl sm:text-2xl font-bold">₹{data?.analytics?.totalRevenue?.toLocaleString('en-IN') ?? 0}</p>
                 </div>
               </div>
             </div>
@@ -411,7 +411,7 @@ function PaymentsContent() {
                 <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                 <div className="ml-3 sm:ml-4">
                   <p className="text-xs sm:text-sm text-gray-500">Successful Payments</p>
-                  <p className="text-xl sm:text-2xl font-bold">0</p>
+                  <p className="text-xl sm:text-2xl font-bold">{data?.analytics?.successfulPayments ?? 0}</p>
                 </div>
               </div>
             </div>
@@ -420,7 +420,7 @@ function PaymentsContent() {
                 <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
                 <div className="ml-3 sm:ml-4">
                   <p className="text-xs sm:text-sm text-gray-500">Failed Payments</p>
-                  <p className="text-xl sm:text-2xl font-bold">0</p>
+                  <p className="text-xl sm:text-2xl font-bold">{data?.analytics?.failedPayments ?? 0}</p>
                 </div>
               </div>
             </div>
@@ -430,11 +430,11 @@ function PaymentsContent() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
               <h2 className="text-base sm:text-lg font-semibold mb-4 text-gray-900">Revenue by Plan Type</h2>
-              <RevenueByPlanChart data={{}} />
+              <RevenueByPlanChart data={data?.analytics?.revenueByPlan ?? {}} />
             </div>
             <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
               <h2 className="text-base sm:text-lg font-semibold mb-4 text-gray-900">Revenue Trend (Last 30 Days)</h2>
-              <RevenueTrendChart data={[]} />
+              <RevenueTrendChart data={data?.analytics?.dailyRevenue ?? []} />
             </div>
           </div>
         </div>

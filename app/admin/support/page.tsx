@@ -389,10 +389,14 @@ export default function AdminSupportPage() {
                     <h3 className="font-semibold text-gray-900 mb-3">Support Notes</h3>
                     <div className="space-y-3">
                       {selectedTicket.notes.map((note, idx) => (
-                        <div key={idx} className="bg-blue-50 border border-blue-100 p-4 rounded-lg">
+                        <div key={idx} className={`p-4 rounded-lg border ${
+                          (note as any).sender === 'user'
+                            ? 'bg-green-50 border-green-100'
+                            : 'bg-blue-50 border-blue-100'
+                        }`}>
                           <p className="text-sm text-gray-900">{note.text}</p>
                           <p className="text-xs text-gray-500 mt-2">
-                            Support Team • {new Date(note.addedAt).toLocaleString('en-US', {
+                            {(note as any).sender === 'user' ? `User (${note.addedBy})` : 'Support Team'} • {new Date(note.addedAt).toLocaleString('en-US', {
                               month: 'short',
                               day: 'numeric',
                               hour: '2-digit',

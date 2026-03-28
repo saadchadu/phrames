@@ -56,6 +56,8 @@ export default function SupportHub({
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
 
   const [formData, setFormData] = useState({
     name: userName || '',
@@ -207,6 +209,39 @@ export default function SupportHub({
       toast(error.message || 'Failed to cancel ticket', 'error');
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleReply = async () => {
+    if (!selectedTicket || !replyText.trim()) return;
+    setIsSendingReply(true);
+    try {
+      const user = auth.currentUser;
+      if (!user) return;
+      const token = await user.getIdToken();
+      const response = await fetch('/api/support/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ticketId: selectedTicket.ticketId, message: replyText }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to send reply');
+      toast('Reply sent', 'success');
+      setReplyText('');
+      await fetchTickets();
+      // fetchTickets updates the tickets state async, so re-select from fresh fetch
+      const freshResponse = await fetch('/api/support/my-tickets', {
+        headers: { Authorization: `Bearer ${await user.getIdToken()}` },
+      });
+      if (freshResponse.ok) {
+        const freshData = await freshResponse.json();
+        const updated = freshData.tickets.find((t: any) => t.ticketId === selectedTicket.ticketId);
+        if (updated) setSelectedTicket(updated);
+      }
+    } catch (error: any) {
+      toast(error.message || 'Failed to send reply', 'error');
+    } finally {
+      setIsSendingReply(false);
     }
   };
 
@@ -587,16 +622,43 @@ export default function SupportHub({
                 {selectedTicket.notes.map((note, idx) => (
                   <div
                     key={idx}
-                    className="bg-blue-50 border border-blue-100 p-4 rounded-lg text-sm"
+                    className={`p-4 rounded-lg text-sm border ${
+                      (note as any).sender === 'user'
+                        ? 'bg-[#f2fff2] border-[#00240020] ml-4'
+                        : 'bg-blue-50 border-blue-100'
+                    }`}
                   >
                     <p className="text-primary">{note.text}</p>
                     <p className="text-xs text-primary/50 mt-2">
-                      Support Team •{' '}
+                      {(note as any).sender === 'user' ? 'You' : 'Support Team'} •{' '}
                       {new Date(note.addedAt).toLocaleString()}
                     </p>
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Reply box - only for open/in_progress tickets */}
+          {(selectedTicket.status === 'open' || selectedTicket.status === 'in_progress') && (
+            <div className="border-t border-[#00240020] pt-4">
+              <h4 className="font-medium text-primary mb-2">Reply:</h4>
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder="Write your reply..."
+                rows={3}
+                className="w-full px-3 py-2 text-sm border border-[#00240020] rounded-lg text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all resize-none mb-2"
+              />
+              <button
+                onClick={handleReply}
+                disabled={!replyText.trim() || isSendingReply}
+                className="w-full px-4 py-2.5 rounded-lg bg-secondary hover:bg-secondary/90 text-primary font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSendingReply ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                ) : 'Send Reply'}
+              </button>
             </div>
           )}
 

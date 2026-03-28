@@ -35,6 +35,8 @@ export default function MyTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -63,6 +65,41 @@ export default function MyTicketsPage() {
       toast(error.message, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReply = async () => {
+    if (!selectedTicket || !replyText.trim()) return;
+    setIsSendingReply(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+      const token = await currentUser.getIdToken();
+      const response = await fetch('/api/support/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ticketId: selectedTicket.ticketId, message: replyText }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to send reply');
+      toast('Reply sent', 'success');
+      setReplyText('');
+      await fetchTickets();
+      // re-select updated ticket
+      const currentUser2 = auth.currentUser;
+      if (currentUser2) {
+        const t2 = await currentUser2.getIdToken();
+        const r2 = await fetch('/api/support/my-tickets', { headers: { Authorization: `Bearer ${t2}` } });
+        if (r2.ok) {
+          const d2 = await r2.json();
+          const updated = d2.tickets.find((t: any) => t.ticketId === selectedTicket.ticketId);
+          if (updated) setSelectedTicket(updated);
+        }
+      }
+    } catch (error: any) {
+      toast(error.message || 'Failed to send reply', 'error');
+    } finally {
+      setIsSendingReply(false);
     }
   };
 
@@ -286,16 +323,42 @@ export default function MyTicketsPage() {
                         {selectedTicket.notes.map((note, idx) => (
                           <div
                             key={idx}
-                            className="bg-[#f2fff2] p-4 rounded-xl text-sm"
+                            className={`p-4 rounded-xl text-sm border ${
+                              (note as any).sender === 'user'
+                                ? 'bg-[#f2fff2] border-[#00240020] ml-4'
+                                : 'bg-blue-50 border-blue-100'
+                            }`}
                           >
                             <p className="text-primary">{note.text}</p>
                             <p className="text-xs text-primary/50 mt-2">
-                              {note.addedBy} •{' '}
+                              {(note as any).sender === 'user' ? 'You' : note.addedBy} •{' '}
                               {new Date(note.addedAt).toLocaleString()}
                             </p>
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {(selectedTicket.status === 'open' || selectedTicket.status === 'in_progress') && (
+                    <div className="border-t border-[#00240020] pt-4">
+                      <h3 className="font-medium text-primary mb-2">Reply:</h3>
+                      <textarea
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Write your reply..."
+                        rows={3}
+                        className="w-full px-4 py-3 text-sm border border-[#00240020] rounded-xl text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-secondary focus:border-transparent transition-all resize-none mb-2"
+                      />
+                      <button
+                        onClick={handleReply}
+                        disabled={!replyText.trim() || isSendingReply}
+                        className="w-full px-4 py-3 rounded-xl bg-secondary hover:bg-secondary/90 text-primary font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {isSendingReply ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                        ) : 'Send Reply'}
+                      </button>
                     </div>
                   )}
                 </div>

@@ -1,20 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore, Timestamp } from 'firebase-admin/firestore'
-import { getAuth } from 'firebase-admin/auth'
-
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  })
-}
-
-const db = getFirestore()
+import { Timestamp } from 'firebase-admin/firestore'
+import { adminDb as db, adminAuth } from '@/lib/firebase-admin'
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +15,7 @@ export async function POST(request: NextRequest) {
     // Verify Firebase token and check if admin
     let adminUid: string
     try {
-      const decodedToken = await getAuth().verifyIdToken(token)
+      const decodedToken = await adminAuth.verifyIdToken(token)
       adminUid = decodedToken.uid
       
       // Check if user is admin using custom claim
@@ -123,11 +109,28 @@ export async function POST(request: NextRequest) {
     // Deactivate campaign
     if (paymentData?.campaignId) {
       const campaignRef = db.collection('campaigns').doc(paymentData.campaignId)
-      await campaignRef.update({
-        isActive: false,
-        status: 'Refunded',
-        refundedAt: Timestamp.now()
-      })
+      const campaignDoc = await campaignRef.get()
+      const campaignData = campaignDoc.data()
+
+      // Only deactivate if this payment is the one that activated the campaign
+      // (i.e., no newer successful payment exists for this campaign)
+      const newerPaymentsSnap = await db.collection('payments')
+        .where('campaignId', '==', paymentData.campaignId)
+        .where('status', 'in', ['SUCCESS', 'success'])
+        .get()
+
+      const hasNewerActivePayment = newerPaymentsSnap.docs.some(doc => doc.id !== paymentId)
+
+      if (!hasNewerActivePayment) {
+        await campaignRef.update({
+          isActive: false,
+          status: 'Refunded',
+          refundedAt: Timestamp.now()
+        })
+      } else {
+        // There's another active payment — just log it but don't deactivate
+        console.log(`Campaign ${paymentData.campaignId} has other active payments, not deactivating`)
+      }
     }
 
     // Create admin log
