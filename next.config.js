@@ -28,6 +28,9 @@ const nextConfig = {
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@heroicons/react', 'recharts'],
   },
+  turbopack: {
+    root: __dirname,
+  },
   // Performance optimizations
   onDemandEntries: {
     maxInactiveAge: 60 * 1000,
