@@ -49,7 +49,8 @@ export async function POST(request: NextRequest) {
     const successfulPayment = payments.find((p: any) => p.payment_status === 'SUCCESS')
 
     if (successfulPayment) {
-      const db = adminDb      const paymentRef = await db.collection('payments').where('orderId', '==', orderId).limit(1).get()
+      const db = adminDb
+      const paymentRef = await db.collection('payments').where('orderId', '==', orderId).limit(1).get()
       
       if (!paymentRef.empty) {
         const paymentData = paymentRef.docs[0].data()
