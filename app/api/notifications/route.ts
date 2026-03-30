@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuth } from 'firebase-admin/auth'
-import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
+import { adminDb, adminAuth } from '@/lib/firebase-admin'
 
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  })
-}
-
-const db = getFirestore()
+const db = adminDb
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,7 +17,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.split('Bearer ')[1]
     
     // Verify Firebase token
-    const decodedToken = await getAuth().verifyIdToken(token)
+    const decodedToken = await adminAuth.verifyIdToken(token)
     const userId = decodedToken.uid
 
     // Get query parameters
@@ -91,7 +78,7 @@ export async function PATCH(request: NextRequest) {
     const token = authHeader.split('Bearer ')[1]
     
     // Verify Firebase token
-    const decodedToken = await getAuth().verifyIdToken(token)
+    const decodedToken = await adminAuth.verifyIdToken(token)
     const userId = decodedToken.uid
 
     const { notificationId, action } = await request.json()
@@ -169,7 +156,7 @@ export async function DELETE(request: NextRequest) {
     const token = authHeader.split('Bearer ')[1]
     
     // Verify Firebase token
-    const decodedToken = await getAuth().verifyIdToken(token)
+    const decodedToken = await adminAuth.verifyIdToken(token)
     const userId = decodedToken.uid
 
     const { notificationId } = await request.json()

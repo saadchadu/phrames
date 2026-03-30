@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore'
+import { Timestamp, FieldValue } from 'firebase-admin/firestore'
+import { adminDb } from '@/lib/firebase-admin'
 import { verifyCashfreeSignature } from '@/lib/webhookVerification'
 import { calculateExpiryDate } from '@/lib/cashfree'
 import { generateInvoiceNumber, getPlanDisplayName, getPlanValidityDays, COMPANY_DETAILS } from '@/lib/invoice'
@@ -18,18 +18,7 @@ import {
 } from '@/lib/monitoring'
 import { sendPaymentConfirmationEmail } from '@/lib/email'
 
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  })
-}
-
-const db = getFirestore()
+const db = adminDb
 
 // Payment record interface for webhook handler
 interface PaymentRecord {

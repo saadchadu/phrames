@@ -1,22 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore, Timestamp } from 'firebase-admin/firestore'
-import { getAuth } from 'firebase-admin/auth'
+import { adminDb, adminAuth } from '@/lib/firebase-admin'
+import { Timestamp } from 'firebase-admin/firestore'
 
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  })
-}
-
-const db = getFirestore()
-
-// Plan duration mapping
+const db = adminDb
 const PLAN_DURATIONS: { [key: string]: number } = {
   'week': 7,
   'month': 30,
@@ -47,7 +33,7 @@ export async function POST(request: NextRequest) {
     // Verify Firebase token and check if admin
     let userId: string
     try {
-      const decodedToken = await getAuth().verifyIdToken(token)
+      const decodedToken = await adminAuth.verifyIdToken(token)
       userId = decodedToken.uid
       
       // Check if user is admin using custom claim

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
-import { getAuth } from 'firebase-admin/auth'
+import { adminDb, adminAuth } from '@/lib/firebase-admin'
 import { generateInvoicePDF } from '@/lib/pdf/generateInvoicePDF'
 import { COMPANY_DETAILS } from '@/lib/invoice'
 
@@ -9,19 +7,6 @@ import { COMPANY_DETAILS } from '@/lib/invoice'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 export const maxDuration = 30
-
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  })
-}
-
-const db = getFirestore()
 
 export async function GET(
   request: NextRequest,
@@ -45,7 +30,7 @@ export async function GET(
     let userId: string
     let isAdmin = false
     try {
-      const decodedToken = await getAuth().verifyIdToken(token)
+      const decodedToken = await adminAuth.verifyIdToken(token)
       userId = decodedToken.uid
       isAdmin = decodedToken.admin === true || decodedToken.isAdmin === true
     } catch (error) {
@@ -56,7 +41,7 @@ export async function GET(
     }
 
     // Get payment record
-    const paymentDoc = await db.collection('payments').doc(paymentId).get()
+    const paymentDoc = await adminDb.collection('payments').doc(paymentId).get()
 
     if (!paymentDoc.exists) {
       return NextResponse.json(
@@ -92,15 +77,15 @@ export async function GET(
       const invoiceNumber = await generateInvoiceNumber()
 
       // Get user details
-      const userDoc = await db.collection('users').doc(paymentData.userId).get()
+      const userDoc = await adminDb.collection('users').doc(paymentData.userId).get()
       const userData = userDoc.data()
 
       // Get campaign details
-      const campaignDoc = await db.collection('campaigns').doc(paymentData.campaignId).get()
+      const campaignDoc = await adminDb.collection('campaigns').doc(paymentData.campaignId).get()
       const campaignData = campaignDoc.data()
 
       // Update payment with invoice data
-      await db.collection('payments').doc(paymentId).update({
+      await adminDb.collection('payments').doc(paymentId).update({
         invoiceNumber,
         invoiceDate: paymentData.completedAt || paymentData.createdAt,
         totalAmount: paymentData.baseAmount || paymentData.amount || 0,
@@ -114,7 +99,7 @@ export async function GET(
       })
 
       // Refresh payment data
-      const updatedDoc = await db.collection('payments').doc(paymentId).get()
+      const updatedDoc = await adminDb.collection('payments').doc(paymentId).get()
       Object.assign(paymentData, updatedDoc.data())
     }
 

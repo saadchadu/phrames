@@ -1,23 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
-import { getAuth } from 'firebase-admin/auth'
+import { adminDb, adminAuth } from '@/lib/firebase-admin'
 import { COMPANY_DETAILS } from '@/lib/invoice'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-if (getApps().length === 0) {
-    initializeApp({
-        credential: cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-    })
-}
-
-const db = getFirestore()
+const db = adminDb
 
 export async function POST(request: NextRequest) {
     try {
@@ -28,7 +16,7 @@ export async function POST(request: NextRequest) {
         }
 
         const token = authHeader.split('Bearer ')[1]
-        const decoded = await getAuth().verifyIdToken(token)
+        const decoded = await adminAuth.verifyIdToken(token)
         if (!decoded.admin && !decoded.isAdmin) {
             return NextResponse.json({ error: 'Forbidden – admin only' }, { status: 403 })
         }

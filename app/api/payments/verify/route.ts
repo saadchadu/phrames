@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuth } from 'firebase-admin/auth'
-import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
+import { adminAuth, adminDb } from '@/lib/firebase-admin'
 import { handlePaymentSuccess } from '../webhook/route'
 import { PerformanceTracker } from '@/lib/monitoring'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
-
-// Initialize Firebase Admin
-if (getApps().length === 0) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  })
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +14,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1]
-    const decodedToken = await getAuth().verifyIdToken(token)
+    const decodedToken = await adminAuth.verifyIdToken(token)
 
     const body = await request.json()
     const { orderId } = body
@@ -62,8 +49,7 @@ export async function POST(request: NextRequest) {
     const successfulPayment = payments.find((p: any) => p.payment_status === 'SUCCESS')
 
     if (successfulPayment) {
-      const db = getFirestore()
-      const paymentRef = await db.collection('payments').where('orderId', '==', orderId).limit(1).get()
+      const db = adminDb      const paymentRef = await db.collection('payments').where('orderId', '==', orderId).limit(1).get()
       
       if (!paymentRef.empty) {
         const paymentData = paymentRef.docs[0].data()

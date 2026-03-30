@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCampaign } from '@/lib/firestore'
 import { isValidPlanType, verifyCashfreeConfig, PRICING_PLANS } from '@/lib/cashfree'
-import { getAuth } from 'firebase-admin/auth'
-import { initializeApp, getApps, cert } from 'firebase-admin/app'
-import { getFirestore, Timestamp } from 'firebase-admin/firestore'
+import { adminDb, adminAuth } from '@/lib/firebase-admin'
+import { Timestamp } from 'firebase-admin/firestore'
 import type { CreateOrderRequest } from 'cashfree-pg'
 import {
   PerformanceTracker,
@@ -73,7 +72,7 @@ export async function POST(request: NextRequest) {
     let userId: string
     let emailVerified: boolean
     try {
-      const decodedToken = await getAuth().verifyIdToken(token)
+      const decodedToken = await adminAuth.verifyIdToken(token)
       userId = decodedToken.uid
       emailVerified = decodedToken.email_verified || false
 
@@ -198,10 +197,9 @@ export async function POST(request: NextRequest) {
     // Get price from Firestore settings
     let amount: number
     try {
-      const db = getFirestore()
       const [plansDoc, systemDoc] = await Promise.all([
-        db.collection('settings').doc('plans').get(),
-        db.collection('settings').doc('system').get()
+        adminDb.collection('settings').doc('plans').get(),
+        adminDb.collection('settings').doc('system').get()
       ])
 
       if (!plansDoc.exists) {
@@ -235,8 +233,7 @@ export async function POST(request: NextRequest) {
     // Process coupon if provided
     if (couponCode) {
       const codeTrimmed = couponCode.toUpperCase().trim()
-      const db = getFirestore()
-      const couponRef = db.collection('coupons').doc(codeTrimmed)
+      const couponRef = adminDb.collection('coupons').doc(codeTrimmed)
       const couponSnap = await couponRef.get()
 
       if (couponSnap.exists) {
@@ -369,11 +366,10 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const db = getFirestore()
-      const paymentRef = await db.collection('payments').add(paymentRecord)
+      const paymentRef = await adminDb.collection('payments').add(paymentRecord)
 
       // Also log to admin logs
-      await db.collection('logs').add({
+      await adminDb.collection('logs').add({
         eventType: 'payment_initiated',
         actorId: userId,
         description: `Payment initiated for campaign ${campaignId}`,
