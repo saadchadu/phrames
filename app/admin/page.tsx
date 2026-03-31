@@ -9,6 +9,8 @@ import RecentSignups from '@/components/admin/RecentSignups';
 import AdminErrorBoundary from '@/components/admin/AdminErrorBoundary';
 import PageHeader from '@/components/admin/PageHeader';
 
+export const dynamic = 'force-dynamic'
+
 async function getAdminStats() {
   try {
     // Import the stats logic directly to avoid server-side fetch issues
