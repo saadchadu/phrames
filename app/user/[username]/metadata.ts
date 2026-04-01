@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       console.error('Error fetching campaign image:', error)
     }
 
-    const ogImage = profileImage || campaignImage || 'https://phrames.cleffon.com/og-image.png'
+    const ogImage = profileImage || campaignImage || 'https://phrames.cleffon.com/images/featured-image-phrames.png'
 
     return {
       title: `${displayName} (@${username}) | Phrames`,

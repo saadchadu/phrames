@@ -15,6 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const title = `${campaign.campaignName} | Phrames`
   const description = campaign.description || `Create your personalized photo with the ${campaign.campaignName} frame on Phrames.`
   const imageUrl = campaign.frameURL
+  const featuredImage = 'https://phrames.cleffon.com/images/featured-image-phrames.png'
 
   return {
     title,
@@ -27,9 +28,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       siteName: 'Phrames',
       images: [
         {
-          url: imageUrl,
+          url: featuredImage,
           width: 1200,
-          height: 1200,
+          height: 630,
           alt: campaign.campaignName,
         },
       ],
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       card: 'summary_large_image',
       title,
       description,
-      images: [imageUrl],
+      images: [featuredImage],
     },
     alternates: {
       canonical: `/campaign/${campaign.slug}`,

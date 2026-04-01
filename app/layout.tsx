@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     siteName: 'Phrames',
     images: [
       {
-        url: '/images/Hero.png',
+        url: '/images/featured-image-phrames.png',
         width: 1200,
         height: 630,
         alt: 'Phrames - Create Viral Photo Frame Campaigns',
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Phrames - Create Viral Photo Frame Campaigns | Free Trial',
     description: 'Create custom photo frames for your campaign in minutes. Perfect for events, brands, and causes. Start free for 1 month.',
-    images: ['/images/Hero.png'],
+    images: ['/images/featured-image-phrames.png'],
     creator: '@cleffon',
     site: '@phrames',
   },

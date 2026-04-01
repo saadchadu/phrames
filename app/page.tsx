@@ -16,6 +16,7 @@ import FAQSection from '@/components/FAQSection'
 import Footer from '@/components/Footer'
 import { toast } from '@/components/ui/toaster'
 import { Play } from 'lucide-react'
+import HeroImageFader from '@/components/HeroImageFader'
 
 export default function Home() {
   const { user } = useAuth()
@@ -177,9 +178,9 @@ export default function Home() {
       {/* Hero Section */}
       <section className="py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-center">
             {/* Left Side - Content */}
-            <div className="w-full lg:w-[55%] text-center lg:text-left">
+            <div className="w-full lg:w-1/2 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 bg-secondary/20 border border-secondary/30 text-primary px-4 py-2 rounded-full text-sm font-semibold mb-6">
                 <span className="w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
                 <span>🎉 First campaign FREE for 1 month!</span>
@@ -243,20 +244,9 @@ export default function Home() {
             </div>
 
             {/* Right Side - Image */}
-            <div className="w-full lg:w-[45%] flex justify-center lg:justify-end mt-8 lg:mt-0">
-              <div className="w-full max-w-sm lg:max-w-md relative">
-                <Image
-                  src="/images/Hero.png"
-                  alt="Phrames Hero - Create viral photo frame campaigns"
-                  width={450}
-                  height={490}
-                  className="w-full h-auto rounded-2xl"
-                  priority
-                  quality={75}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 450px"
-                  placeholder="blur"
-                  blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
-                />
+            <div className="w-full lg:w-1/2 flex justify-center lg:justify-end mt-8 lg:mt-0">
+              <div className="w-full">
+                <HeroImageFader />
               </div>
             </div>
           </div>
