@@ -95,10 +95,11 @@ export default function ExampleGallery() {
               key={index}
               className="group relative bg-white rounded-2xl overflow-hidden border-2 border-gray-100 hover:border-secondary/50 transition-all hover:shadow-xl"
             >
-              {/* Gradient placeholder for image */}
+              {/* Coming Soon placeholder */}
               <div className={`aspect-square bg-gradient-to-br ${example.color} relative overflow-hidden`}>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-32 h-32 border-8 border-white/30 rounded-full"></div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                  <span className="text-white/30 text-6xl">✦</span>
+                  <span className="text-white font-bold text-lg tracking-widest uppercase">Coming Soon</span>
                 </div>
                 {/* Overlay on hover */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all"></div>
