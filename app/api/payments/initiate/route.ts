@@ -10,8 +10,7 @@ import {
   logApiError,
   trackRequest,
   trackError,
-  formatError,
-  sanitizeErrorForClient
+  formatError
 } from '@/lib/monitoring'
 
 // Force dynamic rendering
@@ -326,10 +325,7 @@ export async function POST(request: NextRequest) {
       })
       tracker.end(false)
       return NextResponse.json(
-        {
-          error: 'Failed to create payment order. Please try again.',
-          details: error.response?.data || error.message
-        },
+        { error: 'Failed to create payment order. Please try again.' },
         { status: 500 }
       )
     }
@@ -429,11 +425,7 @@ export async function POST(request: NextRequest) {
     })
     tracker.end(false)
     return NextResponse.json(
-      {
-        error: sanitizeErrorForClient(error),
-        message: error.message,
-        details: 'Check server logs for more information'
-      },
+      { error: 'An unexpected error occurred. Please try again.' },
       { status: 500 }
     )
   }

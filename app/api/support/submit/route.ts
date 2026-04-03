@@ -14,6 +14,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
+    }
+
+    // Enforce length limits to prevent abuse
+    if (name.length > 100) {
+      return NextResponse.json({ error: 'Name must be 100 characters or fewer' }, { status: 400 })
+    }
+    if (subject.length > 200) {
+      return NextResponse.json({ error: 'Subject must be 200 characters or fewer' }, { status: 400 })
+    }
+    if (message.length > 5000) {
+      return NextResponse.json({ error: 'Message must be 5000 characters or fewer' }, { status: 400 })
+    }
+
+    const allowedCategories = ['general', 'billing', 'technical', 'account', 'other']
+    if (!allowedCategories.includes(category)) {
+      return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
+    }
+
     // Try to get userId from auth token if provided (optional)
     let userId: string | null = null;
     const authHeader = request.headers.get('authorization');

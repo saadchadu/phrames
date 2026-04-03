@@ -103,14 +103,9 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    // Return a more specific error for debugging
-    if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        return NextResponse.json({ error: 'Request timeout' }, { status: 408 })
-      }
-      return NextResponse.json({ error: `Proxy error: ${error.message}` }, { status: 500 })
+    if (error instanceof Error && error.name === 'AbortError') {
+      return NextResponse.json({ error: 'Request timeout' }, { status: 408 })
     }
-    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
