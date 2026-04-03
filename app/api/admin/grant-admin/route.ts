@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
 
+const ADMIN_EMAILS = ['saadchadu@gmail.com']
+
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -15,10 +17,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
 
-    // Verify the token
+    // Verify the token and check the target user's email
     await adminAuth.verifyIdToken(idToken);
 
-    // Set custom admin claim
+    // Only allow granting admin to pre-approved emails
+    const targetUser = await adminAuth.getUser(userId);
+    if (!targetUser.email || !ADMIN_EMAILS.includes(targetUser.email.toLowerCase())) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     await adminAuth.setCustomUserClaims(userId, { isAdmin: true });
 
     return NextResponse.json({ success: true });
