@@ -42,7 +42,6 @@
     "@sparticuz/chromium-min": "^143.0.4",
     "@tailwindcss/forms": "^0.5.11",
     "@types/qrcode": "^1.5.6",
-    "cashfree-pg": "^5.1.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "critters": "^0.0.23",

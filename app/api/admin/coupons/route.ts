@@ -29,10 +29,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!await verifyAdmin(req)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const admin = await verifyAdmin(req)
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const body = await req.json();
-    let { code, type, value, applicablePlans, minAmount, usageLimit, perUserLimit, validFrom, validUntil, isActive, createdBy } = body;
+    let { code, type, value, applicablePlans, minAmount, usageLimit, perUserLimit, validFrom, validUntil, isActive } = body;
 
     code = (code || '').toUpperCase().trim();
     if (!code || !type || value === undefined) {
@@ -82,7 +83,7 @@ export async function POST(req: NextRequest) {
       validFrom: validFrom ? Timestamp.fromDate(new Date(validFrom)) : null,
       validUntil: validUntil ? Timestamp.fromDate(new Date(validUntil)) : null,
       isActive: isActive ?? true,
-      createdBy: createdBy || 'admin',
+      createdBy: admin.uid,
       createdAt: Timestamp.now(),
     };
 

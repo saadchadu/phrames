@@ -1,32 +1,3 @@
-import { Cashfree, CFEnvironment } from 'cashfree-pg'
-
-// Initialize Cashfree SDK instance
-let cashfreeInstance: Cashfree | null = null
-
-export function getCashfreeInstance(): Cashfree {
-  if (!cashfreeInstance) {
-    const environment = process.env.CASHFREE_ENV === 'PRODUCTION' 
-      ? CFEnvironment.PRODUCTION 
-      : CFEnvironment.SANDBOX
-    
-    const clientId = process.env.CASHFREE_CLIENT_ID
-    const clientSecret = process.env.CASHFREE_CLIENT_SECRET
-    
-    if (!clientId || !clientSecret) {
-      throw new Error('Cashfree credentials are not configured')
-    }
-    
-    cashfreeInstance = new Cashfree(
-      environment,
-      clientId,
-      clientSecret
-    )
-  }
-  return cashfreeInstance
-}
-
-export { Cashfree, CFEnvironment }
-
 // Pricing plans configuration
 // NOTE: These are fallback values. Actual prices are fetched from Firestore settings/plans
 export const PRICING_PLANS = {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminDb } from '@/lib/firebase-admin'
+import { adminDb, adminAuth } from '@/lib/firebase-admin'
 import { checkRateLimit } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { username, currentUid } = await request.json()
+    const { username } = await request.json()
 
     if (!username) {
       return NextResponse.json(
@@ -31,6 +31,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get the authenticated user's UID from the token (never trust body for this)
+    let currentUid: string | null = null
+    const authHeader = request.headers.get('authorization')
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1])
+        currentUid = decoded.uid
+      } catch { /* unauthenticated — that's fine for availability checks */ }
+    }
+
     // Check if username exists
     const usersRef = adminDb.collection('users')
     const snapshot = await usersRef.where('username', '==', username).limit(1).get()
@@ -39,7 +49,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ available: true })
     }
 
-    // If username exists, check if it belongs to current user
+    // If username exists, check if it belongs to the authenticated user
     const existingUser = snapshot.docs[0]
     if (currentUid && existingUser.id === currentUid) {
       return NextResponse.json({ available: true })

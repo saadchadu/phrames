@@ -3,7 +3,7 @@ import { getCampaign } from '@/lib/firestore'
 import { isValidPlanType, verifyCashfreeConfig, PRICING_PLANS } from '@/lib/cashfree'
 import { adminDb, adminAuth } from '@/lib/firebase-admin'
 import { Timestamp } from 'firebase-admin/firestore'
-import type { CreateOrderRequest } from 'cashfree-pg'
+
 import {
   PerformanceTracker,
   logPaymentInitiated,
@@ -278,22 +278,24 @@ export async function POST(request: NextRequest) {
 
     const orderId = `order_${Date.now()}_${campaignId.substring(0, 8)}`
 
-    // Create Cashfree order
-    // For production Cashfree, URLs must be HTTPS
-    // In development, we'll use a placeholder HTTPS URL that Cashfree accepts
+    // Create Cashfree order via direct REST API (no SDK dependency)
     const isDevelopment = process.env.NODE_ENV === 'development'
     const baseUrl = isDevelopment
-      ? 'https://phrames.app' // Use production URL as placeholder for dev testing
+      ? 'https://phrames.app'
       : process.env.NEXT_PUBLIC_APP_URL
 
-    const orderRequest: CreateOrderRequest = {
+    const cashfreeApiBase = process.env.CASHFREE_ENV === 'PRODUCTION'
+      ? 'https://api.cashfree.com/pg'
+      : 'https://sandbox.cashfree.com/pg'
+
+    const orderRequest = {
       order_amount: amount,
       order_currency: 'INR',
       order_id: orderId,
       customer_details: {
         customer_id: userId,
         customer_email: campaign.createdByEmail || 'user@example.com',
-        customer_phone: '9999999999' // Default phone, Cashfree requires this
+        customer_phone: '9999999999'
       },
       order_meta: {
         return_url: `${baseUrl}/dashboard?payment=success&campaignId=${campaignId}&orderId={order_id}`,
@@ -304,19 +306,21 @@ export async function POST(request: NextRequest) {
 
     let cashfreeResponse
     try {
-      const { Cashfree: CashfreeSDK, CFEnvironment } = await import('cashfree-pg')
-      const environment = process.env.CASHFREE_ENV === 'PRODUCTION'
-        ? CFEnvironment.PRODUCTION
-        : CFEnvironment.SANDBOX
-
-      const cashfree = new CashfreeSDK(
-        environment,
-        process.env.CASHFREE_CLIENT_ID!,
-        process.env.CASHFREE_CLIENT_SECRET!
-      )
-
-      const response = await cashfree.PGCreateOrder(orderRequest)
-      cashfreeResponse = response.data
+      const cfRes = await fetch(`${cashfreeApiBase}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-client-id': process.env.CASHFREE_CLIENT_ID!,
+          'x-client-secret': process.env.CASHFREE_CLIENT_SECRET!,
+          'x-api-version': '2023-08-01',
+        },
+        body: JSON.stringify(orderRequest),
+      })
+      if (!cfRes.ok) {
+        const errBody = await cfRes.text()
+        throw new Error(`Cashfree API error ${cfRes.status}: ${errBody}`)
+      }
+      cashfreeResponse = await cfRes.json()
     } catch (error: any) {
       trackError()
       logApiError({
