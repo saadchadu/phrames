@@ -23,4 +23,4 @@ Disallow: /dashboard/
 Disallow: /admin/
 
 # Sitemap location
-Sitemap: https://phrames.cleffon.com/sitemap.xml
+Sitemap: https://phrames.app/sitemap.xml

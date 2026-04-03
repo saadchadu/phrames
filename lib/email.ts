@@ -2,7 +2,7 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.EMAIL_FROM || 'Phrames <support@cleffon.com>'
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://phrames.cleffon.com'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://phrames.app'
 
 export async function sendEmail(to: string, subject: string, html: string) {
   if (!process.env.RESEND_API_KEY) {
@@ -37,7 +37,7 @@ const C = {
 }
 
 // ─── Logo ─────────────────────────────────────────────────────────────────────
-const LOGO_IMG = '<img src="https://phrames.cleffon.com/logos/Logo-white.png" alt="Phrames" width="130" height="31" style="display:block;border:0;outline:none;" />'
+const LOGO_IMG = '<img src="https://phrames.app/logos/Logo-white.png" alt="Phrames" width="130" height="31" style="display:block;border:0;outline:none;" />'
 
 // ─── Base layout ──────────────────────────────────────────────────────────────
 interface BaseOpts { accent?: string; tag?: string; tagColor?: string; tagBg?: string }
@@ -84,7 +84,7 @@ function base(content: string, opts: BaseOpts = {}): string {
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' +
     '<td style="color:' + C.textLight + ';font-size:12px;line-height:1.5;">' +
     '&copy; ' + year + ' Phrames &nbsp;&middot;&nbsp; ' +
-    '<a href="' + APP_URL + '" style="color:' + C.textLight + ';text-decoration:none;">phrames.cleffon.com</a>' +
+    '<a href="' + APP_URL + '" style="color:' + C.textLight + ';text-decoration:none;">phrames.app</a>' +
     '</td>' +
     '<td align="right" style="color:' + C.textLight + ';font-size:12px;">' +
     '<a href="mailto:support@cleffon.com" style="color:' + C.textLight + ';text-decoration:none;">support@cleffon.com</a>' +

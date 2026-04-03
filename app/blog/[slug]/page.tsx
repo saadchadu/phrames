@@ -169,7 +169,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       title: post.title,
       description: post.description,
-      url: `https://phrames.cleffon.com/blog/${post.slug}`,
+      url: `https://phrames.app/blog/${post.slug}`,
       type: 'article',
       publishedTime: post.date,
       authors: [post.author],
@@ -205,12 +205,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       name: 'Phrames',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://phrames.cleffon.com/icons/favicon.png',
+        url: 'https://phrames.app/icons/favicon.png',
       },
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': `https://phrames.cleffon.com/blog/${post.slug}`,
+      '@id': `https://phrames.app/blog/${post.slug}`,
     },
     keywords: post.keywords.join(', '),
   }

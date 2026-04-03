@@ -15,6 +15,6 @@ export default function robots(): MetadataRoute.Robots {
         crawlDelay: 0,
       },
     ],
-    sitemap: 'https://phrames.cleffon.com/sitemap.xml',
+    sitemap: 'https://phrames.app/sitemap.xml',
   }
 }

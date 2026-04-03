@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Blog - Photo Frame Campaign Tips & Guides',
     description: 'Learn how to create viral photo frame campaigns, marketing strategies, and best practices.',
-    url: 'https://phrames.cleffon.com/blog',
+    url: 'https://phrames.app/blog',
   },
 }
 
@@ -45,13 +45,13 @@ export default function BlogPage() {
     '@type': 'Blog',
     name: 'Phrames Blog',
     description: 'Tips, guides, and best practices for photo frame campaigns',
-    url: 'https://phrames.cleffon.com/blog',
+    url: 'https://phrames.app/blog',
     publisher: {
       '@type': 'Organization',
       name: 'Phrames',
       logo: {
         '@type': 'ImageObject',
-        url: 'https://phrames.cleffon.com/icons/favicon.png',
+        url: 'https://phrames.app/icons/favicon.png',
       },
     },
   }

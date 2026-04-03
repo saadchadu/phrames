@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       console.error('Error fetching campaign image:', error)
     }
 
-    const ogImage = profileImage || campaignImage || 'https://phrames.cleffon.com/images/featured-image-phrames.png'
+    const ogImage = profileImage || campaignImage || 'https://phrames.app/images/featured-image-phrames.png'
 
     return {
       title: `${displayName} (@${username}) | Phrames`,
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         title: `${displayName} (@${username}) | Phrames`,
         description: bio,
-        url: `https://phrames.cleffon.com/user/${username}`,
+        url: `https://phrames.app/user/${username}`,
         siteName: 'Phrames',
         images: [
           {

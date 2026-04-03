@@ -349,7 +349,7 @@ export default function PaymentInvoiceTemplate({ data }: PaymentInvoiceTemplateP
         <div className="invoice-footer">
           <div className="footer-inner">
             <span>System-generated invoice for {data.companyDetails.name}</span>
-            <span>Powered by <a href="https://phrames.cleffon.com" target="_blank" rel="noopener noreferrer">Phrames</a></span>
+            <span>Powered by <a href="https://phrames.app" target="_blank" rel="noopener noreferrer">Phrames</a></span>
           </div>
         </div>
       </div>

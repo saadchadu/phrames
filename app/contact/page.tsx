@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Contact Us - Phrames Support',
     description: 'Get in touch with Phrames support team.',
-    url: 'https://phrames.cleffon.com/contact',
+    url: 'https://phrames.app/contact',
   },
 }
 
@@ -20,7 +20,7 @@ export default function ContactPage() {
     '@type': 'ContactPage',
     name: 'Contact Phrames',
     description: 'Get in touch with Phrames support team',
-    url: 'https://phrames.cleffon.com/contact',
+    url: 'https://phrames.app/contact',
   }
 
   return (

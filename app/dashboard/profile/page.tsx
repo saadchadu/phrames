@@ -478,7 +478,7 @@ export default function ProfileEditPage() {
                       rel="noopener noreferrer"
                       className="text-sm text-secondary hover:underline font-medium break-all"
                     >
-                      phrames.cleffon.com/user/{formData.username}
+                      phrames.app/user/{formData.username}
                     </a>
                   </div>
                 )}

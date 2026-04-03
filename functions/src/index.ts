@@ -65,7 +65,7 @@ function sendResendEmail(to: string, subject: string, html: string): Promise<voi
   })
 }
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://phrames.cleffon.com'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://phrames.app'
 
 // ─── Design tokens (mirrors lib/email.ts + globals.css) ──────────────────────
 const C = {
@@ -84,7 +84,7 @@ const C = {
 }
 
 // ─── Logo (hosted image — SVG inline doesn't render in email clients) ─────────
-const FN_LOGO_IMG = `<img src="https://phrames.cleffon.com/logos/Logo-white.svg" alt="Phrames" width="130" height="31" style="display:block;border:0;outline:none;" />`
+const FN_LOGO_IMG = `<img src="https://phrames.app/logos/Logo-white.svg" alt="Phrames" width="130" height="31" style="display:block;border:0;outline:none;" />`
 
 function fnEmailBase(content: string, opts: { accent?: string; tag?: string; tagColor?: string; tagBg?: string } = {}) {
   const accent   = opts.accent   ?? C.accent
@@ -117,7 +117,7 @@ function fnEmailBase(content: string, opts: { accent?: string; tag?: string; tag
     <tr><td style="background:${C.muted};border-radius:0 0 16px 16px;padding:20px 32px;border:1px solid ${C.border};border-top:none;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td style="color:${C.textLight};font-size:12px;line-height:1.5;">© ${year} Phrames &nbsp;·&nbsp; <a href="${APP_URL}" style="color:${C.textLight};text-decoration:none;">phrames.cleffon.com</a></td>
+          <td style="color:${C.textLight};font-size:12px;line-height:1.5;">© ${year} Phrames &nbsp;·&nbsp; <a href="${APP_URL}" style="color:${C.textLight};text-decoration:none;">phrames.app</a></td>
           <td align="right" style="color:${C.textLight};font-size:12px;"><a href="mailto:support@cleffon.com" style="color:${C.textLight};text-decoration:none;">support@cleffon.com</a></td>
         </tr>
       </table>

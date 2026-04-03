@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'Cleffon', url: 'https://cleffon.com' }],
   creator: 'Cleffon',
   publisher: 'Cleffon',
-  metadataBase: new URL('https://phrames.cleffon.com'),
+  metadataBase: new URL('https://phrames.app'),
   alternates: {
     canonical: '/',
     languages: {
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Phrames - Create Viral Photo Frame Campaigns | Free Trial',
     description: 'Create custom photo frames for your campaign in minutes. Perfect for events, brands, and causes. Start free for 1 month - no credit card required.',
-    url: 'https://phrames.cleffon.com',
+    url: 'https://phrames.app',
     siteName: 'Phrames',
     images: [
       {

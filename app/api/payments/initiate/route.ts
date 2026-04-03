@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
     // In development, we'll use a placeholder HTTPS URL that Cashfree accepts
     const isDevelopment = process.env.NODE_ENV === 'development'
     const baseUrl = isDevelopment
-      ? 'https://phrames.cleffon.com' // Use production URL as placeholder for dev testing
+      ? 'https://phrames.app' // Use production URL as placeholder for dev testing
       : process.env.NEXT_PUBLIC_APP_URL
 
     const orderRequest: CreateOrderRequest = {

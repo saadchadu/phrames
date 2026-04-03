@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const title = `${campaign.campaignName} | Phrames`
   const description = campaign.description || `Create your personalized photo with the ${campaign.campaignName} frame on Phrames.`
   const imageUrl = campaign.frameURL
-  const featuredImage = 'https://phrames.cleffon.com/images/featured-image-phrames.png'
+  const featuredImage = 'https://phrames.app/images/featured-image-phrames.png'
 
   return {
     title,
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       title,
       description,
-      url: `https://phrames.cleffon.com/campaign/${campaign.slug}`,
+      url: `https://phrames.app/campaign/${campaign.slug}`,
       siteName: 'Phrames',
       images: [
         {

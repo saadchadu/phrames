@@ -20,7 +20,7 @@ export default function CampaignQRCode({
   showDownloadButton = true 
 }: CampaignQRCodeProps) {
   const qrRef = useRef<HTMLDivElement>(null)
-  const url = `https://phrames.cleffon.com/campaign/${slug}`
+  const url = `https://phrames.app/campaign/${slug}`
   const { alertState, showAlert, closeAlert } = useDialog()
 
   const handleDownload = () => {

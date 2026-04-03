@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'About Phrames - Photo Frame Campaign Platform',
     description: 'Learn about Phrames, the leading platform for creating viral photo frame campaigns.',
-    url: 'https://phrames.cleffon.com/about',
+    url: 'https://phrames.app/about',
   },
 }
 
@@ -21,12 +21,12 @@ export default function AboutPage() {
     '@type': 'AboutPage',
     name: 'About Phrames',
     description: 'Learn about Phrames, the leading platform for creating viral photo frame campaigns.',
-    url: 'https://phrames.cleffon.com/about',
+    url: 'https://phrames.app/about',
     mainEntity: {
       '@type': 'Organization',
       name: 'Phrames',
-      url: 'https://phrames.cleffon.com',
-      logo: 'https://phrames.cleffon.com/icons/favicon.png',
+      url: 'https://phrames.app',
+      logo: 'https://phrames.app/icons/favicon.png',
       description: 'Create and share custom photo frame campaigns online',
       foundingDate: '2024',
       founder: {

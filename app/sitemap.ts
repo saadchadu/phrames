@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 import { getPublicActiveCampaigns } from '@/lib/firestore'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://phrames.cleffon.com'
+  const baseUrl = 'https://phrames.app'
 
   // Fetch all public active campaigns for dynamic URLs
   const campaigns = await getPublicActiveCampaigns()

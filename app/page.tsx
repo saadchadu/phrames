@@ -93,7 +93,7 @@ export default function Home() {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: 'Phrames',
-    url: 'https://phrames.cleffon.com',
+    url: 'https://phrames.app',
     description: 'Create and share custom photo frame campaigns online for free.',
     applicationCategory: 'DesignApplication',
     operatingSystem: 'All',
@@ -132,7 +132,7 @@ export default function Home() {
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: 'https://phrames.cleffon.com',
+        item: 'https://phrames.app',
       },
     ],
   }), [])

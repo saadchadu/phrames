@@ -176,7 +176,7 @@ export default function UsernameSettings({ currentUsername, userId, onUpdate }: 
               rel="noopener noreferrer"
               className="text-secondary hover:underline text-sm font-medium"
             >
-              phrames.cleffon.com/user/{currentUsername}
+              phrames.app/user/{currentUsername}
             </a>
           </div>
         )}
