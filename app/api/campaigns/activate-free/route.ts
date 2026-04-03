@@ -114,8 +114,9 @@ export async function POST(request: NextRequest) {
       expiresAt: expiryDate.toISOString()
     })
   } catch (error: any) {
+    console.error('Error activating free campaign:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to activate free campaign' },
+      { error: 'Failed to activate free campaign' },
       { status: 500 }
     )
   }

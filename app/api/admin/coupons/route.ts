@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     }));
     return NextResponse.json({ success: true, coupons });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to process request' }, { status: 500 });
   }
 }
 
@@ -62,6 +62,6 @@ export async function POST(req: NextRequest) {
     await docRef.set(newCoupon);
     return NextResponse.json({ success: true, coupon: { id: code, ...newCoupon } });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to create coupon' }, { status: 500 });
   }
 }

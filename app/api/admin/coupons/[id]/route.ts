@@ -34,7 +34,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     await docRef.update(updateData);
     return NextResponse.json({ success: true, message: 'Coupon updated successfully' });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to update coupon' }, { status: 500 });
   }
 }
 
@@ -45,6 +45,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await adminDb.collection('coupons').doc(id).delete();
     return NextResponse.json({ success: true, message: 'Coupon deleted successfully' });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to delete coupon' }, { status: 500 });
   }
 }

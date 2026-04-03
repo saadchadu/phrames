@@ -148,9 +148,6 @@ export default function ProfileEditPage() {
       // Check final size
       const finalSizeKB = Math.round(compressedFile.size / 1024)
       
-      if (finalSizeKB > 500) {
-        console.warn(`Compressed image size: ${finalSizeKB}KB (target: 300KB)`)
-      }
 
       // Use consistent path: profile-images/{uid}.webp
       const path = `profile-images/${user.uid}.webp`

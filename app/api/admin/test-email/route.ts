@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
     await sendEmail(to, 'Test Email from Phrames', '<h1>It works!</h1><p>Resend is configured correctly.</p>')
     return NextResponse.json({ success: true })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    console.error('Test email error:', err)
+    return NextResponse.json({ error: 'Failed to send test email' }, { status: 500 })
   }
 }

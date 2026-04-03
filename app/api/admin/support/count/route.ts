@@ -41,9 +41,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error counting tickets:', error);
-    return NextResponse.json(
-      { error: 'Failed to count tickets', details: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to count tickets' }, { status: 500 });
   }
 }

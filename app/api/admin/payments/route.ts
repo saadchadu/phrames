@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import type { Query } from 'firebase-admin/firestore';
 
@@ -20,6 +20,20 @@ function toDate(timestamp: any): Date | null {
 }
 
 export async function GET(request: NextRequest) {
+  // Verify admin auth
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  try {
+    const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1]);
+    if (decoded.isAdmin !== true) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status');

@@ -220,17 +220,8 @@ export async function GET(request?: Request) {
     });
   } catch (error) {
     console.error('Error fetching admin stats:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    // Log more detail to help diagnose production issues
-    if (error instanceof Error && error.stack) {
-      console.error('Stack:', error.stack);
-    }
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch statistics',
-        message: errorMessage,
-        details: 'Check server logs for more information'
-      },
+      { error: 'Failed to fetch statistics' },
       { status: 500 }
     );
   }

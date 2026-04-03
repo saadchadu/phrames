@@ -96,11 +96,7 @@ export async function POST(request: NextRequest) {
     console.error('Manual inactive campaign cleanup failed:', error)
     
     return NextResponse.json(
-      { 
-        error: 'Cleanup failed', 
-        message: error.message,
-        timestamp: new Date().toISOString()
-      },
+      { error: 'Cleanup failed', timestamp: new Date().toISOString() },
       { status: 500 }
     )
   }

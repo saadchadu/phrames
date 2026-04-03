@@ -128,8 +128,7 @@ export async function POST(request: NextRequest) {
           refundedAt: Timestamp.now()
         })
       } else {
-        // There's another active payment — just log it but don't deactivate
-        console.log(`Campaign ${paymentData.campaignId} has other active payments, not deactivating`)
+        // There's another active payment — don't deactivate
       }
     }
 
