@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import type { DocumentData } from 'firebase-admin/firestore';
 
 export async function POST(request: NextRequest) {
@@ -11,7 +10,7 @@ export async function POST(request: NextRequest) {
         }
 
         const token = authHeader.split('Bearer ')[1];
-        const decodedToken = await getAuth().verifyIdToken(token);
+        const decodedToken = await adminAuth.verifyIdToken(token);
         const userId = decodedToken.uid;
 
         const { code, plan, amount } = await request.json();

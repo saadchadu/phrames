@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserAggregateStats, getUserDailyStats } from '@/lib/firestore'
+import { adminAuth } from '@/lib/firebase-admin'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
+    // Require auth — users can only fetch their own analytics
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    }
+    const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1])
+
     const searchParams = request.nextUrl.searchParams
     const userId = searchParams.get('userId')
     const days = parseInt(searchParams.get('days') || '30')
@@ -14,6 +22,11 @@ export async function GET(request: NextRequest) {
         { success: false, error: 'User ID is required' },
         { status: 400 }
       )
+    }
+
+    // Users can only access their own analytics
+    if (decoded.uid !== userId && decoded.isAdmin !== true) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
     }
 
     // Get aggregate stats
