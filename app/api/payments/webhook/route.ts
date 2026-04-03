@@ -77,54 +77,34 @@ export async function POST(request: NextRequest) {
     // Get raw body for signature verification
     const rawBody = await request.text()
 
-    // Verify signature (in production)
-    if (process.env.CASHFREE_ENV === 'PRODUCTION') {
-      if (!signature || !timestamp) {
-        trackError()
-        logWebhookError({
-          error: 'Missing webhook signature or timestamp'
-        })
+    // Verify signature — always enforce, even in sandbox, to prevent fake webhook injection
+    if (!signature || !timestamp) {
+      trackError()
+      logWebhookError({ error: 'Missing webhook signature or timestamp' })
+      await db.collection('logs').add({
+        eventType: 'webhook_failure',
+        actorId: 'system',
+        description: 'Webhook verification failed: Missing signature or timestamp',
+        metadata: { webhookType: 'payment', error: 'Missing webhook signature or timestamp', hasSignature: !!signature, hasTimestamp: !!timestamp },
+        createdAt: Timestamp.now()
+      })
+      tracker.end(false)
+      return NextResponse.json({ error: 'Invalid webhook' }, { status: 400 })
+    }
 
-        // Create admin log for webhook failure
-        await db.collection('logs').add({
-          eventType: 'webhook_failure',
-          actorId: 'system',
-          description: 'Webhook verification failed: Missing signature or timestamp',
-          metadata: {
-            webhookType: 'payment',
-            error: 'Missing webhook signature or timestamp',
-            hasSignature: !!signature,
-            hasTimestamp: !!timestamp
-          },
-          createdAt: Timestamp.now()
-        })
-
-        tracker.end(false)
-        return NextResponse.json({ error: 'Invalid webhook' }, { status: 400 })
-      }
-
-      const isValid = verifyCashfreeSignature(rawBody, signature!, timestamp!)
-      if (!isValid) {
-        trackError()
-        logWebhookError({
-          error: 'Invalid webhook signature'
-        })
-
-        // Create admin log for webhook failure
-        await db.collection('logs').add({
-          eventType: 'webhook_failure',
-          actorId: 'system',
-          description: 'Webhook verification failed: Invalid signature',
-          metadata: {
-            webhookType: 'payment',
-            error: 'Invalid webhook signature'
-          },
-          createdAt: Timestamp.now()
-        })
-
-        tracker.end(false)
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-      }
+    const isValid = verifyCashfreeSignature(rawBody, signature!, timestamp!)
+    if (!isValid) {
+      trackError()
+      logWebhookError({ error: 'Invalid webhook signature' })
+      await db.collection('logs').add({
+        eventType: 'webhook_failure',
+        actorId: 'system',
+        description: 'Webhook verification failed: Invalid signature',
+        metadata: { webhookType: 'payment', error: 'Invalid webhook signature' },
+        createdAt: Timestamp.now()
+      })
+      tracker.end(false)
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
     // Parse webhook payload

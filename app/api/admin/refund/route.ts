@@ -158,9 +158,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    return NextResponse.json({ 
-      error: 'Failed to process refund',
-      details: error.message 
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to process refund' }, { status: 500 })
   }
 }

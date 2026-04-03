@@ -17,6 +17,17 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { displayName, username, bio, profileImageUrl, location, website } = body
 
+    // Length limits to prevent abuse
+    if (displayName !== undefined && displayName.length > 100) {
+      return NextResponse.json({ error: 'Display name must be 100 characters or fewer' }, { status: 400 })
+    }
+    if (bio !== undefined && bio.length > 500) {
+      return NextResponse.json({ error: 'Bio must be 500 characters or fewer' }, { status: 400 })
+    }
+    if (location !== undefined && location.length > 100) {
+      return NextResponse.json({ error: 'Location must be 100 characters or fewer' }, { status: 400 })
+    }
+
     // Validate username if provided
     if (username) {
       const usernameRegex = /^[a-z0-9_]{3,20}$/
