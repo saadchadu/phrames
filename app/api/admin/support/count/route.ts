@@ -21,24 +21,22 @@ export async function GET(request: NextRequest) {
     const openSnapshot = await adminDb
       .collection('support_tickets')
       .where('status', '==', 'open')
-      .count()
       .get();
 
     // Count in-progress tickets
     const inProgressSnapshot = await adminDb
       .collection('support_tickets')
       .where('status', '==', 'in_progress')
-      .count()
       .get();
 
-    const totalPending = openSnapshot.data().count + inProgressSnapshot.data().count;
+    const totalPending = openSnapshot.size + inProgressSnapshot.size;
 
     return NextResponse.json({ 
       success: true,
       count: totalPending,
       breakdown: {
-        open: openSnapshot.data().count,
-        inProgress: inProgressSnapshot.data().count
+        open: openSnapshot.size,
+        inProgress: inProgressSnapshot.size
       }
     });
   } catch (error: any) {

@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.cashfree.com https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com https://www.gstatic.com https://apis.google.com https://vercel.live",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' data: blob: https: http:",
+      "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https://firebasestorage.googleapis.com https://firestore.googleapis.com https://*.googleapis.com https://sdk.cashfree.com https://www.google-analytics.com https://api.cashfree.com https://accounts.google.com https://vercel.live https://*.firebaseapp.com",
       "frame-src 'self' https://www.google.com https://sdk.cashfree.com https://accounts.google.com https://*.firebaseapp.com https://vercel.live",
@@ -49,9 +49,8 @@ export function middleware(request: NextRequest) {
     response.headers.set(key, value)
   })
 
-  // Rate limiting headers (informational)
-  response.headers.set('X-RateLimit-Limit', '100')
-  response.headers.set('X-RateLimit-Remaining', '99')
+  // Remove server fingerprinting
+  response.headers.delete('X-Powered-By')
 
   return response
 }
