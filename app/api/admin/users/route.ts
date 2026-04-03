@@ -27,7 +27,19 @@ function toDate(timestamp: any): Date | null {
   return null;
 }
 
+async function verifyAdmin(request: NextRequest) {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) return null
+  try {
+    const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1])
+    return decoded.isAdmin === true ? decoded : null
+  } catch { return null }
+}
+
 export async function GET(request: NextRequest) {
+  if (!await verifyAdmin(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   try {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get('search');
@@ -109,6 +121,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!await verifyAdmin(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   try {
     const body = await request.json();
     const { userId, action, adminId, ...data } = body;
@@ -211,6 +226,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  if (!await verifyAdmin(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   try {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');

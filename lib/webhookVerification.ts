@@ -18,6 +18,13 @@ export function verifyCashfreeSignature(
       return false
     }
 
+    // Reject webhooks older than 5 minutes to prevent replay attacks
+    const webhookTime = parseInt(timestamp, 10)
+    const now = Math.floor(Date.now() / 1000)
+    if (isNaN(webhookTime) || Math.abs(now - webhookTime) > 300) {
+      return false
+    }
+
     // Cashfree signature format: timestamp + payload
     const signatureData = `${timestamp}${payload}`
     
@@ -25,8 +32,14 @@ export function verifyCashfreeSignature(
       .createHmac('sha256', secret)
       .update(signatureData)
       .digest('base64')
-    
-    return expectedSignature === signature
+
+    // Use timing-safe comparison to prevent timing attacks
+    const expectedBuf = Buffer.from(expectedSignature)
+    const receivedBuf = Buffer.from(signature)
+    if (expectedBuf.length !== receivedBuf.length) {
+      return false
+    }
+    return crypto.timingSafeEqual(expectedBuf, receivedBuf)
   } catch (error) {
     return false
   }
