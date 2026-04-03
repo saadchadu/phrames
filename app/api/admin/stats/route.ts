@@ -112,12 +112,31 @@ export async function getAdminStatsData() {
   const recentPayments = successfulPayments
     .sort((a, b) => (toDate(b.data().createdAt)?.getTime() || 0) - (toDate(a.data().createdAt)?.getTime() || 0))
     .slice(0, 10)
-    .map(doc => ({ id: doc.id, ...doc.data(), createdAt: toDate(doc.data().createdAt)?.toISOString() }));
+    .map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        userId: d.userId ?? '',
+        campaignId: d.campaignId,
+        amount: d.amount ?? 0,
+        planType: d.planType ?? '',
+        status: d.status ?? '',
+        createdAt: toDate(d.createdAt)?.toISOString() ?? new Date(0).toISOString(),
+      };
+    });
 
   const recentSignups = usersSnap.docs
     .sort((a, b) => (toDate(b.data().createdAt)?.getTime() || 0) - (toDate(a.data().createdAt)?.getTime() || 0))
     .slice(0, 10)
-    .map(doc => ({ id: doc.id, email: doc.data().email, displayName: doc.data().displayName, createdAt: toDate(doc.data().createdAt)?.toISOString() }));
+    .map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        email: d.email ?? '',
+        displayName: d.displayName,
+        createdAt: toDate(d.createdAt)?.toISOString() ?? new Date(0).toISOString(),
+      };
+    });
 
   return {
     stats: { totalUsers, usersToday, totalCampaigns, activeCampaigns, expiredCampaigns, freeCampaignsUsed, totalRevenue, totalRefunded, netRevenue, todayRevenue, last30DaysRevenue, totalRefunds: refundedPayments.length },
