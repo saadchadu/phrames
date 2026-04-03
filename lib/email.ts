@@ -39,6 +39,18 @@ const C = {
 // ─── Logo ─────────────────────────────────────────────────────────────────────
 const LOGO_IMG = '<img src="https://phrames.app/logos/Logo-white.png" alt="Phrames" width="130" height="31" style="display:block;border:0;outline:none;" />'
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Escape HTML special characters to prevent injection in email templates */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 // ─── Base layout ──────────────────────────────────────────────────────────────
 interface BaseOpts { accent?: string; tag?: string; tagColor?: string; tagBg?: string }
 
@@ -165,16 +177,16 @@ export function sendPaymentConfirmationEmail(to: string, data: {
   orderId: string
 }): Promise<unknown> {
   const rows: Array<[string, string]> = [
-    ['Campaign',    data.campaignName],
-    ['Plan',        data.planName],
+    ['Campaign',    escapeHtml(data.campaignName)],
+    ['Plan',        escapeHtml(data.planName)],
     ['Amount Paid', '\u20B9' + data.amount],
-    ['Invoice #',   data.invoiceNumber],
-    ['Order ID',    data.orderId],
+    ['Invoice #',   escapeHtml(data.invoiceNumber)],
+    ['Order ID',    escapeHtml(data.orderId)],
   ]
   const content = (
     badge('Payment Confirmed', '#166534', '#dcfce7') +
     heading('Your campaign is live') +
-    bodyText('Hi ' + data.userName + ', your payment was successful and your campaign is now active and visible to the public.') +
+    bodyText('Hi ' + escapeHtml(data.userName) + ', your payment was successful and your campaign is now active and visible to the public.') +
     infoCard(rows) +
     btn('Go to Dashboard', APP_URL + '/dashboard')
   )
@@ -189,14 +201,14 @@ export function sendSupportTicketEmail(to: string, data: {
   subject: string
 }): Promise<unknown> {
   const rows: Array<[string, string]> = [
-    ['Ticket ID', data.ticketId],
-    ['Subject',   data.subject],
+    ['Ticket ID', escapeHtml(data.ticketId)],
+    ['Subject',   escapeHtml(data.subject)],
     ['Status',    'In Progress'],
   ]
   const content = (
     badge('Support Reply', C.blue, C.blueBg) +
     heading('We have replied to your ticket') +
-    bodyText('Hi ' + data.name + ', our support team has responded to your ticket. Log in to view the reply and continue the conversation.') +
+    bodyText('Hi ' + escapeHtml(data.name) + ', our support team has responded to your ticket. Log in to view the reply and continue the conversation.') +
     infoCard(rows) +
     btn('View Reply', APP_URL + '/dashboard/support')
   )
@@ -214,10 +226,10 @@ export function sendSupportTeamNotificationEmail(data: {
   message: string
 }): Promise<unknown> {
   const rows: Array<[string, string]> = [
-    ['Ticket ID', data.ticketId],
-    ['Category',  data.category],
-    ['From',      data.name + ' (' + data.email + ')'],
-    ['Subject',   data.subject],
+    ['Ticket ID', escapeHtml(data.ticketId)],
+    ['Category',  escapeHtml(data.category)],
+    ['From',      escapeHtml(data.name) + ' (' + escapeHtml(data.email) + ')'],
+    ['Subject',   escapeHtml(data.subject)],
   ]
   const content = (
     badge('New Ticket', '#166534', '#dcfce7') +
@@ -226,7 +238,7 @@ export function sendSupportTeamNotificationEmail(data: {
     infoCard(rows) +
     '<div style="background:' + C.muted + ';border:1px solid ' + C.border + ';border-radius:12px;padding:16px;margin-top:16px;">' +
     '<p style="margin:0 0 8px;color:' + C.textLight + ';font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;">Message</p>' +
-    '<p style="margin:0;color:' + C.textBase + ';font-size:14px;line-height:1.6;">' + data.message + '</p>' +
+    '<p style="margin:0;color:' + C.textBase + ';font-size:14px;line-height:1.6;">' + escapeHtml(data.message) + '</p>' +
     '</div>' +
     btn('View in Admin', APP_URL + '/admin/support')
   )
@@ -250,8 +262,8 @@ export function sendCampaignStatusEmail(to: string, data: {
   const content = (
     badge(badgeLabel, badgeColor, badgeBg) +
     heading(headText) +
-    bodyText('Hi ' + data.userName + ', your campaign <strong style="color:' + C.primary + ';">' + data.campaignName + '</strong> has been ' + statusText + '.') +
-    (data.reason ? callout('<strong>Reason:</strong> ' + data.reason, accent) : '') +
+    bodyText('Hi ' + escapeHtml(data.userName) + ', your campaign <strong style="color:' + C.primary + ';">' + escapeHtml(data.campaignName) + '</strong> has been ' + statusText + '.') +
+    (data.reason ? callout('<strong>Reason:</strong> ' + escapeHtml(data.reason), accent) : '') +
     btn('View Dashboard', APP_URL + '/dashboard')
   )
   const html = base(content, { tag: isActive ? 'Activated' : 'Deactivated', tagBg: badgeBg, tagColor: badgeColor, accent })
@@ -273,14 +285,14 @@ export function sendCampaignExpiryWarningEmail(to: string, data: {
   const headText   = isUrgent ? 'Your campaign expires tomorrow' : 'Your campaign expires in ' + data.daysLeft + ' days'
   const daysLabel  = data.daysLeft + (data.daysLeft !== 1 ? ' days' : ' day')
   const rows: Array<[string, string]> = [
-    ['Campaign',       data.campaignName],
-    ['Expiry Date',    data.expiresAt],
+    ['Campaign',       escapeHtml(data.campaignName)],
+    ['Expiry Date',    escapeHtml(data.expiresAt)],
     ['Days Remaining', daysLabel],
   ]
   const content = (
     badge(badgeLabel, badgeColor, badgeBg) +
     heading(headText) +
-    bodyText('Hi ' + data.userName + ', your campaign <strong style="color:' + C.primary + ';">' + data.campaignName + '</strong> will expire on <strong>' + data.expiresAt + '</strong>. Renew now to keep it live and continue collecting supporters.') +
+    bodyText('Hi ' + escapeHtml(data.userName) + ', your campaign <strong style="color:' + C.primary + ';">' + escapeHtml(data.campaignName) + '</strong> will expire on <strong>' + escapeHtml(data.expiresAt) + '</strong>. Renew now to keep it live and continue collecting supporters.') +
     infoCard(rows) +
     btn('Renew Campaign', APP_URL + '/campaign/' + data.campaignSlug)
   )
@@ -298,7 +310,7 @@ export function sendCampaignExpiredEmail(to: string, data: {
   const content = (
     badge('Campaign Expired', C.red, C.redBg) +
     heading('Your campaign has expired') +
-    bodyText('Hi ' + data.userName + ', your campaign <strong style="color:' + C.primary + ';">' + data.campaignName + '</strong> has expired and is no longer visible to the public.') +
+    bodyText('Hi ' + escapeHtml(data.userName) + ', your campaign <strong style="color:' + C.primary + ';">' + escapeHtml(data.campaignName) + '</strong> has expired and is no longer visible to the public.') +
     callout('Your campaign data is safe. Renewing will restore it immediately.', C.accent) +
     btn('Renew Campaign', APP_URL + '/campaign/' + data.campaignSlug)
   )
@@ -312,7 +324,7 @@ export function sendPasswordResetConfirmationEmail(to: string, data: {
   const content = (
     badge('Password Reset', C.blue, C.blueBg) +
     heading('Password reset email sent') +
-    bodyText('Hi ' + data.userName + ', we received a request to reset your Phrames password. Check your inbox for the reset link \u2014 it expires in 1 hour.') +
+    bodyText('Hi ' + escapeHtml(data.userName) + ', we received a request to reset your Phrames password. Check your inbox for the reset link \u2014 it expires in 1 hour.') +
     callout('If you did not request this, you can safely ignore this email. Your account remains secure.') +
     btn('Go to Login', APP_URL + '/login')
   )

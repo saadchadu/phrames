@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
 
 const db = adminDb;
@@ -16,20 +16,21 @@ function toDate(timestamp: any): Date | null {
   return null;
 }
 
-export async function GET(request?: Request) {
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
-    // Only enforce auth when called via HTTP (request has headers), not when called server-side directly
-    if (request) {
-      const authHeader = (request as any).headers?.get('authorization');
-      if (!authHeader?.startsWith('Bearer ')) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-      const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1]);
-      if (decoded.isAdmin !== true) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-      }
+    const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1]);
+    if (decoded.isAdmin !== true) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+  } catch {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
+  try {
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);

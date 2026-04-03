@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const unreadOnly = searchParams.get('unreadOnly') === 'true'
     const limitParam = searchParams.get('limit')
-    const limit = limitParam ? parseInt(limitParam) : 50
+    const limit = Math.min(Math.max(1, limitParam ? parseInt(limitParam) || 50 : 50), 100)
 
     // Build query
     let query = db.collection('notifications')

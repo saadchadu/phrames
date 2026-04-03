@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import { useAuth } from '@/components/AuthProvider';
 import UserFilters from '@/components/admin/UserFilters';
 import UserActions from '@/components/admin/UserActions';
 import AdminErrorBoundary, { ErrorDisplay } from '@/components/admin/AdminErrorBoundary';
@@ -30,10 +31,11 @@ export default function AdminUsersPage() {
     blocked: 'all',
     minCampaigns: '',
   });
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchUsers();
-  }, [filters.freeCampaignUsed, filters.blocked, filters.minCampaigns]);
+    if (user) fetchUsers();
+  }, [user, filters.freeCampaignUsed, filters.blocked, filters.minCampaigns]);
 
   async function fetchUsers() {
     try {
@@ -44,7 +46,10 @@ export default function AdminUsersPage() {
       if (filters.blocked !== 'all') params.append('blocked', filters.blocked);
       if (filters.minCampaigns) params.append('minCampaigns', filters.minCampaigns);
 
-      const res = await fetch(`/api/admin/users?${params}`);
+      const token = await user?.getIdToken();
+      const res = await fetch(`/api/admin/users?${params}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       
       if (!res.ok) {
         throw new Error(`Failed to fetch users: ${res.statusText}`);

@@ -15,12 +15,10 @@ export async function POST(request: NextRequest) {
     const idToken = authHeader.split('Bearer ')[1]
     const decodedToken = await adminAuth.verifyIdToken(idToken)
     
-    // Check if user is admin
-    const adminEmails = process.env.ADMIN_EMAILS?.split(',') || []
-    const isAdminEmail = adminEmails.includes(decodedToken.email || '')
+    // Check if user is admin — rely solely on the isAdmin custom claim
     const hasAdminClaim = decodedToken.isAdmin === true
     
-    if (!isAdminEmail && !hasAdminClaim) {
+    if (!hasAdminClaim) {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }

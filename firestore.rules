@@ -90,12 +90,8 @@ service cloud.firestore {
                       !request.resource.data.diff(resource.data).affectedKeys()
                         .hasAny(['isActive', 'expiresAt', 'planType', 'amountPaid', 'paymentId', 'lastPaymentAt', 'isFreeCampaign']);
       
-      // Allow anyone to update supportersCount (for tracking supporters)
-      // This is needed for the supporters API to work
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['supportersCount']) &&
-                      request.resource.data.supportersCount is int &&
-                      request.resource.data.supportersCount >= 0 &&
-                      request.resource.data.supportersCount > resource.data.supportersCount;
+      // NOTE: supportersCount is updated server-side only via Admin SDK (bypasses rules).
+      // No client-side rule needed here — removing the open update rule prevents direct manipulation.
       
       // Only the campaign owner can delete their campaign
       allow delete: if isAuthenticated() && isOwner(resource.data.createdBy);
@@ -137,8 +133,8 @@ service cloud.firestore {
       // Anyone can read stats (for public analytics)
       allow read: if true;
       
-      // Anyone can create/update stats (for tracking visits and downloads)
-      // In production, consider using Cloud Functions for more secure tracking
+      // Anyone can create/update stats (for tracking visits and downloads from anonymous visitors)
+      // Fields are validated and only increments are allowed via the increment() function
       allow create, update: if request.resource.data.keys().hasAll(['campaignId', 'date', 'visits', 'downloads']) &&
                                request.resource.data.campaignId is string &&
                                request.resource.data.date is string &&
@@ -178,23 +174,12 @@ service cloud.firestore {
       // Anyone can read supporter records (for public stats)
       allow read: if true;
       
-      // Anyone can create supporter records (for tracking downloads)
-      // Validation ensures data integrity
-      allow create: if request.resource.data.keys().hasAll(['campaignId', 'sessionId', 'supportedAt', 'downloadCount']) &&
-                      request.resource.data.campaignId is string &&
-                      request.resource.data.sessionId is string &&
-                      request.resource.data.downloadCount is int &&
-                      request.resource.data.downloadCount > 0 &&
-                      // Optional fields validation
-                      (!request.resource.data.keys().hasAny(['userId']) || request.resource.data.userId is string) &&
-                      (!request.resource.data.keys().hasAny(['userEmail']) || request.resource.data.userEmail is string) &&
-                      (!request.resource.data.keys().hasAny(['ipAddress']) || request.resource.data.ipAddress is string) &&
-                      (!request.resource.data.keys().hasAny(['userAgent']) || request.resource.data.userAgent is string);
+      // Supporter records are written server-side only via Admin SDK (bypasses rules).
+      // Deny direct client writes to enforce server-side campaign-active validation.
+      allow create: if false;
       
-      // Only allow updating download count and last download time
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloadCount', 'lastDownloadAt']) &&
-                      request.resource.data.downloadCount is int &&
-                      request.resource.data.downloadCount > resource.data.downloadCount;
+      // Updates also go through Admin SDK only — deny direct client updates.
+      allow update: if false;
       
       // Only admins can delete supporter records
       allow delete: if isAdmin();

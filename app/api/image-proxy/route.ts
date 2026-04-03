@@ -90,6 +90,13 @@ export async function GET(request: NextRequest) {
 
     const imageBuffer = await response.arrayBuffer()
     const contentType = response.headers.get('content-type') || 'image/png'
+
+    // Only serve actual image content types to prevent serving malicious content
+    const allowedContentTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/svg+xml']
+    const baseContentType = contentType.split(';')[0].trim()
+    if (!allowedContentTypes.includes(baseContentType)) {
+      return NextResponse.json({ error: 'Invalid content type' }, { status: 400 })
+    }
     
     return new NextResponse(imageBuffer, {
       status: 200,

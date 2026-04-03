@@ -11,15 +11,12 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await adminAuth.verifyIdToken(token);
+    const uid = decodedToken.uid;
     
     // Get user's email
-    const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
+    const userDoc = await adminDb.collection('users').doc(uid).get();
     const userData = userDoc.data();
     const userEmail = userData?.email || decodedToken.email;
-
-    if (!userEmail) {
-      return NextResponse.json({ error: 'User email not found' }, { status: 400 });
-    }
 
     const body = await request.json();
     const { ticketId } = body;
@@ -38,8 +35,9 @@ export async function POST(request: NextRequest) {
 
     const ticketData = ticketDoc.data();
 
-    // Verify the ticket belongs to this user
-    if (ticketData?.email !== userEmail) {
+    // Verify ownership by userId (primary) or email (fallback for legacy tickets)
+    const isOwner = ticketData?.userId === uid || ticketData?.email === userEmail;
+    if (!isOwner) {
       return NextResponse.json({ error: 'Unauthorized to cancel this ticket' }, { status: 403 });
     }
 

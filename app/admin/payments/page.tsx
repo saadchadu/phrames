@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { DollarSign, TrendingUp, Copy, Download } from 'lucide-react';
+import { useAuth } from '@/components/AuthProvider';
 import PaymentFilters from '@/components/admin/PaymentFilters';
 import RevenueByPlanChart from '@/components/admin/RevenueByPlanChart';
 import RevenueTrendChart from '@/components/admin/RevenueTrendChart';
@@ -24,6 +25,7 @@ function PaymentsContent() {
   const [refundingPayment, setRefundingPayment] = useState(false);
   const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const { user } = useAuth();
 
   const toggleRow = useCallback((id: string) => {
     setExpandedRows(prev => {
@@ -38,11 +40,15 @@ function PaymentsContent() {
   }, []);
 
   const fetchPayments = useCallback(async () => {
+    if (!user) return;
     try {
       setLoading(true);
       setError(null);
       const params = new URLSearchParams(searchParams.toString());
-      const res = await fetch(`/api/admin/payments?${params.toString()}`);
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/admin/payments?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!res.ok) {
         throw new Error(`Failed to fetch payments: ${res.statusText}`);
@@ -55,7 +61,7 @@ function PaymentsContent() {
     } finally {
       setLoading(false);
     }
-  }, [searchParams]);
+  }, [searchParams, user]);
 
   useEffect(() => {
     fetchPayments();

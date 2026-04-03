@@ -37,6 +37,12 @@ export async function PATCH(request: NextRequest) {
 
     if (!type) return NextResponse.json({ error: 'Missing type' }, { status: 400 });
 
+    // Whitelist allowed settings documents to prevent arbitrary Firestore writes
+    const allowedTypes = ['system', 'plans'];
+    if (!allowedTypes.includes(type)) {
+      return NextResponse.json({ error: 'Invalid settings type' }, { status: 400 });
+    }
+
     const { FieldValue } = await import('firebase-admin/firestore');
     await db.collection('settings').doc(type).set({
       ...data,

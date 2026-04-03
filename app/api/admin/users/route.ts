@@ -121,14 +121,16 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  if (!await verifyAdmin(request)) {
+  const admin = await verifyAdmin(request)
+  if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   try {
     const body = await request.json();
-    const { userId, action, adminId, ...data } = body;
+    const { userId, action, ...data } = body;
+    const adminId = admin.uid; // Always use the verified token uid, never trust body
 
-    if (!userId || !action || !adminId) {
+    if (!userId || !action) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -239,15 +241,16 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  if (!await verifyAdmin(request)) {
+  const admin = await verifyAdmin(request)
+  if (!admin) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   try {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
-    const adminId = searchParams.get('adminId');
+    const adminId = admin.uid; // Always use verified token uid
 
-    if (!userId || !adminId) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }

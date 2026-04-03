@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 30 supporter adds per minute per IP to prevent count inflation
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || request.headers.get('x-real-ip') || 'unknown'
+  if (!checkRateLimit(ip, { name: 'supporters-add', limit: 30, windowMs: 60 * 1000 })) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   try {
     const body = await request.json()
     const { campaignId, userId, userEmail, sessionId } = body
 
-    if (!campaignId) {
+    if (!campaignId || typeof campaignId !== 'string' || campaignId.length > 128) {
       return NextResponse.json(
         { error: 'Campaign ID is required' },
         { status: 400 }

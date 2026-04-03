@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import type { Query } from 'firebase-admin/firestore';
 import { logCampaignDeactivated, logCampaignReactivated, logCampaignExtended, logCampaignDeleted } from '@/lib/admin-logging-server';
 import { sendCampaignStatusEmail } from '@/lib/email';
 
 const db = adminDb;
+
+async function verifyAdmin(request: NextRequest) {
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader?.startsWith('Bearer ')) return null
+  try {
+    const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1])
+    return decoded.isAdmin === true ? decoded : null
+  } catch { return null }
+}
 
 // Helper to safely convert Firestore timestamp to Date
 function toDate(timestamp: any): Date | null {
@@ -22,6 +31,9 @@ function toDate(timestamp: any): Date | null {
 }
 
 export async function GET(request: NextRequest) {
+  if (!await verifyAdmin(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   try {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get('search');
@@ -170,18 +182,23 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error fetching campaigns:', error?.message || error, error?.code, error?.stack);
     return NextResponse.json(
-      { error: 'Failed to fetch campaigns', detail: error?.message, code: error?.code },
+      { error: 'Failed to fetch campaigns' },
       { status: 500 }
     );
   }
 }
 
 export async function PATCH(request: NextRequest) {
+  const admin = await verifyAdmin(request)
+  if (!admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   try {
     const body = await request.json();
-    const { campaignId, action, adminId, ...data } = body;
+    const { campaignId, action, ...data } = body;
+    const adminId = admin.uid; // Always use verified token uid
 
-    if (!campaignId || !action || !adminId) {
+    if (!campaignId || !action) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -292,12 +309,16 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const admin = await verifyAdmin(request)
+  if (!admin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   try {
     const searchParams = request.nextUrl.searchParams;
     const campaignId = searchParams.get('campaignId');
-    const adminId = searchParams.get('adminId');
+    const adminId = admin.uid; // Always use verified token uid
 
-    if (!campaignId || !adminId) {
+    if (!campaignId) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
         const token = authHeader.split('Bearer ')[1]
         const decoded = await adminAuth.verifyIdToken(token)
-        if (!decoded.admin && !decoded.isAdmin) {
+        if (!decoded.isAdmin) {
             return NextResponse.json({ error: 'Forbidden – admin only' }, { status: 403 })
         }
 

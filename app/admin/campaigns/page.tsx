@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense, useCallback } from 'react';
+import { getAuth } from 'firebase/auth';
 import { LayoutGrid, List, Globe, Lock, Users, Calendar } from 'lucide-react';
 import CampaignFilters, { CampaignFilterValues } from '@/components/admin/CampaignFilters';
 import CampaignActions from '@/components/admin/CampaignActions';
@@ -169,7 +170,10 @@ export default function AdminCampaignsPage() {
       if (currentFilters.dateFrom) params.append('dateFrom', currentFilters.dateFrom);
       if (currentFilters.dateTo) params.append('dateTo', currentFilters.dateTo);
 
-      const res = await fetch(`/api/admin/campaigns?${params}`);
+      const token = await getAuth().currentUser?.getIdToken();
+      const res = await fetch(`/api/admin/campaigns?${params}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (!res.ok) throw new Error(`Failed to fetch campaigns: ${res.statusText}`);
       const data = await res.json();
       setCampaigns(data.campaigns || []);

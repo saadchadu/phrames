@@ -32,7 +32,7 @@ export async function GET(
     try {
       const decodedToken = await adminAuth.verifyIdToken(token)
       userId = decodedToken.uid
-      isAdmin = decodedToken.admin === true || decodedToken.isAdmin === true
+      isAdmin = decodedToken.isAdmin === true
     } catch (error) {
       return NextResponse.json(
         { error: 'Invalid authentication token' },
