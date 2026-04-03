@@ -13,19 +13,8 @@ export const dynamic = 'force-dynamic'
 
 async function getAdminStats() {
   try {
-    // Import the stats logic directly to avoid server-side fetch issues
-    const { GET } = await import('@/app/api/admin/stats/route');
-    const response = await GET();
-    if (!response) throw new Error('No response from stats route');
-    const data = await response.json();
-    if (!data) throw new Error('Empty response from stats route');
-    
-    // Check if there was an error
-    if (data.error) {
-      console.error('Stats route returned error:', data.error, data.message);
-    }
-    
-    return data;
+    const { getAdminStatsData } = await import('@/app/api/admin/stats/route');
+    return await getAdminStatsData();
   } catch (error) {
     console.error('Error fetching admin stats:', error);
     // Return empty data structure instead of null to prevent UI errors
