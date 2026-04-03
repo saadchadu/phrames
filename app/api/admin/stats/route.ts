@@ -95,7 +95,19 @@ export async function getAdminStatsData() {
   const recentCampaigns = campaignsSnap.docs
     .sort((a, b) => (toDate(b.data().createdAt)?.getTime() || 0) - (toDate(a.data().createdAt)?.getTime() || 0))
     .slice(0, 5)
-    .map(doc => ({ id: doc.id, ...doc.data(), createdAt: toDate(doc.data().createdAt)?.toISOString() ?? new Date(0).toISOString(), expiresAt: toDate(doc.data().expiresAt)?.toISOString() }));
+    .map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        campaignName: d.campaignName ?? '',
+        userId: d.userId ?? '',
+        isActive: d.isActive ?? false,
+        isFreeCampaign: d.isFreeCampaign,
+        planType: d.planType,
+        createdAt: toDate(d.createdAt)?.toISOString() ?? new Date(0).toISOString(),
+        expiresAt: toDate(d.expiresAt)?.toISOString(),
+      };
+    });
 
   const recentPayments = successfulPayments
     .sort((a, b) => (toDate(b.data().createdAt)?.getTime() || 0) - (toDate(a.data().createdAt)?.getTime() || 0))
