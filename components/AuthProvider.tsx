@@ -42,12 +42,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
       // Set a timeout to prevent infinite loading
       timeoutId = setTimeout(() => {
-        if (loading) {
-          console.warn('Auth state loading timeout')
-          setLoading(false)
-          setError('Authentication timeout')
-        }
-      }, 10000) // 10 second timeout
+        setLoading(false)
+      }, 10000)
 
       return () => {
         unsubscribe()
@@ -58,7 +54,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       setError('Failed to initialize authentication')
       setLoading(false)
     }
-  }, [loading])
+  }, [])
 
   if (error) {
     return (
