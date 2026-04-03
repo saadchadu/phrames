@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { verifyIdToken } from '@/lib/firebase-admin'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 export async function PUT(request: NextRequest) {
+  // Rate limit: 10 profile updates per minute per IP
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || request.headers.get('x-real-ip') || 'unknown'
+  if (!checkRateLimit(ip, { name: 'profile-update', limit: 10, windowMs: 60 * 1000 })) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+  }
+
   try {
     // Verify authentication
     const authHeader = request.headers.get('authorization')
@@ -50,10 +57,16 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Validate website URL if provided
+    // Validate website URL if provided — only allow http/https to prevent javascript: XSS
     if (website && website.trim()) {
       try {
-        new URL(website)
+        const parsed = new URL(website)
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return NextResponse.json(
+            { error: 'Website URL must use http or https' },
+            { status: 400 }
+          )
+        }
       } catch {
         return NextResponse.json(
           { error: 'Invalid website URL' },

@@ -12,6 +12,7 @@ import {
   trackError,
   formatError
 } from '@/lib/monitoring'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -20,6 +21,14 @@ export const runtime = 'nodejs'
 export async function POST(request: NextRequest) {
   const tracker = new PerformanceTracker('payment_initiation')
   trackRequest()
+
+  // Rate limit: 5 payment initiations per minute per IP
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || request.headers.get('x-real-ip') || 'unknown'
+  if (!checkRateLimit(ip, { name: 'payment-initiate', limit: 5, windowMs: 60 * 1000 })) {
+    trackError()
+    tracker.end(false)
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+  }
 
   try {
     // Verify Cashfree configuration

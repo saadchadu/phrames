@@ -77,6 +77,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Prevent re-activation of already active campaigns
+    if (campaignData?.isActive === true && campaignData?.status === 'Active') {
+      return NextResponse.json(
+        { error: 'This campaign is already active' },
+        { status: 400 }
+      )
+    }
+
     // Calculate expiry date (30 days from now)
     const expiryDate = new Date()
     expiryDate.setDate(expiryDate.getDate() + 30)

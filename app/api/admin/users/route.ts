@@ -135,6 +135,16 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // Prevent admin from modifying their own account (except safe read-only actions)
+    const adminDoc = await db.collection('users').doc(adminId).get()
+    const adminEmail = adminDoc.data()?.email
+    if (userId === adminId && ['setAdmin', 'block', 'delete'].includes(action)) {
+      return NextResponse.json(
+        { error: 'You cannot perform this action on your own account' },
+        { status: 403 }
+      );
+    }
+
     const userRef = db.collection('users').doc(userId);
     const userDoc = await userRef.get();
 
@@ -180,6 +190,9 @@ export async function PATCH(request: NextRequest) {
         break;
 
       case 'block':
+        if (data.reason && data.reason.length > 500) {
+          return NextResponse.json({ error: 'Block reason must be 500 characters or fewer' }, { status: 400 });
+        }
         await userRef.update({
           isBlocked: true,
           blockedAt: FieldValue.serverTimestamp(),

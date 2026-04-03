@@ -39,6 +39,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing required code, type or value' }, { status: 400 });
     }
 
+    // Validate coupon code format
+    if (!/^[A-Z0-9_-]{2,30}$/.test(code)) {
+      return NextResponse.json({ success: false, error: 'Coupon code must be 2-30 characters (letters, numbers, hyphens, underscores)' }, { status: 400 });
+    }
+
+    // Validate type
+    if (!['flat', 'percent'].includes(type)) {
+      return NextResponse.json({ success: false, error: 'Invalid coupon type. Must be flat or percent' }, { status: 400 });
+    }
+
+    // Validate value ranges
+    const numValue = Number(value);
+    if (isNaN(numValue) || numValue <= 0) {
+      return NextResponse.json({ success: false, error: 'Coupon value must be a positive number' }, { status: 400 });
+    }
+    if (type === 'percent' && numValue > 100) {
+      return NextResponse.json({ success: false, error: 'Percent discount cannot exceed 100%' }, { status: 400 });
+    }
+    if (type === 'flat' && numValue > 100000) {
+      return NextResponse.json({ success: false, error: 'Flat discount cannot exceed ₹1,00,000' }, { status: 400 });
+    }
+
+    // Validate date range
+    if (validFrom && validUntil && new Date(validFrom) >= new Date(validUntil)) {
+      return NextResponse.json({ success: false, error: 'validFrom must be before validUntil' }, { status: 400 });
+    }
+
     const docRef = adminDb.collection('coupons').doc(code);
     if ((await docRef.get()).exists) {
       return NextResponse.json({ success: false, error: 'Coupon code already exists' }, { status: 400 });
