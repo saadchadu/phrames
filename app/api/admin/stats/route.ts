@@ -86,10 +86,10 @@ export async function getAdminStatsData() {
     dailyNewUsers.push({ date: dateStr, users: dayUsers });
   }
 
-  const planDistribution: { [key: string]: number } = { week: 0, month: 0, '3month': 0, '6month': 0, year: 0 };
+  const planDistribution: { week: number; month: number; '3month': number; '6month': number; year: number } = { week: 0, month: 0, '3month': 0, '6month': 0, year: 0 };
   successfulPayments.forEach(doc => {
     const planType = doc.data().planType;
-    if (planType && planDistribution.hasOwnProperty(planType)) planDistribution[planType]++;
+    if (planType && planDistribution.hasOwnProperty(planType)) planDistribution[planType as keyof typeof planDistribution]++;
   });
 
   const recentCampaigns = campaignsSnap.docs
