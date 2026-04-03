@@ -36,7 +36,7 @@ async function getAdminStats() {
       charts: {
         dailyRevenue: [],
         dailyNewUsers: [],
-        planDistribution: {},
+        planDistribution: { week: 0, month: 0, '3month': 0, '6month': 0, year: 0 },
       },
       recent: {
         campaigns: [],
