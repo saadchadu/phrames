@@ -125,12 +125,10 @@ export async function GET(
 
   } catch (error: any) {
     console.error('Error generating invoice:', error)
-    console.error('Error stack:', error.stack)
     return NextResponse.json(
       {
         error: 'Failed to generate invoice',
-        details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        details: process.env.NODE_ENV === 'development' ? error.message : 'An error occurred'
       },
       { status: 500 }
     )

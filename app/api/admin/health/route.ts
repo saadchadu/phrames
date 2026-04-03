@@ -35,8 +35,7 @@ export async function GET() {
   } catch (error: any) {
     return NextResponse.json({
       status: 'error',
-      error: error.message,
-      stack: error.stack
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Health check failed'
     }, { status: 500 });
   }
 }

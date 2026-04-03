@@ -82,7 +82,6 @@ export default function AdminLayoutClient({
           const data = await res.json();
           if (data.success && typeof data.count === 'number') {
             setPendingTicketsCount(data.count);
-            console.log('Pending tickets count updated:', data.count, data.breakdown);
           }
         } else {
           console.error('Failed to fetch ticket count:', res.status, await res.text());
