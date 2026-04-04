@@ -1,7 +1,7 @@
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.EMAIL_FROM || 'Phrames <support@cleffon.com>'
+const FROM = process.env.EMAIL_FROM || 'Phrames <support@phrames.app>'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://phrames.app'
 
 export async function sendEmail(to: string, subject: string, html: string) {
@@ -99,7 +99,7 @@ function base(content: string, opts: BaseOpts = {}): string {
     '<a href="' + APP_URL + '" style="color:' + C.textLight + ';text-decoration:none;">phrames.app</a>' +
     '</td>' +
     '<td align="right" style="color:' + C.textLight + ';font-size:12px;">' +
-    '<a href="mailto:support@cleffon.com" style="color:' + C.textLight + ';text-decoration:none;">support@cleffon.com</a>' +
+    '<a href="mailto:support@phrames.app" style="color:' + C.textLight + ';text-decoration:none;">support@phrames.app</a>' +
     '</td>' +
     '</tr></table>' +
     '</td></tr>' +
@@ -243,7 +243,7 @@ export function sendSupportTeamNotificationEmail(data: {
     btn('View in Admin', APP_URL + '/admin/support')
   )
   const html = base(content, { tag: 'Internal', tagBg: '#dcfce7', tagColor: '#166534', accent: C.accent })
-  return sendEmail('support@cleffon.com', 'New support ticket \u2013 ' + data.ticketId, html)
+  return sendEmail('support@phrames.app', 'New support ticket \u2013 ' + data.ticketId, html)
 }
 
 export function sendCampaignStatusEmail(to: string, data: {
