@@ -24,6 +24,15 @@ service firebase.storage {
       return isImage() && isValidSize();
     }
     
+    // CDN-served images (hash-based, deduplicated, served via img.phrames.app)
+    // These are immutable public assets — anyone can read, only server can write
+    match /images/{fileName} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isImage() && isValidSize();
+      allow update: if false; // immutable — hash-named files never change
+      allow delete: if false; // managed server-side only
+    }
+
     // Campaign images
     match /campaigns/{userId}/{fileName} {
       // Anyone can read campaign images

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { collection, query, where, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Campaign } from '@/lib/firestore'
 import { 
@@ -54,28 +54,28 @@ export default function UserProfilePage() {
     const usersRef = collection(db, 'users')
     const userQuery = query(usersRef, where('username', '==', username.toLowerCase()))
 
-    // Real-time listener for user profile
-    const unsubscribeUser = onSnapshot(userQuery, (userSnapshot) => {
-      if (userSnapshot.empty) {
-        setNotFound(true)
-        setLoading(false)
-        return
-      }
+    async function loadProfile() {
+      try {
+        const userSnapshot = await getDocs(userQuery)
+        if (userSnapshot.empty) {
+          setNotFound(true)
+          setLoading(false)
+          return
+        }
 
-      const userData = { uid: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile
-      setProfile(userData)
+        const userData = { uid: userSnapshot.docs[0].id, ...userSnapshot.docs[0].data() } as UserProfile
+        setProfile(userData)
 
-      // Real-time listener for campaigns
-      const campaignsRef = collection(db, 'campaigns')
-      const campaignsQuery = query(
-        campaignsRef,
-        where('createdBy', '==', userData.uid),
-        where('visibility', '==', 'Public'),
-        where('isActive', '==', true),
-        where('status', '==', 'Active')
-      )
+        const campaignsRef = collection(db, 'campaigns')
+        const campaignsQuery = query(
+          campaignsRef,
+          where('createdBy', '==', userData.uid),
+          where('visibility', '==', 'Public'),
+          where('isActive', '==', true),
+          where('status', '==', 'Active')
+        )
 
-      onSnapshot(campaignsQuery, (campaignsSnapshot) => {
+        const campaignsSnapshot = await getDocs(campaignsQuery)
         const now = new Date()
         const campaignsData = campaignsSnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() } as Campaign))
@@ -104,17 +104,14 @@ export default function UserProfilePage() {
           totalVisits: 0,
           memberSince
         })
-
+      } catch {
+        setNotFound(true)
+      } finally {
         setLoading(false)
-      }, () => {
-        setLoading(false)
-      })
-    }, () => {
-      setNotFound(true)
-      setLoading(false)
-    })
+      }
+    }
 
-    return () => unsubscribeUser()
+    loadProfile()
   }, [username])
 
   if (loading) {
@@ -265,6 +262,7 @@ export default function UserProfilePage() {
                     <img
                       src={campaign.frameURL}
                       alt={campaign.campaignName}
+                      loading="lazy"
                       className="w-full h-full object-contain"
                     />
                     <div className="absolute top-3 right-3">

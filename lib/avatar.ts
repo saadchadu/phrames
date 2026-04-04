@@ -1,6 +1,8 @@
 /**
- * Avatar utility functions for profile images
+ * Avatar utility functions for profile images.
+ * CDN-first: images served from img.phrames.app via Cloudflare.
  */
+import { isCdnUrl, isFirebaseStorageUrl } from './cdn'
 
 export interface UserAvatarData {
   profileImageUrl?: string | null
@@ -31,6 +33,16 @@ export function getProfileImageUrl(user: UserAvatarData): string | null {
 export function needsImageProxy(url: string | null): boolean {
   if (!url) return false
   return url.includes('googleusercontent.com')
+}
+
+/**
+ * Check if a URL needs to be served via CDN.
+ * Legacy Firebase Storage URLs should be treated as CDN-served
+ * once the Cloudflare worker/redirect is in place.
+ */
+export function isCdnServed(url: string | null): boolean {
+  if (!url) return false
+  return isCdnUrl(url) || isFirebaseStorageUrl(url)
 }
 
 /**

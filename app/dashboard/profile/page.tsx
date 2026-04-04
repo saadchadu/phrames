@@ -6,8 +6,8 @@ import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
-import { uploadImage, deleteImage } from '@/lib/storage'
-import { compressImage, validateProfileImage } from '@/lib/image-compression'
+import { uploadImageWithDedup, deleteImage } from '@/lib/storage'
+import { validateImageFile } from '@/lib/image-compression'
 import { User } from '@/lib/firestore'
 import { toast } from '@/components/ui/toaster'
 import { 
@@ -132,8 +132,8 @@ export default function ProfileEditPage() {
     const file = e.target.files?.[0]
     if (!file || !user) return
 
-    // Validate file
-    const validation = validateProfileImage(file)
+    // Validate file type and size (3MB max)
+    const validation = validateImageFile(file)
     if (!validation.valid) {
       toast(validation.error || 'Invalid image file', 'error')
       return
@@ -141,34 +141,21 @@ export default function ProfileEditPage() {
 
     setUploading(true)
     try {
-      // Compress image to WebP format
       toast('Compressing image...', 'info')
-      const compressedFile = await compressImage(file)
-      
-      // Check final size
-      const finalSizeKB = Math.round(compressedFile.size / 1024)
-      
+      const result = await uploadImageWithDedup(file, 'profile')
 
-      // Use consistent path: profile-images/{uid}.webp
-      const path = `profile-images/${user.uid}.webp`
-      const url = await uploadImage(compressedFile, path)
-      
-      if (url) {
-        setFormData(prev => ({ ...prev, profileImageUrl: url }))
-        toast(`Image uploaded successfully (${finalSizeKB}KB)`, 'success')
-      } else {
-        throw new Error('Upload failed - no URL returned')
-      }
+      setFormData(prev => ({ ...prev, profileImageUrl: result.url }))
+
+      const msg = result.deduplicated
+        ? 'Image ready (reused existing upload)'
+        : 'Image uploaded successfully'
+      toast(msg, 'success')
     } catch (error) {
       console.error('Error uploading image:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Error uploading image'
-      toast(errorMessage, 'error')
+      toast(error instanceof Error ? error.message : 'Error uploading image', 'error')
     } finally {
       setUploading(false)
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -308,9 +295,17 @@ export default function ProfileEditPage() {
                             onClick={async () => {
                               if (!user) return
                               
-                              // Delete from Firebase Storage
-                              const path = `profile-images/${user.uid}.webp`
-                              const deleted = await deleteImage(path)
+                              // Extract storage path from CDN URL or use stored path
+                              // CDN URL format: https://img.phrames.app/images/{hash}.{ext}
+                              const imgUrl = formData.profileImageUrl
+                              let storagePath = ''
+                              if (imgUrl.includes('img.phrames.app/')) {
+                                storagePath = imgUrl.split('img.phrames.app/')[1]
+                              } else if (imgUrl.includes('firebasestorage.googleapis.com')) {
+                                // Legacy URL — skip storage deletion, just clear from profile
+                                storagePath = ''
+                              }
+                              const deleted = storagePath ? await deleteImage(storagePath) : true
                               
                               if (deleted) {
                                 setFormData(prev => ({ ...prev, profileImageUrl: '' }))

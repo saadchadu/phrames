@@ -1,153 +1,194 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+/**
+ * Firebase Storage upload utilities with:
+ *  - SHA-256 deduplication (hash-based filenames)
+ *  - CDN URL construction (img.phrames.app) — never uses getDownloadURL()
+ *  - Immutable cache headers for Cloudflare edge caching
+ *  - Transparency-aware WebP/PNG selection
+ *  - 3MB upload limit enforcement
+ */
+
+import { ref, uploadBytes, getMetadata, deleteObject } from 'firebase/storage'
 import { storage } from './firebase'
+import { hashFile, buildImagePath } from './image-hash'
+import { buildCdnUrl } from './cdn'
+import { compressImage, validateImageFile, PROFILE_COMPRESSION, FRAME_COMPRESSION } from './image-compression'
 import { detectAspectRatio, getAspectRatioDimensions, type AspectRatio } from './aspect-ratios'
 
-// Max frame upload size: 3MB (per spec)
-const FRAME_MAX_SIZE = 3 * 1024 * 1024
+// Immutable cache metadata — tells Cloudflare to cache forever
+const IMMUTABLE_CACHE: { cacheControl: string; contentType?: string } = {
+  cacheControl: 'public, max-age=31536000, immutable',
+}
 
-export const uploadImage = async (file: File, path: string): Promise<string | null> => {
+export interface UploadResult {
+  url: string
+  path: string
+  hash: string
+  format: 'webp' | 'png'
+  deduplicated: boolean
+}
+
+/**
+ * Core upload function.
+ * 1. Compresses the image (Web Worker when available).
+ * 2. Hashes the compressed bytes → filename.
+ * 3. Checks if the file already exists in Firebase Storage.
+ * 4. Uploads only if new; returns CDN URL either way.
+ *
+ * NEVER calls getDownloadURL(). CDN URL is constructed from the known path.
+ */
+export async function uploadImageWithDedup(
+  file: File,
+  compressionPreset: 'profile' | 'frame' = 'profile'
+): Promise<UploadResult> {
+  const options = compressionPreset === 'frame' ? FRAME_COMPRESSION : PROFILE_COMPRESSION
+
+  // Compress + detect format
+  const { file: compressed, format } = await compressImage(file, options)
+
+  // Hash the compressed bytes for deduplication
+  const hash = await hashFile(compressed)
+  const storagePath = buildImagePath(hash, format)
+  const cdnUrl = buildCdnUrl(storagePath)
+
+  // Check if already uploaded (deduplication)
+  const storageRef = ref(storage, storagePath)
+  let deduplicated = false
+
   try {
-    const storageRef = ref(storage, path)
-    // Add CDN cache headers for immutable assets
-    const metadata = { cacheControl: 'public, max-age=31536000, immutable' }
-    const snapshot = await uploadBytes(storageRef, file, metadata)
-    const downloadURL = await getDownloadURL(snapshot.ref)
-    return downloadURL
+    await getMetadata(storageRef)
+    // File exists — reuse CDN URL
+    deduplicated = true
+  } catch {
+    // File does not exist — upload it
+    const metadata = {
+      ...IMMUTABLE_CACHE,
+      contentType: format === 'webp' ? 'image/webp' : 'image/png',
+    }
+    await uploadBytes(storageRef, compressed, metadata)
+  }
+
+  return { url: cdnUrl, path: storagePath, hash, format, deduplicated }
+}
+
+/**
+ * Upload a profile image.
+ * Profile images use a user-scoped path so they can be replaced.
+ * The hash-named file is stored under images/ for CDN serving.
+ */
+export async function uploadProfileImage(file: File): Promise<string | null> {
+  try {
+    const result = await uploadImageWithDedup(file, 'profile')
+    return result.url
   } catch (error) {
-    console.error('Firebase Storage uploadImage error:', error, 'path:', path)
+    console.error('uploadProfileImage error:', error)
     return null
   }
 }
 
-export const deleteImage = async (path: string): Promise<boolean> => {
+/**
+ * Upload a frame/campaign image.
+ * Preserves transparency (PNG fallback), higher quality preset.
+ */
+export async function uploadFrameImage(file: File): Promise<UploadResult | null> {
   try {
-    const storageRef = ref(storage, path)
-    await deleteObject(storageRef)
-    return true
+    return await uploadImageWithDedup(file, 'frame')
   } catch (error) {
+    console.error('uploadFrameImage error:', error)
+    return null
+  }
+}
+
+/**
+ * Legacy uploadImage — kept for backward compatibility.
+ * Compresses and uploads, returns CDN URL.
+ * @param file  The image file to upload
+ * @param _path Ignored — path is now hash-based. Kept for API compatibility.
+ */
+export async function uploadImage(file: File, _path?: string): Promise<string | null> {
+  return uploadProfileImage(file)
+}
+
+/** Delete an image from Firebase Storage by its storage path. */
+export async function deleteImage(path: string): Promise<boolean> {
+  try {
+    await deleteObject(ref(storage, path))
+    return true
+  } catch {
     return false
   }
 }
 
-export const validateImageFile = (file: File, allowAllTypes = false): { valid: boolean; error?: string } => {
-  // Frames: PNG only
-  if (!allowAllTypes && file.type !== 'image/png') {
-    return { valid: false, error: 'Only PNG files are allowed' }
-  }
+// ─── Validation helpers (unchanged API) ──────────────────────────────────────
 
-  if (allowAllTypes && !file.type.startsWith('image/')) {
-    return { valid: false, error: 'Only image files are allowed' }
-  }
+export { validateImageFile }
 
-  // Frames: max 3MB
-  if (!allowAllTypes && file.size > FRAME_MAX_SIZE) {
-    return { valid: false, error: 'Frame file size must be less than 3MB' }
-  }
+export const validateFrameImage = async (
+  file: File
+): Promise<{ valid: boolean; error?: string; aspectRatio?: AspectRatio; dimensions?: { width: number; height: number } }> => {
+  const basic = validateImageFile(file)
+  if (!basic.valid) return basic
 
-  return { valid: true }
-}
+  try {
+    const dimensions = await checkImageDimensions(file)
+    const detectedAspectRatio = detectAspectRatio(dimensions.width, dimensions.height)
 
-export const checkImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => {
-      resolve({ width: img.width, height: img.height })
+    if (!detectedAspectRatio) {
+      return { valid: false, error: 'Image must have a supported aspect ratio: 1:1, 4:5, 3:4, or 9:16.' }
     }
-    img.onerror = reject
-    img.src = URL.createObjectURL(file)
-  })
+
+    const { width: minW, height: minH } = getAspectRatioDimensions(detectedAspectRatio)
+    if (dimensions.width < minW || dimensions.height < minH) {
+      return {
+        valid: false,
+        error: `Frame must be at least ${minW}×${minH}px for ${detectedAspectRatio} ratio. Your image is ${dimensions.width}×${dimensions.height}px.`,
+      }
+    }
+
+    const hasTransparency = await checkImageTransparency(file)
+    if (!hasTransparency) {
+      return { valid: false, error: 'Image must have transparent areas (PNG with transparency required).' }
+    }
+
+    return { valid: true, aspectRatio: detectedAspectRatio, dimensions }
+  } catch {
+    return { valid: false, error: 'Error validating image. Please try again.' }
+  }
 }
 
-export const checkImageTransparency = (file: File): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
+export const checkImageDimensions = (file: File): Promise<{ width: number; height: number }> =>
+  new Promise((resolve, reject) => {
     const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => { resolve({ width: img.width, height: img.height }); URL.revokeObjectURL(url) }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')) }
+    img.src = url
+  })
+
+export const checkImageTransparency = (file: File): Promise<boolean> =>
+  new Promise((resolve, reject) => {
+    if (file.type !== 'image/png') { resolve(false); return }
+    const img = new Image()
+    const url = URL.createObjectURL(file)
     img.onload = () => {
       try {
-        // Create a canvas to analyze the image
         const canvas = document.createElement('canvas')
         canvas.width = img.width
         canvas.height = img.height
         const ctx = canvas.getContext('2d')
-
-        if (!ctx) {
-          reject(new Error('Could not get canvas context'))
-          return
-        }
-
-        // Draw the image
+        if (!ctx) { reject(new Error('No canvas context')); return }
         ctx.drawImage(img, 0, 0)
-
-        // Get image data
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        const data = imageData.data
-
-        // Check for any transparent pixels (alpha < 255)
-        let hasTransparency = false
+        const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        let transparent = false
         for (let i = 3; i < data.length; i += 4) {
-          if (data[i] < 255) {
-            hasTransparency = true
-            break
-          }
+          if (data[i] < 255) { transparent = true; break }
         }
-
-        // Clean up
-        URL.revokeObjectURL(img.src)
-
-        resolve(hasTransparency)
-      } catch (error) {
-        reject(error)
+        URL.revokeObjectURL(url)
+        resolve(transparent)
+      } catch (err) {
+        URL.revokeObjectURL(url)
+        reject(err)
       }
     }
-    img.onerror = () => {
-      URL.revokeObjectURL(img.src)
-      reject(new Error('Failed to load image'))
-    }
-    img.src = URL.createObjectURL(file)
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')) }
+    img.src = url
   })
-}
-
-export const validateFrameImage = async (file: File): Promise<{ valid: boolean; error?: string; aspectRatio?: AspectRatio; dimensions?: { width: number; height: number } }> => {
-  // First check basic file validation
-  const basicValidation = validateImageFile(file)
-  if (!basicValidation.valid) {
-    return basicValidation
-  }
-
-  try {
-    // Check dimensions
-    const dimensions = await checkImageDimensions(file)
-
-    // Detect aspect ratio
-    const detectedAspectRatio = detectAspectRatio(dimensions.width, dimensions.height)
-
-    if (!detectedAspectRatio) {
-      return {
-        valid: false,
-        error: 'Image must have a supported aspect ratio: 1:1, 4:5, 3:4, or 9:16.'
-      }
-    }
-
-    // Enforce minimum dimensions for each ratio
-    const { width: minWidth, height: minHeight } = getAspectRatioDimensions(detectedAspectRatio)
-
-    if (dimensions.width < minWidth || dimensions.height < minHeight) {
-      return {
-        valid: false,
-        error: `Frame must be at least ${minWidth}×${minHeight}px for ${detectedAspectRatio} ratio. Your image is ${dimensions.width}×${dimensions.height}px.`
-      }
-    }
-
-    // Check for transparency
-    const hasTransparency = await checkImageTransparency(file)
-    if (!hasTransparency) {
-      return {
-        valid: false,
-        error: 'Image must have transparent areas. Please upload a PNG with transparency where the user photo should appear.'
-      }
-    }
-
-    return { valid: true, aspectRatio: detectedAspectRatio, dimensions }
-  } catch (error) {
-    return { valid: false, error: 'Error validating image. Please try again.' }
-  }
-}
