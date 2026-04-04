@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
 
-const ADMIN_EMAILS = ['saadchadu@gmail.com']
+// Admin emails loaded from env — never hardcode in source
+const ADMIN_EMAILS: string[] = (process.env.ADMIN_EMAILS || '')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean)
 
 export async function POST(request: NextRequest) {
   try {

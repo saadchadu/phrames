@@ -1,6 +1,10 @@
 /**
- * Simple in-memory rate limiter.
- * For multi-instance deployments, replace with Redis/Upstash.
+ * In-memory rate limiter with automatic cleanup.
+ *
+ * NOTE: This works per-instance. On Vercel serverless each cold start gets a
+ * fresh store, which means limits reset between invocations. This is acceptable
+ * for low-traffic abuse prevention. For strict distributed limiting, swap in
+ * Upstash Redis (@upstash/ratelimit).
  */
 
 interface RateLimitRecord {
@@ -10,8 +14,30 @@ interface RateLimitRecord {
 
 const stores = new Map<string, Map<string, RateLimitRecord>>()
 
+// Cleanup stale entries every 5 minutes to prevent memory leaks
+let cleanupTimer: ReturnType<typeof setInterval> | null = null
+
+function scheduleCleanup() {
+  if (cleanupTimer) return
+  cleanupTimer = setInterval(() => {
+    const now = Date.now()
+    for (const [storeName, store] of stores) {
+      for (const [key, record] of store) {
+        if (now > record.resetTime) store.delete(key)
+      }
+      if (store.size === 0) stores.delete(storeName)
+    }
+  }, 5 * 60 * 1000)
+
+  // Don't block process exit
+  if (cleanupTimer.unref) cleanupTimer.unref()
+}
+
 function getStore(name: string): Map<string, RateLimitRecord> {
-  if (!stores.has(name)) stores.set(name, new Map())
+  if (!stores.has(name)) {
+    stores.set(name, new Map())
+    scheduleCleanup()
+  }
   return stores.get(name)!
 }
 

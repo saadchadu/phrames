@@ -71,17 +71,16 @@ service firebase.storage {
       // Anyone can read profile images (public profiles)
       allow read: if true;
       
-      // Extract userId from filename (format: {userId}.webp)
       // Only the user can upload/update their own profile image
-      // Max 1MB file size for profile images
+      // Max 3MB (compressed WebP/PNG from client)
       allow create, update: if isAuthenticated() && 
                               isImage() &&
-                              request.resource.size < 1 * 1024 * 1024 &&
-                              fileName.matches('^' + request.auth.uid + '\\.webp$');
+                              request.resource.size < 3 * 1024 * 1024 &&
+                              fileName.matches('^' + request.auth.uid + '\\.(webp|png)$');
       
       // Only the user can delete their own profile image
       allow delete: if isAuthenticated() && 
-                      fileName.matches('^' + request.auth.uid + '\\.webp$');
+                      fileName.matches('^' + request.auth.uid + '\\.(webp|png)$');
     }
     
     // User campaign images

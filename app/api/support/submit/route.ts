@@ -21,6 +21,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Strip control characters to prevent injection
+    const sanitize = (s: string) => s.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '').trim()
+    const safeName = sanitize(name)
+    const safeSubject = sanitize(subject)
+    const safeMessage = sanitize(message)
+    const safeOrderId = orderId ? sanitize(String(orderId)) : null
+    const safeCampaignId = campaignId ? sanitize(String(campaignId)) : null
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
@@ -28,13 +36,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Enforce length limits to prevent abuse
-    if (name.length > 100) {
+    if (safeName.length > 100) {
       return NextResponse.json({ error: 'Name must be 100 characters or fewer' }, { status: 400 })
     }
-    if (subject.length > 200) {
+    if (safeSubject.length > 200) {
       return NextResponse.json({ error: 'Subject must be 200 characters or fewer' }, { status: 400 })
     }
-    if (message.length > 5000) {
+    if (safeMessage.length > 5000) {
       return NextResponse.json({ error: 'Message must be 5000 characters or fewer' }, { status: 400 })
     }
 
@@ -62,13 +70,13 @@ export async function POST(request: NextRequest) {
     // Create ticket document
     const ticketData: any = {
       ticketId,
-      name,
+      name: safeName,
       email,
       category,
-      subject,
-      message,
-      orderId: orderId || null,
-      campaignId: campaignId || null,
+      subject: safeSubject,
+      message: safeMessage,
+      orderId: safeOrderId,
+      campaignId: safeCampaignId,
       status: 'open',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -83,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     // Notify support team (non-blocking)
     import('@/lib/email').then(({ sendSupportTeamNotificationEmail }) =>
-      sendSupportTeamNotificationEmail({ name, email, ticketId, subject, category, message })
+      sendSupportTeamNotificationEmail({ name: safeName, email, ticketId, subject: safeSubject, category, message: safeMessage })
     ).catch((err) => {
       console.error('[email] Support team notification email failed:', err)
     })

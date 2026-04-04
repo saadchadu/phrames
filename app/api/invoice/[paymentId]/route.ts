@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminDb, adminAuth } from '@/lib/firebase-admin'
 import { generateInvoicePDF } from '@/lib/pdf/generateInvoicePDF'
 import { COMPANY_DETAILS } from '@/lib/invoice'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -14,6 +15,17 @@ export async function GET(
 ) {
   try {
     const { paymentId } = await params
+
+    // Rate limit: 20 invoice downloads per minute per IP (prevents enumeration)
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || request.headers.get('x-real-ip') || 'unknown'
+    if (!checkRateLimit(ip, { name: 'invoice-download', limit: 20, windowMs: 60 * 1000 })) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
+    // Validate paymentId format to prevent path traversal / injection
+    if (!paymentId || !/^[a-zA-Z0-9_-]{1,128}$/.test(paymentId)) {
+      return NextResponse.json({ error: 'Invalid payment ID' }, { status: 400 })
+    }
 
     // Get authorization token
     const authHeader = request.headers.get('authorization')

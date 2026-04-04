@@ -1,16 +1,21 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Helper functions
+
+    // ── Helper functions ──────────────────────────────────────────────────────
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.isAdmin == true;
+    }
+
     function isValidCampaign() {
       return request.resource.data.keys().hasAll(['campaignName', 'slug', 'visibility', 'frameURL', 'status', 'createdBy', 'supportersCount']) &&
              request.resource.data.campaignName is string &&
@@ -27,14 +32,14 @@ service cloud.firestore {
              request.resource.data.supportersCount is int &&
              request.resource.data.supportersCount >= 0;
     }
-    
+
     function isValidUser() {
       return request.resource.data.keys().hasAll(['uid', 'email']) &&
              request.resource.data.uid is string &&
              request.resource.data.email is string &&
              request.resource.data.email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
     }
-    
+
     function isValidUsername() {
       return !request.resource.data.keys().hasAny(['username']) ||
              (request.resource.data.username is string &&
@@ -42,150 +47,125 @@ service cloud.firestore {
               request.resource.data.username.size() <= 30 &&
               request.resource.data.username.matches('^[a-zA-Z0-9_-]+$'));
     }
-    
-    // Check if user is admin (via custom claim)
-    function isAdmin() {
-      return isAuthenticated() && request.auth.token.isAdmin == true;
-    }
-    
-    // Users collection
+
+    // ── Users ─────────────────────────────────────────────────────────────────
+
     match /users/{userId} {
-      // Anyone can read user profiles (for displaying creator info and public profiles)
       allow read: if true;
-      
-      // Only the user can create their own profile
       allow create: if isOwner(userId) && isValidUser() && isValidUsername();
-      
-      // Only the user can update their own profile
-      // IMPORTANT: Cannot modify freeCampaignUsed from client
-      allow update: if isOwner(userId) && 
-                      isValidUser() && 
+      allow update: if isOwner(userId) &&
+                      isValidUser() &&
                       isValidUsername() &&
-                      // Prevent modification of freeCampaignUsed field
                       !request.resource.data.diff(resource.data).affectedKeys()
-                        .hasAny(['freeCampaignUsed']);
-      
-      // Only the user can delete their own profile
+                        .hasAny(['freeCampaignUsed', 'isAdmin', 'isBlocked']);
       allow delete: if isOwner(userId);
     }
-    
-    // Campaigns collection
+
+    // ── Campaigns ─────────────────────────────────────────────────────────────
+
     match /campaigns/{campaignId} {
-      // Anyone can read public campaigns
       allow read: if true;
-      
-      // Only authenticated users can create campaigns
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() &&
                       isOwner(request.resource.data.createdBy) &&
                       isValidCampaign();
-      
-      // Only the campaign owner can update their campaign
-      // IMPORTANT: Cannot modify payment-related fields and isFreeCampaign from client
-      allow update: if isAuthenticated() && 
+      allow update: if isAuthenticated() &&
                       isOwner(resource.data.createdBy) &&
                       isValidCampaign() &&
-                      // Prevent changing the owner
                       request.resource.data.createdBy == resource.data.createdBy &&
-                      // Prevent modification of payment fields and free campaign flag
                       !request.resource.data.diff(resource.data).affectedKeys()
-                        .hasAny(['isActive', 'expiresAt', 'planType', 'amountPaid', 'paymentId', 'lastPaymentAt', 'isFreeCampaign']);
-      
-      // NOTE: supportersCount is updated server-side only via Admin SDK (bypasses rules).
-      // No client-side rule needed here — removing the open update rule prevents direct manipulation.
-      
-      // Only the campaign owner can delete their campaign
+                        .hasAny(['isActive', 'expiresAt', 'planType', 'amountPaid', 'paymentId', 'lastPaymentAt', 'isFreeCampaign', 'supportersCount']);
       allow delete: if isAuthenticated() && isOwner(resource.data.createdBy);
     }
-    
-    // Notifications collection
+
+    // ── Notifications ─────────────────────────────────────────────────────────
+
     match /notifications/{notificationId} {
-      // Users can only read their own notifications
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      
-      // Only system can create notifications (via server-side code)
       allow create: if false;
-      
-      // Users can update their own notifications (mark as read)
-      allow update: if isAuthenticated() && 
+      allow update: if isAuthenticated() &&
                       isOwner(resource.data.userId) &&
-                      // Only allow updating isRead field
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']) &&
                       request.resource.data.isRead is bool;
-      
-      // Users can delete their own notifications
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
-    
-    // Payment records - read-only for users
+
+    // ── Payments ──────────────────────────────────────────────────────────────
+
     match /payments/{paymentId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow write: if false; // Only server can write
+      allow write: if false;
     }
-    
-    // Expiry logs - read-only for users
+
+    // ── Expiry logs ───────────────────────────────────────────────────────────
+
     match /expiryLogs/{logId} {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow write: if false; // Only server can write
+      allow write: if false;
     }
-    
-    // Campaign Stats Daily collection
+
+    // ── Campaign Stats Daily ──────────────────────────────────────────────────
+    // All writes go through server-side Admin SDK only.
+    // Denying client writes prevents stat inflation attacks.
+
     match /CampaignStatsDaily/{statId} {
-      // Anyone can read stats (for public analytics)
       allow read: if true;
-      
-      // Anyone can create/update stats (for tracking visits and downloads from anonymous visitors)
-      // Fields are validated and only increments are allowed via the increment() function
-      allow create, update: if request.resource.data.keys().hasAll(['campaignId', 'date', 'visits', 'downloads']) &&
-                               request.resource.data.campaignId is string &&
-                               request.resource.data.date is string &&
-                               request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
-                               request.resource.data.visits is int &&
-                               request.resource.data.visits >= 0 &&
-                               request.resource.data.downloads is int &&
-                               request.resource.data.downloads >= 0;
-      
-      // No one can delete stats
-      allow delete: if false;
+      allow create, update, delete: if false;
     }
-    
-    // Admin logs collection - only admins can access
+
+    // ── Admin logs ────────────────────────────────────────────────────────────
+
     match /logs/{logId} {
       allow read, write: if isAdmin();
     }
-    
-    // Cleanup logs collection - only admins can access
+
     match /cleanupLogs/{logId} {
       allow read, write: if isAdmin();
     }
-    
-    // Settings collection - pricing is public, system settings require auth, only admins can write
+
+    // ── Settings ──────────────────────────────────────────────────────────────
+
     match /settings/plans {
-      allow read: if true; // Public pricing
-      allow write: if isAdmin();
-    }
-    
-    match /settings/{document} {
-      allow read: if document == 'system' ? true : isAuthenticated(); // System settings public for feature flags
-      allow write: if isAdmin();
-    }
-    
-    // Supporters collection - tracks who supported which campaigns
-    match /supporters/{supporterId} {
-      // Anyone can read supporter records (for public stats)
       allow read: if true;
-      
-      // Supporter records are written server-side only via Admin SDK (bypasses rules).
-      // Deny direct client writes to enforce server-side campaign-active validation.
-      allow create: if false;
-      
-      // Updates also go through Admin SDK only — deny direct client updates.
-      allow update: if false;
-      
-      // Only admins can delete supporter records
+      allow write: if isAdmin();
+    }
+
+    match /settings/{document} {
+      allow read: if document == 'system' ? true : isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ── Supporters ────────────────────────────────────────────────────────────
+    // All writes go through server-side Admin SDK only.
+
+    match /supporters/{supporterId} {
+      allow read: if true;
+      allow create, update: if false;
       allow delete: if isAdmin();
     }
-    
-    // Deny all other access
+
+    // ── Coupons ───────────────────────────────────────────────────────────────
+    // Public read for validation; writes are admin-only via server.
+
+    match /coupons/{couponId} {
+      allow read: if true;
+      allow write: if false;
+
+      match /redemptions/{userId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    // ── Support tickets ───────────────────────────────────────────────────────
+    // Tickets are written server-side only.
+
+    match /support_tickets/{ticketId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow write: if false;
+    }
+
+    // ── Deny everything else ──────────────────────────────────────────────────
+
     match /{document=**} {
       allow read, write: if false;
     }
