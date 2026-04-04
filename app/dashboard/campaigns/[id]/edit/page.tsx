@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
 import { getCampaign, updateCampaign, generateUniqueSlug, Campaign } from '@/lib/firestore'
-import { uploadImage, validateFrameImage } from '@/lib/storage'
+import { uploadFrameImage, validateFrameImage } from '@/lib/storage'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 
 // Prevent static generation for this auth-protected page
@@ -137,13 +137,11 @@ export default function EditCampaignPage() {
 
       // Upload new image if file was selected
       if (file) {
-        const imagePath = `campaigns/${user.uid}/${Date.now()}-${file.name}`
-        const imageUrl = await uploadImage(file, imagePath)
-
-        if (!imageUrl) {
+        const uploadResult = await uploadFrameImage(file)
+        if (!uploadResult) {
           throw new Error('Failed to upload image')
         }
-        frameURL = imageUrl
+        frameURL = uploadResult.url
       }
 
       // Prepare update data

@@ -41,7 +41,36 @@ export function isCdnUrl(url: string): boolean {
 }
 
 /**
- * Check if a URL is a legacy Firebase Storage URL that should be migrated.
+ * Convert a legacy Firebase Storage URL to a CDN URL.
+ *
+ * Firebase Storage URLs look like:
+ *   https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encoded-path}?alt=media&token=...
+ *
+ * We extract the path, decode it, and construct the CDN URL.
+ * If the URL is already a CDN URL or can't be parsed, it's returned as-is.
+ */
+export function normalizeToCdnUrl(url: string): string {
+  if (!url) return url
+  // Already a CDN URL
+  if (isCdnUrl(url)) return url
+
+  try {
+    const parsed = new URL(url)
+    if (parsed.hostname !== 'firebasestorage.googleapis.com') return url
+
+    // Path format: /v0/b/{bucket}/o/{encoded-object-path}
+    const match = parsed.pathname.match(/^\/v0\/b\/[^/]+\/o\/(.+)$/)
+    if (!match) return url
+
+    const storagePath = decodeURIComponent(match[1])
+    return buildCdnUrl(storagePath)
+  } catch {
+    return url
+  }
+}
+
+/**
+ * Check if a URL is a legacy Firebase Storage URL.
  */
 export function isFirebaseStorageUrl(url: string): boolean {
   return url.includes('firebasestorage.googleapis.com')

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { getCampaignBySlug, incrementCampaignVisit, incrementCampaignDownload, Campaign, parseFirestoreDate } from '@/lib/firestore'
 import { getSessionId } from '@/lib/supporters'
 import { getUserProfile, UserProfile } from '@/lib/auth'
+import { normalizeToCdnUrl } from '@/lib/cdn'
 import { ArrowDownTrayIcon, PhotoIcon, MagnifyingGlassMinusIcon, MagnifyingGlassPlusIcon, ScissorsIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import CampaignQRCode from '@/components/CampaignQRCode'
@@ -199,7 +200,7 @@ export default function CampaignPage() {
     setProcessing(true)
     try {
       const frameImg = new Image()
-      const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(campaign.frameURL)}`
+      const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(cdnFrameUrl)}`
       frameImg.crossOrigin = 'anonymous'
       await new Promise<void>((resolve, reject) => {
         frameImg.onload = () => resolve()
@@ -207,7 +208,7 @@ export default function CampaignPage() {
           const fb = new Image()
           fb.onload = () => { frameImg.src = fb.src; resolve() }
           fb.onerror = () => reject(new Error('Frame load failed'))
-          fb.src = campaign.frameURL
+          fb.src = cdnFrameUrl
         }
         frameImg.src = proxyUrl
         setTimeout(() => reject(new Error('Frame load timeout')), 15000)
@@ -309,6 +310,9 @@ export default function CampaignPage() {
     ? `${(frameNativeSize.height / frameNativeSize.width) * 100}%`
     : ({ '4:5': '125%', '3:4': '133.33%', '9:16': '177.78%', '1:1': '100%' } as Record<string, string>)[campaign.aspectRatio || '1:1'] ?? '100%'
 
+  // Normalize frameURL to CDN — handles both new hash-based and legacy Firebase Storage URLs
+  const cdnFrameUrl = normalizeToCdnUrl(campaign.frameURL)
+
   const creatorAvatarSrc = (creatorProfile?.photoURL || creatorProfile?.avatarURL)?.startsWith('https://lh')
     ? `/api/image-proxy?url=${encodeURIComponent(creatorProfile?.photoURL || creatorProfile?.avatarURL || '')}`
     : creatorProfile?.photoURL || creatorProfile?.avatarURL || ''
@@ -406,7 +410,7 @@ export default function CampaignPage() {
 
                 {/* Frame overlay */}
                 <img
-                  src={campaign.frameURL}
+                  src={cdnFrameUrl}
                   alt={campaign.campaignName}
                   className="absolute inset-0 w-full h-full object-contain pointer-events-none"
                   style={{ zIndex: 2, opacity: isDragging ? 0.45 : 1, transition: isDragging ? 'none' : 'opacity 0.2s ease' }}

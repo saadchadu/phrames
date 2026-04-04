@@ -6,7 +6,7 @@ import { useAuth } from '@/components/AuthProvider'
 import AuthGuard from '@/components/AuthGuard'
 import PaymentModal from '@/components/PaymentModal'
 import { createCampaign, getCampaignBySlug, checkFreeCampaignEligibility, activateFreeCampaign } from '@/lib/firestore'
-import { uploadImage, validateFrameImage } from '@/lib/storage'
+import { uploadFrameImage, validateFrameImage } from '@/lib/storage'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { isCampaignCreationEnabled } from '@/lib/feature-toggles'
@@ -111,13 +111,12 @@ export default function CreateCampaignPage() {
     setError('')
 
     try {
-      // Upload image to Firebase Storage
-      const imagePath = `campaigns/${user.uid}/${Date.now()}-${file.name}`
-      const imageUrl = await uploadImage(file, imagePath)
-
-      if (!imageUrl) {
+      // Upload image to Firebase Storage via CDN-optimized path
+      const uploadResult = await uploadFrameImage(file)
+      if (!uploadResult) {
         throw new Error('Failed to upload image')
       }
+      const imageUrl = uploadResult.url
 
       // Create campaign in Firestore
       const campaignPayload: any = {

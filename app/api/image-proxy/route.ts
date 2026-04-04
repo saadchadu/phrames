@@ -41,6 +41,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Validate URL to prevent SSRF attacks
+    // CDN URLs (img.phrames.app) are served directly — no proxy needed
+    if (imageUrl.startsWith('https://img.phrames.app/')) {
+      // Redirect directly to CDN — no need to proxy our own CDN
+      return NextResponse.redirect(imageUrl, { status: 302 })
+    }
+
     if (!imageUrl.startsWith('https://firebasestorage.googleapis.com/') && 
         !imageUrl.startsWith('https://lh3.googleusercontent.com/') &&
         !imageUrl.startsWith('https://lh4.googleusercontent.com/') &&
@@ -56,6 +62,7 @@ export async function GET(request: NextRequest) {
       const url = new URL(imageUrl)
       const allowedHosts = [
         'firebasestorage.googleapis.com',
+        'img.phrames.app',
         'lh1.googleusercontent.com',
         'lh2.googleusercontent.com',
         'lh3.googleusercontent.com',
