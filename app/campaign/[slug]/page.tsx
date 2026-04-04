@@ -215,10 +215,16 @@ export default function CampaignPage() {
 
       const canvasWidth = frameImg.naturalWidth || frameImg.width
       const canvasHeight = frameImg.naturalHeight || frameImg.height
+
+      // HiDPI canvas for sharp, premium output
+      const scale = window.devicePixelRatio || 1
       const canvas = document.createElement('canvas')
-      canvas.width = canvasWidth; canvas.height = canvasHeight
+      canvas.width = canvasWidth * scale
+      canvas.height = canvasHeight * scale
       const ctx = canvas.getContext('2d')!
-      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
+      ctx.scale(scale, scale)
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
 
       const userImg = new Image()
       if (userImage.startsWith('http')) userImg.crossOrigin = 'anonymous'
@@ -255,7 +261,7 @@ export default function CampaignPage() {
         link.download = `${campaign.campaignName}-framed-${Date.now()}.png`
         link.href = url; link.click()
         setTimeout(() => URL.revokeObjectURL(url), 100)
-      }, 'image/png', 1.0)
+      }, 'image/png')
 
       if (campaign.id) {
         try {

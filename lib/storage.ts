@@ -2,10 +2,15 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { storage } from './firebase'
 import { detectAspectRatio, getAspectRatioDimensions, type AspectRatio } from './aspect-ratios'
 
+// Max frame upload size: 3MB (per spec)
+const FRAME_MAX_SIZE = 3 * 1024 * 1024
+
 export const uploadImage = async (file: File, path: string): Promise<string | null> => {
   try {
     const storageRef = ref(storage, path)
-    const snapshot = await uploadBytes(storageRef, file)
+    // Add CDN cache headers for immutable assets
+    const metadata = { cacheControl: 'public, max-age=31536000, immutable' }
+    const snapshot = await uploadBytes(storageRef, file, metadata)
     const downloadURL = await getDownloadURL(snapshot.ref)
     return downloadURL
   } catch (error) {
@@ -25,7 +30,7 @@ export const deleteImage = async (path: string): Promise<boolean> => {
 }
 
 export const validateImageFile = (file: File, allowAllTypes = false): { valid: boolean; error?: string } => {
-  // Check file type
+  // Frames: PNG only
   if (!allowAllTypes && file.type !== 'image/png') {
     return { valid: false, error: 'Only PNG files are allowed' }
   }
@@ -34,10 +39,9 @@ export const validateImageFile = (file: File, allowAllTypes = false): { valid: b
     return { valid: false, error: 'Only image files are allowed' }
   }
 
-  // Check file size (10MB max)
-  const maxSize = 10 * 1024 * 1024 // 10MB in bytes
-  if (file.size > maxSize) {
-    return { valid: false, error: 'File size must be less than 10MB' }
+  // Frames: max 3MB
+  if (!allowAllTypes && file.size > FRAME_MAX_SIZE) {
+    return { valid: false, error: 'Frame file size must be less than 3MB' }
   }
 
   return { valid: true }
