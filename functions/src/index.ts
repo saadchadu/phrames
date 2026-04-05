@@ -31,7 +31,7 @@ const db = admin.firestore()
 // ─── Resend email helper (no extra deps) ─────────────────────────────────────
 function sendResendEmail(to: string, subject: string, html: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY
-  const from = process.env.EMAIL_FROM || 'Phrames <support@cleffon.com>'
+  const from = process.env.EMAIL_FROM || 'Phrames <support@phrames.app>'
   if (!apiKey) {
     console.warn('[email] RESEND_API_KEY not set, skipping email to', to)
     return Promise.resolve()
@@ -118,7 +118,7 @@ function fnEmailBase(content: string, opts: { accent?: string; tag?: string; tag
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td style="color:${C.textLight};font-size:12px;line-height:1.5;">© ${year} Phrames &nbsp;·&nbsp; <a href="${APP_URL}" style="color:${C.textLight};text-decoration:none;">phrames.app</a></td>
-          <td align="right" style="color:${C.textLight};font-size:12px;"><a href="mailto:support@cleffon.com" style="color:${C.textLight};text-decoration:none;">support@cleffon.com</a></td>
+          <td align="right" style="color:${C.textLight};font-size:12px;"><a href="mailto:support@phrames.app" style="color:${C.textLight};text-decoration:none;">support@phrames.app</a></td>
         </tr>
       </table>
     </td></tr>
