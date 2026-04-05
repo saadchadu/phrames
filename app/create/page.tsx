@@ -124,6 +124,7 @@ export default function CreateCampaignPage() {
         slug: formData.slug,
         visibility: formData.visibility,
         frameURL: imageUrl,
+        frameStoragePath: uploadResult.path,
         aspectRatio: aspectRatio,
         createdBy: user.uid,
         createdByEmail: user.email

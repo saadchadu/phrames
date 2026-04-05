@@ -1,6 +1,7 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
+import { getStorage } from 'firebase-admin/storage'
 
 // Initialize Firebase Admin SDK
 if (!getApps().length) {
@@ -19,12 +20,14 @@ if (!getApps().length) {
   initializeApp({
     credential: cert(serviceAccount),
     projectId: process.env.FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   })
 }
 
 export const auth = getAuth()
 export const adminAuth = getAuth() // Alias for backward compatibility
 export const adminDb = getFirestore()
+export const adminStorage = getStorage()
 
 // Helper function for token verification
 export const verifyIdToken = async (idToken: string) => {

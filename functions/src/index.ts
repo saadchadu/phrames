@@ -574,6 +574,68 @@ export const scheduledInactiveCampaignCleanup = functions.pubsub
         console.log(`🧹 INFO [inactive_cleanup] Deleted ${deletedCount}, warned ${warnedCount} inactive campaigns`)
       }
 
+      // Delete storage files for campaigns that were just deleted (best-effort)
+      if (toDelete.length > 0) {
+        const bucket = admin.storage().bucket()
+        for (const { id, campaign } of toDelete) {
+          try {
+            const frameURL: string | undefined = campaign.frameURL
+            if (!frameURL) continue
+
+            let storagePath: string | null = campaign.frameStoragePath || null
+
+            // Fallback: parse storagePath from frameURL if not explicitly stored
+            if (!storagePath) {
+            // Case 1: legacy Firebase download URL
+            // https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<encoded-path>?alt=media&token=...
+            const fbMatch = frameURL.match(/firebasestorage\.googleapis\.com\/v0\/b\/[^/]+\/o\/(.+?)(\?|$)/)
+            if (fbMatch) {
+              storagePath = decodeURIComponent(fbMatch[1])
+            }
+
+            // Case 2: CDN URL — https://img.phrames.app/<path>
+            if (!storagePath && frameURL.includes('img.phrames.app/')) {
+              storagePath = frameURL.split('img.phrames.app/')[1]
+            }
+
+            // Case 3: raw GCS URL — https://storage.googleapis.com/<bucket>/<path>
+            if (!storagePath) {
+              const gcsMatch = frameURL.match(/storage\.googleapis\.com\/[^/]+\/(.+)/)
+              if (gcsMatch) storagePath = gcsMatch[1]
+            }
+            } // end fallback path parsing
+
+            if (!storagePath) {
+              console.warn(`🧹 WARN [storage_cleanup] Could not parse storage path for campaign ${id}: ${frameURL}`)
+              continue
+            }
+
+            // Check if any other campaign still references this storage path (deduplication safety)
+            const sharedRefs = await db.collection('campaigns')
+              .where('frameStoragePath', '==', storagePath)
+              .get()
+            // Also check by frameURL for legacy campaigns without frameStoragePath
+            const sharedByUrl = await db.collection('campaigns')
+              .where('frameURL', '==', frameURL)
+              .get()
+            const totalRefs = new Set([...sharedRefs.docs.map(d => d.id), ...sharedByUrl.docs.map(d => d.id)])
+            // Remove the campaign being deleted from the count
+            totalRefs.delete(id)
+
+            if (totalRefs.size > 0) {
+              console.log(`🧹 INFO [storage_cleanup] Skipping file delete for campaign ${id} — still referenced by ${totalRefs.size} other campaign(s)`)
+              continue
+            }
+
+            await bucket.file(storagePath).delete()
+            console.log(`🧹 INFO [storage_cleanup] Deleted storage file for campaign ${id}: ${storagePath}`)
+          } catch (storageErr: any) {
+            // Non-fatal — log and continue. File may already be deleted or path invalid.
+            console.error(`🧹 WARN [storage_cleanup] Failed to delete storage file for campaign ${id}:`, storageErr?.message)
+          }
+        }
+      }
+
       // Send deletion warning emails (best-effort)
       for (const { id, campaign, daysLeft } of toWarn) {
         try {

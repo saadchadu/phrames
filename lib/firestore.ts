@@ -22,6 +22,7 @@ export interface Campaign {
   description?: string
   visibility: 'Public' | 'Unlisted'
   frameURL: string
+  frameStoragePath?: string // Firebase Storage path for cleanup on deletion
   aspectRatio?: '1:1' | '4:5' | '3:4' // Frame aspect ratio
   status: 'Active' | 'Inactive'
   supportersCount: number
