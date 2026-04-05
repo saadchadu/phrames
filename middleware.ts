@@ -9,11 +9,11 @@ export function middleware(request: NextRequest) {
     // Content Security Policy
     'Content-Security-Policy': [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.cashfree.com https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com https://www.gstatic.com https://apis.google.com https://vercel.live",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.cashfree.com https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com https://www.gstatic.com https://apis.google.com https://vercel.live https://static.cloudflareinsights.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self' https://firebasestorage.googleapis.com https://firestore.googleapis.com https://*.googleapis.com https://sdk.cashfree.com https://www.google-analytics.com https://api.cashfree.com https://accounts.google.com https://vercel.live https://*.firebaseapp.com",
+      "connect-src 'self' https://firebasestorage.googleapis.com https://firestore.googleapis.com https://*.googleapis.com https://sdk.cashfree.com https://www.google-analytics.com https://api.cashfree.com https://accounts.google.com https://vercel.live https://*.firebaseapp.com https://cloudflareinsights.com",
       "frame-src 'self' https://www.google.com https://sdk.cashfree.com https://accounts.google.com https://*.firebaseapp.com https://vercel.live",
       "object-src 'none'",
       "base-uri 'self'",
