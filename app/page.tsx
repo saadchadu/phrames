@@ -437,7 +437,7 @@ export default function Home() {
             {/* Right Column - Image */}
             <div className="w-full lg:w-1/2 order-first lg:order-last">
               <Image
-                src="/images/Strip.png?v=2"
+                src="/images/Strip.png"
                 alt="Campaign visual examples showing photo frames in action"
                 width={720}
                 height={455}
