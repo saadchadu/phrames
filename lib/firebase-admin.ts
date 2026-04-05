@@ -33,3 +33,28 @@ export const adminStorage = getStorage()
 export const verifyIdToken = async (idToken: string) => {
   return await auth.verifyIdToken(idToken)
 }
+
+/**
+ * Checks if a user is blocked. Returns true if blocked (request should be rejected).
+ * Use this in any API route that performs user actions.
+ */
+export async function isUserBlocked(userId: string): Promise<boolean> {
+  try {
+    const userDoc = await adminDb.collection('users').doc(userId).get()
+    return userDoc.exists && userDoc.data()?.isBlocked === true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Verifies a Bearer token and returns the decoded token, or null if invalid/missing.
+ */
+export async function verifyBearerToken(authHeader: string | null) {
+  if (!authHeader?.startsWith('Bearer ')) return null
+  try {
+    return await auth.verifyIdToken(authHeader.split('Bearer ')[1])
+  } catch {
+    return null
+  }
+}

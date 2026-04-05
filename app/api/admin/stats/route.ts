@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 const db = adminDb;
 
@@ -146,6 +147,11 @@ export async function getAdminStatsData() {
 }
 
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || request.headers.get('x-real-ip') || 'unknown'
+  if (!checkRateLimit(ip, { name: 'admin-stats', limit: 20, windowMs: 60 * 1000 })) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

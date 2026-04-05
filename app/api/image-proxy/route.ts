@@ -109,11 +109,11 @@ export async function GET(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://phrames.app',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type',
         'Cache-Control': 'public, max-age=3600',
-        'Cross-Origin-Resource-Policy': 'cross-origin'
+        'Cross-Origin-Resource-Policy': 'same-site'
       }
     })
   } catch (error) {
@@ -128,7 +128,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_APP_URL || 'https://phrames.app',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     }

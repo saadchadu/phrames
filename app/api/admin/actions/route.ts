@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/lib/firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 import { logManualCronTrigger, logDataExport } from '@/lib/admin-logging-server';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 const db = adminDb;
 
@@ -19,6 +20,11 @@ function toDate(timestamp: any): Date | null {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() || request.headers.get('x-real-ip') || 'unknown'
+  if (!checkRateLimit(ip, { name: 'admin-actions', limit: 10, windowMs: 60 * 1000 })) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   const auth = request.headers.get('authorization');
   if (!auth?.startsWith('Bearer ')) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   let adminId: string;

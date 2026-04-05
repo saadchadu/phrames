@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { adminDb } from '@/lib/firebase-admin'
+import { adminDb, isUserBlocked } from '@/lib/firebase-admin'
 import { verifyIdToken } from '@/lib/firebase-admin'
 import { checkRateLimit } from '@/lib/rateLimit'
 
@@ -20,6 +20,11 @@ export async function PUT(request: NextRequest) {
     const token = authHeader.split('Bearer ')[1]
     const decodedToken = await verifyIdToken(token)
     const userId = decodedToken.uid
+
+    // Reject blocked users
+    if (await isUserBlocked(userId)) {
+      return NextResponse.json({ error: 'Your account has been blocked.' }, { status: 403 })
+    }
 
     const body = await request.json()
     const { displayName, username, bio, profileImageUrl, location, website } = body
