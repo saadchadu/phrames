@@ -47,6 +47,9 @@ export function isCdnUrl(url: string): boolean {
  *   https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encoded-path}?alt=media&token=...
  *
  * We extract the path, decode it, and construct the CDN URL.
+ * Only paths under "images/" are served via CDN — legacy paths (e.g. campaigns/...)
+ * are returned as direct Firebase Storage URLs since they aren't routed through
+ * the Cloudflare origin rule.
  * If the URL is already a CDN URL or can't be parsed, it's returned as-is.
  */
 export function normalizeToCdnUrl(url: string): string {
@@ -63,6 +66,10 @@ export function normalizeToCdnUrl(url: string): string {
     if (!match) return url
 
     const storagePath = decodeURIComponent(match[1])
+
+    // Only route hash-based images/ paths through CDN — legacy paths fall back to Firebase
+    if (!storagePath.startsWith('images/')) return url
+
     return buildCdnUrl(storagePath)
   } catch {
     return url
