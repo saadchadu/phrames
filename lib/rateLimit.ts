@@ -21,12 +21,12 @@ function scheduleCleanup() {
   if (cleanupTimer) return
   cleanupTimer = setInterval(() => {
     const now = Date.now()
-    for (const [storeName, store] of stores) {
-      for (const [key, record] of store) {
+    Array.from(stores.entries()).forEach(([storeName, store]) => {
+      Array.from(store.entries()).forEach(([key, record]) => {
         if (now > record.resetTime) store.delete(key)
-      }
+      })
       if (store.size === 0) stores.delete(storeName)
-    }
+    })
   }, 5 * 60 * 1000)
 
   // Don't block process exit
