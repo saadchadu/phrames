@@ -279,7 +279,7 @@ export default function Home() {
           {trendingCampaigns.length > 0 && (
             <>
               {/* Search Input and Button */}
-              <div className="flex flex-col items-center justify-center sm:flex-row items-stretch sm:items-end gap-5 mb-10">
+              <div className="flex flex-col items-center justify-center sm:flex-row sm:items-end gap-5 mb-10">
                 <SearchInput
                   value={searchQuery}
                   onChange={setSearchQuery}
@@ -288,7 +288,7 @@ export default function Home() {
                 />
                 <button
                   onClick={handleSearch}
-                  className="w-full sm:w-[196px] bg-secondary hover:bg-secondary/90 text-primary px-[26px] py-[22px] rounded-lg text-sm sm:text-base font-semibold transition-all shadow-sm hover:shadow-md active:scale-95 min-h-[44px]"
+                  className="w-full sm:w-auto sm:min-w-[160px] bg-secondary hover:bg-secondary/90 text-primary px-6 py-[22px] rounded-lg text-sm sm:text-base font-semibold transition-all shadow-sm hover:shadow-md active:scale-95 min-h-[44px]"
                 >
                   Find Campaign
                 </button>
@@ -409,7 +409,7 @@ export default function Home() {
           <div className="flex flex-col lg:flex-row items-center">
             {/* Left Column - Text */}
             <div className="w-full lg:w-1/2 px-6 sm:px-8 md:px-12 lg:px-16 xl:px-24 py-12 sm:py-16 lg:py-20">
-              <div className="flex flex-col gap-4 sm:gap-5 text-center lg:text-left">
+              <div className="flex flex-col gap-4 sm:gap-5 text-left lg:text-left">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[38px] font-bold text-[#f2fff2] leading-tight">
                   Turn your campaign into a shared visual moment.
                 </h2>

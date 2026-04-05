@@ -87,9 +87,14 @@
   
   /* Mobile-first touch targets */
   @media (max-width: 768px) {
-    button, a, [role="button"] {
+    button, [role="button"] {
       min-height: 44px;
       min-width: 44px;
+    }
+    
+    /* Inline links should not get forced min-width */
+    a {
+      min-height: 44px;
     }
     
     /* Full-screen mobile app feel */

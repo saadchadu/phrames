@@ -22,7 +22,7 @@ export default function SearchInput({
   }
 
   return (
-    <div className="relative w-full sm:w-[377px]">
+    <div className="relative w-full sm:max-w-[377px]">
       <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/50" />
       <input
         type="text"

@@ -156,7 +156,7 @@ export default function ImageCropModal({
                 enter="ease-out duration-200" enterFrom="opacity-0 translate-y-2 scale-95" enterTo="opacity-100 translate-y-0 scale-100"
                 leave="ease-in duration-150" leaveFrom="opacity-100 translate-y-0 scale-100" leaveTo="opacity-0 translate-y-2 scale-95"
               >
-                <Dialog.Panel className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-[#00240010]" style={{ maxWidth: 740 }}>
+                <Dialog.Panel className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-[#00240010]">
 
                   {/* Header */}
                   <div className="flex items-center justify-between px-6 py-4 border-b border-[#00240010]">
@@ -175,8 +175,8 @@ export default function ImageCropModal({
                   {/* Body */}
                   <div className="flex flex-col sm:flex-row">
 
-                    {/* Crop canvas — fixed size, aspect ratio drives the crop box */}
-                    <div className="relative bg-[#111] flex-shrink-0" style={{ width: 480, height: 420 }}>
+                    {/* Crop canvas — fluid width, fixed height on desktop, shorter on mobile */}
+                    <div className="relative bg-[#111] flex-shrink-0 w-full sm:w-auto" style={{ height: 'min(420px, 55vw)' }}>
                       <Cropper
                         image={image}
                         crop={crop}
@@ -192,7 +192,7 @@ export default function ImageCropModal({
                         minZoom={0.5}
                         maxZoom={4}
                         style={{
-                          containerStyle: { width: '480px', height: '420px', background: '#111' },
+                          containerStyle: { width: '100%', height: '100%', background: '#111' },
                           cropAreaStyle: {
                             border: '2px solid #00dd78',
                             boxShadow: '0 0 0 9999px rgba(0,0,0,0.6)',

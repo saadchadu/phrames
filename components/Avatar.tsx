@@ -1,6 +1,7 @@
 'use client'
 
-import { getDisplayImageUrl, getInitials, getAvatarGradient, UserAvatarData } from '@/lib/avatar'
+import { getDisplayImageUrl, getInitials, getAvatarGradient, UserAvatarData, needsImageProxy } from '@/lib/avatar'
+import { isCdnUrl } from '@/lib/cdn'
 import { useState } from 'react'
 import Image from 'next/image'
 
@@ -53,17 +54,31 @@ export default function Avatar({ user, size = 'md', className = '', showBorder =
 
   return (
     <div className={`${sizeClass} ${borderClass} ${className} rounded-full overflow-hidden relative`}>
-      <Image
-        src={imageUrl}
-        alt={`${user.displayName || user.username || 'User'} profile picture`}
-        width={pixelSize}
-        height={pixelSize}
-        className="w-full h-full object-cover"
-        onError={() => setImageError(true)}
-        loading="lazy"
-        unoptimized={imageUrl.includes('googleusercontent.com')}
-        priority={size === 'xl'}
-      />
+      {isCdnUrl(imageUrl) ? (
+        // CDN images: bypass Next.js optimization so Cloudflare cache rule fires
+        <img
+          src={imageUrl}
+          alt={`${user.displayName || user.username || 'User'} profile picture`}
+          width={pixelSize}
+          height={pixelSize}
+          className="w-full h-full object-cover"
+          onError={() => setImageError(true)}
+          loading={size === 'xl' ? 'eager' : 'lazy'}
+        />
+      ) : (
+        // Google-proxied or other external images: use Next.js Image
+        <Image
+          src={imageUrl}
+          alt={`${user.displayName || user.username || 'User'} profile picture`}
+          width={pixelSize}
+          height={pixelSize}
+          className="w-full h-full object-cover"
+          onError={() => setImageError(true)}
+          loading="lazy"
+          unoptimized={needsImageProxy(imageUrl)}
+          priority={size === 'xl'}
+        />
+      )}
     </div>
   )
 }

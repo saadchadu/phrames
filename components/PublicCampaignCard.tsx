@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Image from 'next/image'
 import { Campaign } from '@/lib/firestore'
+import { normalizeToCdnUrl } from '@/lib/cdn'
 import useCampaignStats from '@/hooks/useCampaignStats'
 import TrendingBadge from './TrendingBadge'
 import ClientOnly from './ClientOnly'
@@ -54,12 +54,11 @@ export default function PublicCampaignCard({ campaign, onClick }: PublicCampaign
         campaign.aspectRatio === '3:4' ? 'aspect-[3/4]' : 
         'aspect-square'
       }`}>
-        <Image
-          src={campaign.frameURL}
+        <img
+          src={normalizeToCdnUrl(campaign.frameURL)}
           alt={campaign.campaignName}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover"
+          loading="lazy"
+          className="absolute inset-0 w-full h-full object-cover"
         />
       </div>
       
@@ -90,15 +89,11 @@ export default function PublicCampaignCard({ campaign, onClick }: PublicCampaign
                       }}
                     />
                   ) : (
-                    <Image
-                      src={publisher.photoURL || publisher.avatarURL || ''}
+                    <img
+                      src={normalizeToCdnUrl(publisher.photoURL || publisher.avatarURL || '')}
                       alt={publisher.displayName || 'Creator'}
-                      width={16}
-                      height={16}
                       className="w-full h-full object-cover"
-                      onError={(e) => {
-                        setImageError(true)
-                      }}
+                      onError={() => setImageError(true)}
                     />
                   )}
                 </div>

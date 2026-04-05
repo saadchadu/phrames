@@ -1,8 +1,8 @@
 'use client'
 
-import Image from 'next/image'
 import { useState } from 'react'
 import { Campaign, parseFirestoreDate } from '@/lib/firestore'
+import { normalizeToCdnUrl } from '@/lib/cdn'
 import { PencilIcon, LinkIcon, TrashIcon, QrCodeIcon } from '@heroicons/react/24/outline'
 import { toast } from '@/components/ui/toaster'
 import QRCode from 'qrcode'
@@ -149,11 +149,11 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
           'aspect-square'
         }`}>
         {campaign.frameURL && !imgError ? (
-          <Image
-            src={campaign.frameURL}
+          <img
+            src={normalizeToCdnUrl(campaign.frameURL)}
             alt={campaign.campaignName}
-            fill
-            className="object-cover"
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover"
             onError={() => setImgError(true)}
           />
         ) : (
@@ -164,7 +164,7 @@ export default function CampaignCard({ campaign, onEdit, onShare, onDelete, onRe
           </div>
         )}
         {/* Action buttons overlay */}
-        <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex gap-2">
+        <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex flex-wrap justify-end gap-1.5 max-w-[calc(100%-24px)]">
           <button
             onClick={() => onEdit(campaign.id!)}
             className="bg-white/95 hover:bg-white active:scale-95 backdrop-blur-sm border border-[#00240020] hover:border-[#00240040] p-2 sm:p-3 rounded-lg sm:rounded-xl transition-all shadow-sm"

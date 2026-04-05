@@ -52,23 +52,15 @@ const nextConfig = {
     contentDispositionType: 'attachment',
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-        pathname: '/**',
-      },
-      {
-        // Cloudflare CDN — primary image delivery domain
-        protocol: 'https',
-        hostname: 'img.phrames.app',
-        pathname: '/images/**',
-      },
-      {
-        // Google profile photos (proxied via /api/image-proxy)
+        // Google profile photos (proxied via /api/image-proxy for CORS)
         protocol: 'https',
         hostname: '*.googleusercontent.com',
         pathname: '/**',
       },
     ],
+    // NOTE: Campaign frames (img.phrames.app) and Firebase Storage URLs are served
+    // directly via <img> tags to ensure Cloudflare CDN cache rules fire correctly.
+    // Using next/image for those routes them through /_next/image, bypassing Cloudflare.
   },
   compress: true,
   poweredByHeader: false,

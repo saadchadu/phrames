@@ -63,7 +63,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
             {user ? (
               <>
-                <span className="text-gray-700 text-sm truncate max-w-[150px] lg:max-w-none">{user.email}</span>
+                <span className="text-gray-700 text-sm truncate max-w-[150px] md:max-w-[200px] lg:max-w-none">{user.email}</span>
                 <Link
                   href="/dashboard"
                   className="text-gray-700 hover:text-secondary px-3 py-2 rounded-md text-sm font-medium transition-colors"

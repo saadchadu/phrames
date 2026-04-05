@@ -171,7 +171,7 @@ export default function PricingSection() {
               key={plan.key}
               className={`relative flex flex-col bg-white rounded-2xl border-2 p-6 sm:p-8 transition-all hover:shadow-xl ${
                 plan.popular
-                  ? 'border-secondary shadow-lg scale-105'
+                  ? 'border-secondary shadow-lg lg:scale-105'
                   : 'border-gray-200 hover:border-secondary/50'
               }`}
             >

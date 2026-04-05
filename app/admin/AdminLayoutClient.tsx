@@ -164,7 +164,7 @@ export default function AdminLayoutClient({
       {/* Mobile menu button - floating */}
       <button
         onClick={() => setSidebarOpen(true)}
-        className="lg:hidden fixed top-20 left-4 z-30 p-2 rounded-md bg-white shadow-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="lg:hidden fixed top-[3.75rem] sm:top-16 left-4 z-30 p-2 rounded-md bg-white shadow-lg text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
       >
         <Menu className="h-6 w-6" />
       </button>
