@@ -101,6 +101,7 @@ export async function PATCH(request: NextRequest) {
         sender: 'admin',
       });
       updateData.notes = notes;
+      updateData.needsAdminReply = false; // admin has responded, clear the badge
 
       // Send confirmation email to user on first reply
       if (isFirstReply && ticketData?.email) {

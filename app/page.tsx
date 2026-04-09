@@ -91,17 +91,18 @@ export default function Home() {
   // Create stable JSON-LD data to prevent hydration issues (must be before early return)
   const stableJsonLd = useMemo(() => ({
     '@context': 'https://schema.org',
-    '@type': 'WebApplication',
+    '@type': 'SoftwareApplication',
     name: 'Phrames',
     url: 'https://phrames.app',
-    description: 'Create and share custom photo frame campaigns online for free.',
+    description: 'Phrames is a free Twibbonize alternative to create custom photo frame campaigns and profile picture overlays. No watermarks. Free for 1 month.',
     applicationCategory: 'DesignApplication',
     operatingSystem: 'All',
     browserRequirements: 'Requires JavaScript. Requires HTML5.',
     offers: {
       '@type': 'Offer',
       price: '0',
-      priceCurrency: 'USD',
+      priceCurrency: 'INR',
+      description: 'First campaign free for 1 month. No credit card required.',
     },
     creator: {
       '@type': 'Organization',
@@ -111,16 +112,22 @@ export default function Home() {
     aggregateRating: {
       '@type': 'AggregateRating',
       ratingValue: '4.8',
-      ratingCount: '100', // Use stable value to prevent hydration issues
+      ratingCount: '100',
     },
     featureList: [
-      'Upload custom PNG frames',
-      'Create photo frame campaigns',
-      'Share campaign links',
-      'Track supporters',
-      'Download high-resolution images',
-      'No watermarks',
-      'Free to use'
+      'Create twibbon-style photo frame campaigns',
+      'Upload custom PNG frames with transparency',
+      'No watermarks on downloaded images',
+      'Unlimited supporters per campaign',
+      'Real-time analytics and download tracking',
+      'QR code generation for every campaign',
+      'Free for 1 month — no credit card required',
+      'Better Twibbonize alternative',
+    ],
+    sameAs: [
+      'https://x.com/cleffondesigns',
+      'https://www.instagram.com/cleffondesigns/',
+      'https://www.linkedin.com/company/96634299/',
     ],
   }), [])
 
@@ -186,11 +193,11 @@ export default function Home() {
                 <span>🎉 First campaign FREE for 1 month!</span>
               </div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[56px] font-bold text-primary mb-4 sm:mb-6 leading-tight">
-                Create Viral Photo Frames for Your Campaign 
-                <span className="text-secondary block mt-1">in Minutes</span>
+                Create Viral Photo Frame Campaigns
+                <span className="text-secondary block mt-1">in Minutes — Free</span>
               </h1>
               <p className="text-base sm:text-lg text-primary/80 mb-6 sm:mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                Perfect for events, brands, causes, and celebrations. Let your supporters spread your message with custom photo frames.
+                The best Twibbonize alternative. Create custom twibbon-style photo frames for events, elections, brands, and causes. No watermarks. Free for 1 month.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start mb-6">
                 {user ? (

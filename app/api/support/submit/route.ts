@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       orderId: safeOrderId,
       campaignId: safeCampaignId,
       status: 'open',
+      needsAdminReply: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       notes: [],

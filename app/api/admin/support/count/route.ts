@@ -17,27 +17,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
     }
 
-    // Count open tickets
-    const openSnapshot = await adminDb
+    // Count tickets that need an admin reply (new tickets or user replied)
+    const snapshot = await adminDb
       .collection('support_tickets')
-      .where('status', '==', 'open')
+      .where('needsAdminReply', '==', true)
       .get();
-
-    // Count in-progress tickets
-    const inProgressSnapshot = await adminDb
-      .collection('support_tickets')
-      .where('status', '==', 'in_progress')
-      .get();
-
-    const totalPending = openSnapshot.size + inProgressSnapshot.size;
 
     return NextResponse.json({ 
       success: true,
-      count: totalPending,
-      breakdown: {
-        open: openSnapshot.size,
-        inProgress: inProgressSnapshot.size
-      }
+      count: snapshot.size,
     });
   } catch (error: any) {
     console.error('Error counting tickets:', error);

@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
 
     await ticketRef.update({
       notes,
+      needsAdminReply: true, // user replied, show badge again
       updatedAt: new Date().toISOString(),
     });
 

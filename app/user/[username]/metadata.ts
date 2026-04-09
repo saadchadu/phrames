@@ -46,11 +46,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const ogImage = profileImage || campaignImage || 'https://phrames.app/images/featured-image-phrames.png'
 
     return {
-      title: `${displayName} (@${username}) | Phrames`,
-      description: bio,
+      title: `${displayName} (@${username}) - Campaign Creator | Phrames`,
+      description: bio.length > 20 ? bio : `${displayName} creates twibbon-style photo frame campaigns on Phrames. View their public campaigns and add frames to your profile picture.`,
+      keywords: [
+        displayName,
+        `${username} twibbon`,
+        `${displayName} campaign`,
+        'photo frame creator',
+        'twibbon campaign creator',
+        'profile picture frame',
+      ],
       openGraph: {
-        title: `${displayName} (@${username}) | Phrames`,
-        description: bio,
+        title: `${displayName} (@${username}) - Campaign Creator | Phrames`,
+        description: bio.length > 20 ? bio : `${displayName} creates photo frame campaigns on Phrames.`,
         url: `https://phrames.app/user/${username}`,
         siteName: 'Phrames',
         images: [
@@ -65,8 +73,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
       twitter: {
         card: 'summary_large_image',
-        title: `${displayName} (@${username}) | Phrames`,
-        description: bio,
+        title: `${displayName} (@${username}) - Campaign Creator | Phrames`,
+        description: bio.length > 20 ? bio : `${displayName} creates photo frame campaigns on Phrames.`,
         images: [ogImage],
       },
     }

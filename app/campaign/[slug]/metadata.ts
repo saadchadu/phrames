@@ -12,15 +12,28 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
   }
 
-  const title = `${campaign.campaignName} | Phrames`
-  const description = campaign.description || `Create your personalized photo with the ${campaign.campaignName} frame on Phrames.`
+  const title = `${campaign.campaignName} - Twibbon Frame | Phrames`
+  const description = campaign.description
+    ? `${campaign.description} — Add this photo frame to your profile picture on Phrames. Free twibbon frame creator, no watermarks.`
+    : `Add the ${campaign.campaignName} frame to your profile picture. Free twibbon-style photo frame on Phrames — no watermarks, no sign-up required.`
   const imageUrl = campaign.frameURL
   const featuredImage = 'https://phrames.app/images/featured-image-phrames.png'
 
   return {
     title,
     description,
-    keywords: ['photo frame', campaign.campaignName, 'campaign', 'photo editor', 'frame generator'],
+    keywords: [
+      campaign.campaignName,
+      `${campaign.campaignName} twibbon`,
+      `${campaign.campaignName} frame`,
+      `${campaign.campaignName} photo frame`,
+      'twibbon frame',
+      'profile picture frame',
+      'photo overlay',
+      'campaign frame',
+      'twibbonize alternative',
+      'free twibbon',
+    ],
     openGraph: {
       title,
       description,
@@ -28,10 +41,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       siteName: 'Phrames',
       images: [
         {
-          url: featuredImage,
+          url: campaign.frameURL || featuredImage,
           width: 1200,
           height: 630,
-          alt: campaign.campaignName,
+          alt: `${campaign.campaignName} - Twibbon Frame on Phrames`,
         },
       ],
       locale: 'en_US',
@@ -41,7 +54,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       card: 'summary_large_image',
       title,
       description,
-      images: [featuredImage],
+      images: [campaign.frameURL || featuredImage],
     },
     alternates: {
       canonical: `/campaign/${campaign.slug}`,
