@@ -46,6 +46,8 @@ export async function GET(request: NextRequest) {
     const freeCampaignFilter = searchParams.get('freeCampaignUsed');
     const blockedFilter = searchParams.get('blocked');
     const minCampaigns = searchParams.get('minCampaigns');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
 
     let query: Query = db.collection('users');
 
@@ -108,6 +110,20 @@ export async function GET(request: NextRequest) {
           return data.totalCampaigns >= minCount;
         });
       }
+    }
+
+    // Apply date range filter (based on createdAt)
+    if (dateFrom || dateTo) {
+      const from = dateFrom ? new Date(dateFrom) : null;
+      const to = dateTo ? new Date(dateTo + 'T23:59:59.999Z') : null;
+      users = users.filter(user => {
+        const data = user as any;
+        const joined = data.createdAt ? new Date(data.createdAt) : null;
+        if (!joined) return false;
+        if (from && joined < from) return false;
+        if (to && joined > to) return false;
+        return true;
+      });
     }
 
     return NextResponse.json({ users });

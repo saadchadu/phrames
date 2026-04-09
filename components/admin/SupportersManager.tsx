@@ -134,7 +134,7 @@ export default function SupportersManager() {
               value={campaignId}
               onChange={(e) => setCampaignId(e.target.value)}
               placeholder="Campaign ID"
-              className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 bg-white text-sm"
             />
             <button
               onClick={handleFixSingle}

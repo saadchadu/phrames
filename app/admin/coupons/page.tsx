@@ -345,7 +345,7 @@ export default function AdminCouponsPage() {
                                         disabled={isEditing}
                                         value={formData.code}
                                         onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                                        className={`w-full border border-gray-300 rounded-lg px-3 py-2 uppercase font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all ${isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-900'}`}
+                                        className={`w-full border border-gray-300 rounded-lg px-3 py-2 uppercase font-mono focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all ${isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-white text-gray-900'}`}
                                         placeholder="e.g. SUMMER50"
                                         maxLength={15}
                                     />
@@ -357,7 +357,7 @@ export default function AdminCouponsPage() {
                                         <select
                                             value={formData.type}
                                             onChange={e => setFormData({ ...formData, type: e.target.value as 'flat' | 'percent' })}
-                                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                                         >
                                             <option value="flat">Flat (₹)</option>
                                             <option value="percent">Percent (%)</option>
@@ -372,7 +372,7 @@ export default function AdminCouponsPage() {
                                             max={formData.type === 'percent' ? 100 : undefined}
                                             value={formData.value}
                                             onChange={e => setFormData({ ...formData, value: e.target.value })}
-                                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                                             placeholder={formData.type === 'percent' ? '50' : '100'}
                                         />
                                     </div>
@@ -412,7 +412,7 @@ export default function AdminCouponsPage() {
                                         min="1"
                                         value={formData.usageLimit}
                                         onChange={e => setFormData({ ...formData, usageLimit: e.target.value })}
-                                        className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                        className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                                         placeholder="e.g. 100 uses"
                                     />
                                 </div>
@@ -424,7 +424,7 @@ export default function AdminCouponsPage() {
                                             type="date"
                                             value={formData.validFrom}
                                             onChange={e => setFormData({ ...formData, validFrom: e.target.value })}
-                                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                                         />
                                     </div>
                                     <div>
@@ -433,7 +433,7 @@ export default function AdminCouponsPage() {
                                             type="date"
                                             value={formData.validUntil}
                                             onChange={e => setFormData({ ...formData, validUntil: e.target.value })}
-                                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                            className="w-full bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                                         />
                                     </div>
                                 </div>

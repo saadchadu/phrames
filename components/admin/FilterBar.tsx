@@ -64,7 +64,7 @@ export default function FilterBar({
               value={localSearchValue}
               onChange={(e) => setLocalSearchValue(e.target.value)}
               placeholder={searchPlaceholder}
-              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 bg-white text-sm"
             />
             {localSearchValue && (
               <button
@@ -84,7 +84,7 @@ export default function FilterBar({
             <select
               value={filterValues[filter.key] || filter.defaultValue || ''}
               onChange={(e) => onFilterChange?.(filter.key, e.target.value)}
-              className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 text-sm"
+              className="block w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 bg-white text-sm"
               aria-label={filter.label}
             >
               <option value="">{filter.label}</option>

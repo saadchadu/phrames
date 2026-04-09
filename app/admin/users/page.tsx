@@ -30,12 +30,14 @@ export default function AdminUsersPage() {
     freeCampaignUsed: 'all',
     blocked: 'all',
     minCampaigns: '',
+    dateFrom: '',
+    dateTo: '',
   });
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) fetchUsers();
-  }, [user, filters.freeCampaignUsed, filters.blocked, filters.minCampaigns]);
+  }, [user, filters.freeCampaignUsed, filters.blocked, filters.minCampaigns, filters.dateFrom, filters.dateTo]);
 
   async function fetchUsers() {
     try {
@@ -45,6 +47,8 @@ export default function AdminUsersPage() {
       if (filters.freeCampaignUsed !== 'all') params.append('freeCampaignUsed', filters.freeCampaignUsed);
       if (filters.blocked !== 'all') params.append('blocked', filters.blocked);
       if (filters.minCampaigns) params.append('minCampaigns', filters.minCampaigns);
+      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.append('dateTo', filters.dateTo);
 
       const token = await user?.getIdToken();
       const res = await fetch(`/api/admin/users?${params}`, {

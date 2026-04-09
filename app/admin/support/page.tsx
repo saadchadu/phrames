@@ -248,7 +248,7 @@ export default function AdminSupportPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-gray-700 w-full sm:w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-700 bg-white font-medium"
+              className="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 bg-white text-sm"
             >
               <option value="all">All Status</option>
               <option value="open">Open</option>
@@ -260,7 +260,7 @@ export default function AdminSupportPage() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="text-gray-700 w-full sm:w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-700 bg-white font-medium"
+              className="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 bg-white text-sm"
             >
               <option value="all">All Categories</option>
               <option value="general">General</option>
@@ -344,7 +344,7 @@ export default function AdminSupportPage() {
                     <select
                       value={selectedTicket.status}
                       onChange={(e) => updateTicketStatus(selectedTicket.ticketId, e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-gray-900 appearance-none cursor-pointer"
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-gray-900 appearance-none cursor-pointer"
                       style={{
                         backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                         backgroundPosition: 'right 0.5rem center',
@@ -431,7 +431,7 @@ export default function AdminSupportPage() {
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="Add internal note visible to user..."
                     rows={4}
-                    className="text-gray-700 w-full px-4 py-3 border border-gray-300 rounded-lg mb-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-gray-900 text-sm resize-none mb-3"
                   />
                   <button
                     onClick={addNote}
